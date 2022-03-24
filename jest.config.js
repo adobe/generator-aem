@@ -14,10 +14,7 @@
  limitations under the License.
 */
 
-module.exports = {
-  testPathIgnorePatterns: ['<rootDir>/__tests__/fixtures/'],
-  testEnvironment: 'node',
-  verbose: true,
+export default {
   collectCoverage: true,
   collectCoverageFrom: [
     'lib/**/*.js',
@@ -32,7 +29,19 @@ module.exports = {
       statements: 100,
     },
   },
+  setupFilesAfterEnv: [
+    '<rootDir>/__tests__/setup/setup.js'
+  ],
+  testPathIgnorePatterns: [
+    '<rootDir>/__tests__/fixtures/',
+    '<rootDir>/__tests__/setup/'
+  ],
+  testEnvironment: 'node',
+  transform: {
+    "\\.[jt]sx?$": "babel-jest"
+  },
   transformIgnorePatterns: [
     "node_modules/(?!@adobe/generator-aem)"
-  ]
+  ],
+  verbose: true
 };

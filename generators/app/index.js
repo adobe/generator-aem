@@ -31,6 +31,9 @@ class AEMGenerator extends Generator {
       this.option(k, v);
     });
   }
+  prompting() {
+   this.log(`Welcome to the <%- superb %> ${chalk.red('<%= generatorName %>')} generator!`);
+  }
 }
 
 export default AEMGenerator;
