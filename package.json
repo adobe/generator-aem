@@ -1,0 +1,74 @@
+{
+  "name": "@adobe/generator-aem",
+  "version": "0.0.1",
+  "description": "Creates an AEM Multi-module maven project based on user selections.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/adobe/generator-aem#README",
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adobe/generator-aem.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adobe/generator-aem/issues"
+  },
+  "author": {
+    "name": "Adobe Inc",
+    "email": "",
+    "url": "https://www.adobe.com"
+  },
+  "scripts": {
+    "lintfix": "eslint --fix .",
+    "eslint": "eslint .",
+    "test": "jest -c ./jest.config.js "
+  },
+  "files": [
+    "generators",
+    "lib"
+  ],
+  "main": "generators/app/index.js",
+  "keywords": [
+    "adobe",
+    "aem",
+    "templates",
+    "yeoman-generator"
+  ],
+  "engines": {
+    "npm": ">= 4.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.11.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-xo": "^0.40.0",
+    "eslint-plugin-license-header": "^0.4.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^7.0.4",
+    "jest": "^27.5.1",
+    "lint-staged": "^12.3.7",
+    "prettier": "^2.6.0",
+    "yeoman-assert": "^3.1.1",
+    "yeoman-environment": "^3.9.1",
+    "yeoman-test": "^6.3.0"
+  },
+  "dependencies": {
+    "chalk": "^5.0.1",
+    "lodash": "^4.17.21",
+    "yeoman-generator": "^5.6.1"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ],
+    "*.json": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+coverage
+**/templates
+**/*.partial
+resources/license-header.js
