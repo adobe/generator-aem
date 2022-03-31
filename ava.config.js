@@ -14,24 +14,10 @@
  limitations under the License.
 */
 
-import path from 'path';
-import assert from 'yeoman-assert';
-import helpers from 'yeoman-test';
+const config = {
+  files: ['tests/**/*', '!tests/fixtures/**/*'],
+  verbose: true,
+  workerThreads: false,
+};
 
-describe('@adobe/generator-aem', () => {
-  const props = ['appTitle', 'appId', 'groupId', 'artifactId', 'version', 'aemVersion', 'ccVersion', 'cifVersion'];
-
-
-  describe('options', () => {
-    let runResult;
-    beforeEach(async() =>
-      runResult = await helpers.create(path.join(__dirname, '../generators/app/index.js'))
-        .withOptions({"--help":""})
-        .run()
-    );
-
-    it('runs correctly',()  => {
-      runResult;
-    });
-  });
-});
+export default config;

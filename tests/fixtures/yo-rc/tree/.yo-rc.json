@@ -1,0 +1,9 @@
+{
+  "@adobe/generator-aem": {
+    "simple": {
+      "name": "Local Yo",
+      "appId": "localyo",
+      "artifactId": "localyo"
+    }
+  }
+}

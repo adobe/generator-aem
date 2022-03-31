@@ -1,0 +1,10 @@
+{
+  "@adobe/generator-aem": {
+    "name": "Local Yo",
+    "appId": "localyo",
+    "groupId": "com.test.localyo",
+    "artifactId": "localyo",
+    "version": "1.0-LOCALYO",
+    "aemVersion": "localyo"
+  }
+}
