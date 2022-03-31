@@ -35,7 +35,7 @@ const generator = class extends Generator {
     };
 
     this.props = {};
-    _.merge(this.props, _.pick(this.options, ['parent']), GeneratorCommons.props(this, cb));
+    _.defaults(this.props, _.pick(this.options, ['parent']), GeneratorCommons.props(this, cb));
   }
 
   writing() {

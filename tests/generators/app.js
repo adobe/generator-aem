@@ -17,6 +17,7 @@
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
+import _ from 'lodash';
 
 import test from 'ava';
 import helpers from 'yeoman-test';
@@ -26,14 +27,24 @@ const dirname = path.dirname(filename);
 const projectRoot = path.join(dirname, '..', '..');
 const generatorPath = path.join(projectRoot, 'generators', 'app');
 
+const promptDefaults = {
+  examples: false,
+  name: 'prompted',
+  appId: 'prompted',
+  artifactId: 'prompted',
+  version: 'prompted',
+  aemVersion: 'prompted',
+};
+
 test('@adobe/generator-aem - initialize', async (t) => {
   t.plan(1);
 
   await helpers
     .create(generatorPath)
+    .withPrompts(promptDefaults)
     .run()
     .then((result) => {
-      const expected = {};
+      const expected = promptDefaults;
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
 });
@@ -44,6 +55,7 @@ test('@adobe/generator-aem - initialize - defaults', async (t) => {
   await helpers
     .create(generatorPath)
     .withOptions({ defaults: true })
+    .withPrompts(promptDefaults)
     .run()
     .then((result) => {
       const expected = {
@@ -52,6 +64,7 @@ test('@adobe/generator-aem - initialize - defaults', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aemVersion: 'cloud',
       };
+      _.defaults(expected, promptDefaults);
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
 });
@@ -61,6 +74,7 @@ test('@adobe/generator-aem - initialize from pom', async (t) => {
 
   await helpers
     .create(generatorPath)
+    .withPrompts(promptDefaults)
     .inTmpDir((dir) => {
       fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(dir, 'pom.xml'));
     })
@@ -73,6 +87,7 @@ test('@adobe/generator-aem - initialize from pom', async (t) => {
         version: '1.0-POM',
         aemVersion: 'pom',
       };
+      _.defaults(expected, promptDefaults);
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
 });
@@ -85,6 +100,7 @@ test('@adobe/generator-aem - initialize from pom - generateInto', async (t) => {
   await helpers
     .create(generatorPath)
     .withOptions({ generateInto: subdir })
+    .withPrompts(promptDefaults)
     .inTmpDir((dir) => {
       fs.mkdirSync(path.join(dir, subdir));
       fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(dir, subdir, 'pom.xml'));
@@ -98,6 +114,7 @@ test('@adobe/generator-aem - initialize from pom - generateInto', async (t) => {
         version: '1.0-POM',
         aemVersion: 'pom',
       };
+      _.defaults(expected, promptDefaults);
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
 });
@@ -107,6 +124,7 @@ test('@adobe/generator-aem - initialize from .yo-rc.json', async (t) => {
 
   await helpers
     .create(generatorPath)
+    .withPrompts(promptDefaults)
     .inTmpDir((dir) => {
       fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'yo-rc', 'full', '.yo-rc.json'), path.join(dir, '.yo-rc.json'));
     })
@@ -120,6 +138,7 @@ test('@adobe/generator-aem - initialize from .yo-rc.json', async (t) => {
         version: '1.0-LOCALYO',
         aemVersion: 'localyo',
       };
+      _.defaults(expected, promptDefaults);
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
 });
@@ -130,6 +149,7 @@ test('@adobe/generator-aem - initialize merge', async (t) => {
   await helpers
     .create(generatorPath)
     .withOptions({ defaults: true })
+    .withPrompts(promptDefaults)
     .inTmpDir((dir) => {
       fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'partial', 'pom.xml'), path.join(dir, 'pom.xml'));
       fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'yo-rc', 'partial', '.yo-rc.json'), path.join(dir, '.yo-rc.json'));
@@ -145,6 +165,7 @@ test('@adobe/generator-aem - initialize merge', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aemVersion: 'localyo',
       };
+      _.defaults(expected, promptDefaults);
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
 });
@@ -161,6 +182,7 @@ test('@adobe/generator-aem - composes with module - base options', async (t) => 
       defaults: true,
       modules: path.join(projectRoot, 'tests', 'fixtures', 'generators', 'simple'),
     })
+    .withPrompts(promptDefaults)
     .inTmpDir((dir) => {
       temporaryDir = dir;
     })
@@ -177,6 +199,7 @@ test('@adobe/generator-aem - composes with module - base options', async (t) => 
           aemVersion: 'cloud',
         },
       };
+      _.defaults(expected.parent, promptDefaults);
       const actual = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'simple', 'props.json')));
       t.deepEqual(actual, expected, 'File created');
     });
@@ -197,6 +220,7 @@ test('@adobe/generator-aem - composes with module - shared options', async (t) =
       defaults: true,
       modules: path.join(projectRoot, 'tests', 'fixtures', 'generators', 'simple'),
     })
+    .withPrompts(promptDefaults)
     .inTmpDir((dir) => {
       temporaryDir = dir;
     })
@@ -219,6 +243,7 @@ test('@adobe/generator-aem - composes with module - shared options', async (t) =
           aemVersion: 'cloud',
         },
       };
+      _.defaults(expected.parent, promptDefaults);
       const actual = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'simple', 'props.json')));
       t.deepEqual(actual, expected, 'File created');
     });
@@ -229,9 +254,10 @@ test('@adobe/generator-aem - prompting', async (t) => {
 
   await helpers
     .create(generatorPath)
+    .withPrompts(promptDefaults)
     .run()
     .then((result) => {
-      const expected = {};
+      const expected = promptDefaults;
       const actual = result.generator.props;
       t.deepEqual(actual, expected, 'Properties set');
     });

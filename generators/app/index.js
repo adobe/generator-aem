@@ -28,7 +28,7 @@ class AEMGenerator extends Generator {
     super(args, options, features);
 
     const options_ = {};
-    _.merge(options_, GeneratorCommons.options, {
+    _.defaults(options_, GeneratorCommons.options, {
       groupId: {
         type: String,
         desc: 'Base Maven Group ID (e.g. "com.mysite").',
@@ -88,7 +88,7 @@ class AEMGenerator extends Generator {
     }
 
     const moduleOptions = {};
-    _.merge(moduleOptions, _.pick(this.props, _.keys(GeneratorCommons.options)));
+    _.defaults(moduleOptions, _.pick(this.props, _.keys(GeneratorCommons.options)));
 
     moduleOptions.parent = this.props;
 
@@ -101,10 +101,35 @@ class AEMGenerator extends Generator {
   }
 
   prompting() {
+    const prompts = GeneratorCommons.prompts(this).concat([
+      {
+        name: 'version',
+        message: 'Project version (e.g. 1.0.0-SNAPSHOT).',
+        when: !this.options.defaults,
+        default: this.props.version,
+      },
+      {
+        name: 'aemVersion',
+        when: !this.options.defaults,
+        default: this.props.aemVersion,
+      },
+    ]);
 
+    return this.prompt(prompts).then((answers) => {
+      GeneratorCommons.processAnswers(this, answers);
+      _.defaults(this.props, answers);
+    });
   }
 
+  configuring() {}
+
   default() {}
+
+  writing() {}
+
+  conflicts() {}
+
+  install() {}
 
   end() {
     this.log('Thanks for using the AEM Project Generator.');

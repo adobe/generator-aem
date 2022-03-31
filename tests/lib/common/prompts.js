@@ -19,7 +19,7 @@ import test from 'ava';
 
 import GeneratorCommons from '../../../lib/common.js';
 
-test('examples - default not set', (t) => {
+test('examples - default not set', async (t) => {
   t.plan(2);
 
   const generator = {};
@@ -28,10 +28,10 @@ test('examples - default not set', (t) => {
 
   const prompt = _.find(prompts, { name: 'examples' });
   t.false(prompt.default, 'Example default true');
-  t.true(prompt.when(), 'Example prompts');
+  t.true(await prompt.when(), 'Example prompts');
 });
 
-test('examples - defaults set', (t) => {
+test('examples - defaults set', async (t) => {
   t.plan(2);
 
   const generator = { props: { defaults: true } };
@@ -40,10 +40,10 @@ test('examples - defaults set', (t) => {
 
   const prompt = _.find(prompts, { name: 'examples' });
   t.false(prompt.default, 'Example default true');
-  t.false(prompt.when(), 'Example does not prompt');
+  t.false(await prompt.when(), 'Example does not prompt');
 });
 
-test('examples - examples set', (t) => {
+test('examples - examples set', async (t) => {
   t.plan(2);
 
   const generator = { props: { examples: true } };
@@ -52,7 +52,7 @@ test('examples - examples set', (t) => {
 
   const prompt = _.find(prompts, { name: 'examples' });
   t.false(prompt.default, 'Example default true');
-  t.false(prompt.when(), 'Example does not prompt');
+  t.false(await prompt.when(), 'Example does not prompt');
 });
 
 test('name - not specified', (t) => {
@@ -99,7 +99,7 @@ test('appId - specified', (t) => {
   t.false(prompt.when, 'appId does not prompt');
 });
 
-test('artifactId - not specified', (t) => {
+test('artifactId - not specified', async (t) => {
   t.plan(1);
 
   const generator = {};
@@ -107,10 +107,10 @@ test('artifactId - not specified', (t) => {
   const prompts = GeneratorCommons.prompts(generator);
 
   const prompt = _.find(prompts, { name: 'artifactId' });
-  t.true(prompt.when(), 'artifactId prompts');
+  t.true(await prompt.when(), 'artifactId prompts');
 });
 
-test('artifactId - specified', (t) => {
+test('artifactId - specified', async (t) => {
   t.plan(1);
 
   const generator = { props: { artifactId: 'ArtifactId' } };
@@ -118,10 +118,10 @@ test('artifactId - specified', (t) => {
   const prompts = GeneratorCommons.prompts(generator);
 
   const prompt = _.find(prompts, { name: 'artifactId' });
-  t.false(prompt.when(), 'artifactId does not prompt');
+  t.false(await prompt.when(), 'artifactId does not prompt');
 });
 
-test('artifactId - defaults set', (t) => {
+test('artifactId - defaults set', async (t) => {
   t.plan(1);
 
   const generator = { props: { defaults: true } };
@@ -129,40 +129,40 @@ test('artifactId - defaults set', (t) => {
   const prompts = GeneratorCommons.prompts(generator);
 
   const prompt = _.find(prompts, { name: 'artifactId' });
-  t.false(prompt.when(), 'artifactId does not prompt');
+  t.false(await prompt.when(), 'artifactId does not prompt');
 });
 
-test('artifactId - default - appId answered', (t) => {
+test('artifactId - default - appId answered', async (t) => {
   t.plan(1);
 
   const generator = {};
   const prompts = GeneratorCommons.prompts(generator);
 
   const prompt = _.find(prompts, { name: 'artifactId' });
-  t.is(prompt.default({ appId: 'answer' }), 'answer', 'Default uses AppId answer');
+  t.is(await prompt.default({ appId: 'answer' }), 'answer', 'Default uses AppId answer');
 });
 
-test('artifactId - default - property fallback', (t) => {
+test('artifactId - default - property fallback', async (t) => {
   t.plan(1);
 
   const generator = { props: { appId: 'property' } };
   const prompts = GeneratorCommons.prompts(generator);
 
   const prompt = _.find(prompts, { name: 'artifactId' });
-  t.is(prompt.default({ appId: 'property' }), 'property', 'Default uses AppId answer');
+  t.is(await prompt.default({ appId: 'property' }), 'property', 'Default uses AppId answer');
 });
 
-test('artifactId - default - module generate folder appended', (t) => {
+test('artifactId - default - module generate folder appended', async (t) => {
   t.plan(2);
 
   const generator = { options: { generateInto: 'module' } };
   let prompts = GeneratorCommons.prompts(generator);
 
   let prompt = _.find(prompts, { name: 'artifactId' });
-  t.is(prompt.default({ appId: 'answer' }), 'answer.module', 'Answer & Generate Into default');
+  t.is(await prompt.default({ appId: 'answer' }), 'answer.module', 'Answer & Generate Into default');
 
   generator.props = { appId: 'property' };
   prompts = GeneratorCommons.prompts(generator);
   prompt = _.find(prompts, { name: 'artifactId' });
-  t.is(prompt.default({}), 'property.module', 'Property & Generate Into default');
+  t.is(await prompt.default({}), 'property.module', 'Property & Generate Into default');
 });
