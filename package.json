@@ -18,8 +18,7 @@
     "url": "https://www.adobe.com"
   },
   "scripts": {
-    "fix": "xo --fix",
-    "test": "xo && c8 ava",
+    "test": "xo --fix && c8 ava",
     "unit-test": "ava"
   },
   "files": [
@@ -40,6 +39,7 @@
     "ava": "^4.1.0",
     "c8": "^7.11.0",
     "eslint-plugin-license-header": "^0.4.0",
+    "temp-dir": "^2.0.0",
     "xo": "^0.48.0",
     "yeoman-assert": "^3.1.1",
     "yeoman-environment": "^3.9.1",

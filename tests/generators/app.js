@@ -14,10 +14,13 @@
  limitations under the License.
 */
 
-import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
+
 import _ from 'lodash';
+import tempDirectory from 'temp-dir';
 
 import test from 'ava';
 import helpers from 'yeoman-test';
@@ -27,14 +30,14 @@ const dirname = path.dirname(filename);
 const projectRoot = path.join(dirname, '..', '..');
 const generatorPath = path.join(projectRoot, 'generators', 'app');
 
-const promptDefaults = {
+const promptDefaults = Object.freeze({
   examples: false,
   name: 'prompted',
   appId: 'prompted',
   artifactId: 'prompted',
   version: 'prompted',
   aemVersion: 'prompted',
-};
+});
 
 test('@adobe/generator-aem - initialize', async (t) => {
   t.plan(1);
@@ -44,8 +47,7 @@ test('@adobe/generator-aem - initialize', async (t) => {
     .withPrompts(promptDefaults)
     .run()
     .then((result) => {
-      const expected = promptDefaults;
-      t.deepEqual(result.generator.props, expected, 'Properties set');
+      t.deepEqual(result.generator.props, promptDefaults, 'Properties set');
     });
 });
 
@@ -75,8 +77,8 @@ test('@adobe/generator-aem - initialize from pom', async (t) => {
   await helpers
     .create(generatorPath)
     .withPrompts(promptDefaults)
-    .inTmpDir((dir) => {
-      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(dir, 'pom.xml'));
+    .inTmpDir((temporary) => {
+      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(temporary, 'pom.xml'));
     })
     .run()
     .then((result) => {
@@ -94,16 +96,15 @@ test('@adobe/generator-aem - initialize from pom', async (t) => {
 
 test('@adobe/generator-aem - initialize from pom - generateInto', async (t) => {
   t.plan(1);
-
   const subdir = 'subdir';
 
   await helpers
     .create(generatorPath)
     .withOptions({ generateInto: subdir })
     .withPrompts(promptDefaults)
-    .inTmpDir((dir) => {
-      fs.mkdirSync(path.join(dir, subdir));
-      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(dir, subdir, 'pom.xml'));
+    .inTmpDir((temporary) => {
+      fs.mkdirSync(path.join(temporary, subdir));
+      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(temporary, subdir, 'pom.xml'));
     })
     .run()
     .then((result) => {
@@ -125,8 +126,8 @@ test('@adobe/generator-aem - initialize from .yo-rc.json', async (t) => {
   await helpers
     .create(generatorPath)
     .withPrompts(promptDefaults)
-    .inTmpDir((dir) => {
-      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'yo-rc', 'full', '.yo-rc.json'), path.join(dir, '.yo-rc.json'));
+    .inTmpDir((temporary) => {
+      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'yo-rc', 'full', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
     })
     .run()
     .then((result) => {
@@ -150,9 +151,9 @@ test('@adobe/generator-aem - initialize merge', async (t) => {
     .create(generatorPath)
     .withOptions({ defaults: true })
     .withPrompts(promptDefaults)
-    .inTmpDir((dir) => {
-      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'partial', 'pom.xml'), path.join(dir, 'pom.xml'));
-      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'yo-rc', 'partial', '.yo-rc.json'), path.join(dir, '.yo-rc.json'));
+    .inTmpDir((temporary) => {
+      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'partial', 'pom.xml'), path.join(temporary, 'pom.xml'));
+      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'yo-rc', 'partial', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
     })
     .run()
     .then((result) => {
@@ -183,8 +184,8 @@ test('@adobe/generator-aem - composes with module - base options', async (t) => 
       modules: path.join(projectRoot, 'tests', 'fixtures', 'generators', 'simple'),
     })
     .withPrompts(promptDefaults)
-    .inTmpDir((dir) => {
-      temporaryDir = dir;
+    .inTmpDir((temporary) => {
+      temporaryDir = temporary;
     })
     .run()
     .then(() => {
@@ -192,6 +193,9 @@ test('@adobe/generator-aem - composes with module - base options', async (t) => 
         added: 'Added',
         defaults: true,
         examples: true,
+        appId: 'prompted',
+        artifactId: 'prompted',
+        name: 'prompted',
         parent: {
           defaults: true,
           examples: true,
@@ -200,7 +204,7 @@ test('@adobe/generator-aem - composes with module - base options', async (t) => 
         },
       };
       _.defaults(expected.parent, promptDefaults);
-      const actual = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'simple', 'props.json')));
+      const actual = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'prompted', 'simple', 'props.json')));
       t.deepEqual(actual, expected, 'File created');
     });
 });
@@ -221,8 +225,8 @@ test('@adobe/generator-aem - composes with module - shared options', async (t) =
       modules: path.join(projectRoot, 'tests', 'fixtures', 'generators', 'simple'),
     })
     .withPrompts(promptDefaults)
-    .inTmpDir((dir) => {
-      temporaryDir = dir;
+    .inTmpDir((temporary) => {
+      temporaryDir = temporary;
     })
     .run()
     .then(() => {
@@ -244,7 +248,7 @@ test('@adobe/generator-aem - composes with module - shared options', async (t) =
         },
       };
       _.defaults(expected.parent, promptDefaults);
-      const actual = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'simple', 'props.json')));
+      const actual = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'appId', 'simple', 'props.json')));
       t.deepEqual(actual, expected, 'File created');
     });
 });
@@ -257,8 +261,66 @@ test('@adobe/generator-aem - prompting', async (t) => {
     .withPrompts(promptDefaults)
     .run()
     .then((result) => {
-      const expected = promptDefaults;
       const actual = result.generator.props;
-      t.deepEqual(actual, expected, 'Properties set');
+      t.deepEqual(actual, promptDefaults, 'Properties set');
+    });
+});
+
+test('@adobe/generator-aem - configuring', async (t) => {
+  t.plan(1);
+  let temporaryDir;
+
+  await helpers
+    .create(generatorPath)
+    .withPrompts(promptDefaults)
+    .inTmpDir((temporary) => {
+      temporaryDir = temporary;
+    })
+    .run()
+    .then(() => {
+      const expected = {
+        '@adobe/generator-aem': promptDefaults,
+      };
+
+      const yoData = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'prompted', '.yo-rc.json')));
+      t.deepEqual(yoData, expected, 'Yeoman Data saved.');
+    });
+});
+
+test('@adobe/generator-aem - configuring - fails on existing different pom', async (t) => {
+  t.plan(2);
+
+  const error = await t.throwsAsync(
+    helpers
+      .create(generatorPath)
+      .withPrompts(promptDefaults)
+      .inTmpDir((temporary) => {
+        fs.mkdirSync(path.join(temporary, 'prompted'));
+        fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(temporary, 'prompted', 'pom.xml'));
+      })
+      .run()
+  );
+  t.is(error.message, 'Refusing to update existing project with different group/artifact identifiers.');
+});
+
+test('@adobe/generator-aem - configuring - cwd is same as appId', async (t) => {
+  t.plan(1);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'), 'appId');
+
+  await helpers
+    .create(generatorPath)
+    .withOptions({ appId: 'appId' })
+    .withPrompts(promptDefaults)
+    .inDir(temporaryDir)
+    .run()
+    .then(() => {
+      const rootProps = {};
+      const expected = {
+        '@adobe/generator-aem': _.merge(rootProps, promptDefaults, { appId: 'appId' }),
+      };
+
+      const yoData = JSON.parse(fs.readFileSync(path.join(temporaryDir, '.yo-rc.json')));
+      t.deepEqual(yoData, expected, 'Yeoman Data saved.');
     });
 });

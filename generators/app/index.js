@@ -86,18 +86,6 @@ class AEMGenerator extends Generator {
     if (this.options.defaults) {
       _.defaults(this.props, { version: '1.0.0-SNAPSHOT', aemVersion: 'cloud' });
     }
-
-    const moduleOptions = {};
-    _.defaults(moduleOptions, _.pick(this.props, _.keys(GeneratorCommons.options)));
-
-    moduleOptions.parent = this.props;
-
-    const modules = this.options.modules;
-    for (const m in modules) {
-      if (Object.prototype.hasOwnProperty.call(modules, m)) {
-        this.composeWith(require.resolve(modules[m]), moduleOptions);
-      }
-    }
   }
 
   prompting() {
@@ -121,9 +109,46 @@ class AEMGenerator extends Generator {
     });
   }
 
-  configuring() {}
+  configuring() {
+    const current = this.config.getAll();
 
-  default() {}
+    // No config - check if folder contains pom with same properties.
+    if (_.isEmpty(current)) {
+      let dest;
+      if (this.options.generateInto) {
+        dest = this.destinationPath(this.options.generateInto);
+      } else if (path.basename(this.contextRoot) === this.props.appId) {
+        dest = this.contextRoot;
+      } else {
+        dest = this.destinationPath(this.props.appId);
+      }
+
+      const pomData = GeneratorCommons.readPom(dest);
+      if (!_.isEmpty(pomData) && pomData.groupId !== this.props.groupId && pomData.artifactId !== this.props.artifactId) {
+        throw new Error('Refusing to update existing project with different group/artifact identifiers.');
+      }
+
+      this.destinationRoot(dest);
+    }
+
+    // Props will overwrite any current values.
+    _.merge(current, this.props);
+    this.config.set(current);
+  }
+
+  default() {
+    const moduleOptions = {};
+    _.defaults(moduleOptions, _.pick(this.props, _.keys(GeneratorCommons.options)));
+
+    moduleOptions.parent = this.props;
+
+    const modules = this.options.modules;
+    for (const m in modules) {
+      if (Object.prototype.hasOwnProperty.call(modules, m)) {
+        this.composeWith(require.resolve(modules[m]), moduleOptions);
+      }
+    }
+  }
 
   writing() {}
 
