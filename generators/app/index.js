@@ -26,6 +26,9 @@ import GeneratorCommons from '../../lib/common.js';
 
 class AEMGenerator extends Generator {
   constructor(args, options, features) {
+    features = features || {};
+    features.customInstallTask = true;
+
     super(args, options, features);
 
     const options_ = {};
@@ -132,7 +135,7 @@ class AEMGenerator extends Generator {
       {
         name: 'version',
         message: 'Project version (e.g. 1.0.0-SNAPSHOT).',
-        when: !this.options.defaults,
+        when: !this.options.defaults && !this.props.version,
         default: this.props.version || '1.0.0-SNAPSHOT',
       },
       {
@@ -141,14 +144,14 @@ class AEMGenerator extends Generator {
         type: 'list',
         choices: ['8', '11'],
         default: 1,
-        when: !this.options.defaults || !this.props.javaVersion,
+        when: !this.options.defaults && !this.props.javaVersion,
       },
       {
         name: 'aemVersion',
         type: 'list',
         choices: ['6.5', 'cloud'],
         default: 1,
-        when: !this.options.defaults || !this.options.aemVersion,
+        when: !this.options.defaults && !this.props.aemVersion,
       },
     ]);
 
@@ -237,17 +240,13 @@ class AEMGenerator extends Generator {
   conflicts() {}
 
   install() {
-    return this.spawnCommand('mvn', ['clean', 'verify'])
-      .then(() => {
-        this.log('Successfully verified the Maven project.');
-      })
-      .catch((error) => {
-        this.log(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
-      });
+    return this.spawnCommand('mvn', ['clean', 'verify']).catch((error) => {
+      this.log(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
+    });
   }
 
   end() {
-    this.log('Thanks for using the AEM Project Generator.');
+    this.log(chalk.greenBright('\n\nThanks for using the AEM Project Generator.\n\n'));
   }
 
   _coordinates() {
