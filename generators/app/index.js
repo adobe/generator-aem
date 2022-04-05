@@ -14,14 +14,16 @@
  limitations under the License.
 */
 
+import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
 import _ from 'lodash';
+import chalk from 'chalk';
+
+import got from 'got';
+import { XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 import GeneratorCommons from '../../lib/common.js';
-
-const require = createRequire(import.meta.url);
 
 class AEMGenerator extends Generator {
   constructor(args, options, features) {
@@ -37,6 +39,11 @@ class AEMGenerator extends Generator {
       version: {
         type: String,
         desc: 'Project version (e.g. 1.0.0-SNAPSHOT).',
+      },
+
+      javaVersion: {
+        type: String,
+        desc: 'Java version to use for project (8 or 11)',
       },
 
       aemVersion: {
@@ -63,20 +70,30 @@ class AEMGenerator extends Generator {
     // * Yeoman Config
     // * Pom Values
 
-    const dest = this.options.generateInto || path.relative(this.destinationRoot(), this.contextRoot);
-    delete this.options.generateInto;
+    let dest = this.options.generateInto || path.relative(this.destinationRoot(), this.contextRoot);
 
-    const unique = ['groupId', 'version', 'aemVersion'];
+    if (fs.existsSync(this.destinationPath(dest, '.yo-rc.json'))) {
+      this.destinationRoot(this.destinationPath(dest));
+      dest = '';
+    }
+
+    const unique = ['groupId', 'version', 'javaVersion', 'aemVersion'];
 
     // Populate Root unique properties
     this.props = {};
     _.defaults(this.props, _.pick(this.options, unique));
     _.defaults(this.props, _.pick(this.config.getAll(), unique));
-    const pom = GeneratorCommons.readPom(path.join(this.destinationRoot(), dest));
 
+    const pom = GeneratorCommons.readPom(this.destinationPath(dest));
     _.defaults(this.props, _.omit(pom, ['pomProperties']));
-    if (pom.pomProperties && pom.pomProperties['aem.version']) {
-      this.props.aemVersion = this.props.aemVersion || pom.pomProperties['aem.version'];
+    if (pom.pomProperties) {
+      if (pom.pomProperties['aem.version']) {
+        this.props.aemVersion = this.props.aemVersion || pom.pomProperties['aem.version'];
+      }
+
+      if (pom.pomProperties['java.version']) {
+        this.props.javaVersion = this.props.javaVersion || `${pom.pomProperties['java.version']}`;
+      }
     }
 
     // Populate Shared
@@ -84,17 +101,30 @@ class AEMGenerator extends Generator {
 
     // Fall back to defaults
     if (this.options.defaults) {
-      _.defaults(this.props, { version: '1.0.0-SNAPSHOT', aemVersion: 'cloud' });
+      _.defaults(this.props, { version: '1.0.0-SNAPSHOT', javaVersion: '11', aemVersion: 'cloud' });
     }
   }
 
   prompting() {
     const prompts = GeneratorCommons.prompts(this).concat([
       {
+        name: 'groupId',
+        message: 'Base Maven Group ID (e.g. "com.mysite").',
+        when: !this.props.groupId,
+      },
+      {
         name: 'version',
         message: 'Project version (e.g. 1.0.0-SNAPSHOT).',
         when: !this.options.defaults,
         default: this.props.version,
+      },
+      {
+        name: 'javaVersion',
+        message: 'Java Version',
+        type: 'list',
+        choices: ['8', '11'],
+        default: 1,
+        when: !this.props.javaVersion,
       },
       {
         name: 'aemVersion',
@@ -111,7 +141,6 @@ class AEMGenerator extends Generator {
 
   configuring() {
     const current = this.config.getAll();
-
     // No config - check if folder contains pom with same properties.
     if (_.isEmpty(current)) {
       let dest;
@@ -143,21 +172,75 @@ class AEMGenerator extends Generator {
     moduleOptions.parent = this.props;
 
     const modules = this.options.modules;
-    for (const m in modules) {
-      if (Object.prototype.hasOwnProperty.call(modules, m)) {
-        this.composeWith(require.resolve(modules[m]), moduleOptions);
+    for (const idx in modules) {
+      if (Object.prototype.hasOwnProperty.call(modules, idx)) {
+        this.composeWith(modules[idx], moduleOptions);
       }
     }
   }
 
-  writing() {}
+  writing() {
+    const files = [];
+    files.push(
+      {
+        src: this.templatePath('README.md'),
+        dest: this.destinationPath('README.md'),
+      },
+      {
+        src: this.templatePath('.gitignore'),
+        dest: this.destinationPath('.gitignore'),
+      },
+      {
+        src: this.templatePath('pom.xml'),
+        dest: this.destinationPath('pom.xml'),
+      }
+    );
+
+    return this._latestSdk().then((sdkVersion) => {
+      this.props.aemVersion = sdkVersion;
+      GeneratorCommons.write(this, files);
+    });
+  }
 
   conflicts() {}
 
-  install() {}
+  install() {
+    return this.spawnCommand('mvn', ['clean', 'verify'])
+      .then(() => {
+        this.log('Successfully verified the Maven project.');
+      })
+      .catch((error) => {
+        this.log(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
+      });
+  }
 
   end() {
     this.log('Thanks for using the AEM Project Generator.');
+  }
+
+  /*
+   *
+   * Returns a promise that resolves to the current version of the SDK.
+   */
+  _latestSdk() {
+    return new Promise((resolve, reject) => {
+      try {
+        got.get('https://repo1.maven.org/maven2/com/adobe/aem/aem-sdk-api/maven-metadata.xml', { responseType: 'text', resolveBodyOnly: true }).then((body) => {
+          try {
+            const parser = new XMLParser({
+              ignoreAttributes: true,
+              ignoreDeclaration: true,
+            });
+            const data = parser.parse(body);
+            resolve(data.metadata.versioning.latest);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      } catch (error) {
+        reject(error.response ? error.response.body : error);
+      }
+    });
   }
 }
 

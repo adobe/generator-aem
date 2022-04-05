@@ -1,10 +1,12 @@
 {
   "@adobe/generator-aem": {
+    "examples": false,
     "name": "Local Yo",
     "appId": "localyo",
     "groupId": "com.test.localyo",
     "artifactId": "localyo",
     "version": "1.0-LOCALYO",
+    "javaVersion": "8",
     "aemVersion": "localyo"
   }
 }

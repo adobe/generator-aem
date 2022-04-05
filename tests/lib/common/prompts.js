@@ -166,3 +166,35 @@ test('artifactId - default - module generate folder appended', async (t) => {
   prompt = _.find(prompts, { name: 'artifactId' });
   t.is(await prompt.default({}), 'property.module', 'Property & Generate Into default');
 });
+
+test('processAnswers - defaults', (t) => {
+  t.plan(1);
+  const generator = { props: { defaults: true } };
+  const answers = { appId: 'defaults' };
+  GeneratorCommons.processAnswers(generator, answers);
+  t.is(answers.artifactId, 'defaults', 'Defaults artifactId');
+});
+
+test('processAnswers - defaults - appId from properties', (t) => {
+  t.plan(1);
+  const generator = { props: { defaults: true, appId: 'appId' } };
+  const answers = {};
+  GeneratorCommons.processAnswers(generator, answers);
+  t.is(answers.artifactId, 'appId', 'Defaults artifactId');
+});
+
+test('processAnswers - defaults - generateInto', (t) => {
+  t.plan(1);
+  const generator = { props: { defaults: true }, options: { generateInto: 'generateInto' } };
+  const answers = { appId: 'defaults' };
+  GeneratorCommons.processAnswers(generator, answers);
+  t.is(answers.artifactId, 'defaults.generateInto', 'Defaults artifactId');
+});
+
+test('processAnswers - defaults - appId from properties && generateInto', (t) => {
+  t.plan(1);
+  const generator = { props: { defaults: true, appId: 'appId' }, options: { generateInto: 'generateInto' } };
+  const answers = {};
+  GeneratorCommons.processAnswers(generator, answers);
+  t.is(answers.artifactId, 'appId.generateInto', 'Defaults artifactId');
+});

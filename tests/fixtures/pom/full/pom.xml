@@ -25,6 +25,7 @@
   <description>POM Description</description>
 
   <properties>
+    <java.version>8</java.version>
     <aem.version>pom</aem.version>
   </properties>
 </project>

@@ -25,25 +25,30 @@ import tempDirectory from 'temp-dir';
 import test from 'ava';
 import helpers from 'yeoman-test';
 
+import TestGenerator from '../fixtures/generators/simple/index.js';
+
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 const projectRoot = path.join(dirname, '..', '..');
+const noWriteGenerator = path.join(projectRoot, 'tests', 'fixtures', 'generators', 'nowrite');
 const generatorPath = path.join(projectRoot, 'generators', 'app');
 
 const promptDefaults = Object.freeze({
   examples: false,
   name: 'prompted',
   appId: 'prompted',
+  groupId: 'prompted',
   artifactId: 'prompted',
   version: 'prompted',
   aemVersion: 'prompted',
+  javaVersion: 'prompted',
 });
 
 test('@adobe/generator-aem - initialize', async (t) => {
   t.plan(1);
 
   await helpers
-    .create(generatorPath)
+    .create(noWriteGenerator)
     .withPrompts(promptDefaults)
     .run()
     .then((result) => {
@@ -55,7 +60,7 @@ test('@adobe/generator-aem - initialize - defaults', async (t) => {
   t.plan(1);
 
   await helpers
-    .create(generatorPath)
+    .create(noWriteGenerator)
     .withOptions({ defaults: true })
     .withPrompts(promptDefaults)
     .run()
@@ -64,6 +69,7 @@ test('@adobe/generator-aem - initialize - defaults', async (t) => {
         defaults: true,
         examples: true,
         version: '1.0.0-SNAPSHOT',
+        javaVersion: '11',
         aemVersion: 'cloud',
       };
       _.defaults(expected, promptDefaults);
@@ -75,7 +81,7 @@ test('@adobe/generator-aem - initialize from pom', async (t) => {
   t.plan(1);
 
   await helpers
-    .create(generatorPath)
+    .create(noWriteGenerator)
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
       fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(temporary, 'pom.xml'));
@@ -87,6 +93,7 @@ test('@adobe/generator-aem - initialize from pom', async (t) => {
         groupId: 'com.test.pom.groupid',
         artifactId: 'pom.artifactid',
         version: '1.0-POM',
+        javaVersion: '8',
         aemVersion: 'pom',
       };
       _.defaults(expected, promptDefaults);
@@ -99,7 +106,7 @@ test('@adobe/generator-aem - initialize from pom - generateInto', async (t) => {
   const subdir = 'subdir';
 
   await helpers
-    .create(generatorPath)
+    .create(noWriteGenerator)
     .withOptions({ generateInto: subdir })
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
@@ -113,6 +120,7 @@ test('@adobe/generator-aem - initialize from pom - generateInto', async (t) => {
         groupId: 'com.test.pom.groupid',
         artifactId: 'pom.artifactid',
         version: '1.0-POM',
+        javaVersion: '8',
         aemVersion: 'pom',
       };
       _.defaults(expected, promptDefaults);
@@ -124,22 +132,25 @@ test('@adobe/generator-aem - initialize from .yo-rc.json', async (t) => {
   t.plan(1);
 
   await helpers
-    .create(generatorPath)
+    .create(noWriteGenerator)
+    .withOptions({ generateInto: 'prompted' })
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
-      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'yo-rc', 'full', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
+      fs.mkdirSync(path.join(temporary, 'prompted'));
+      fs.copyFileSync(path.join(projectRoot, 'tests', 'fixtures', 'yo-rc', 'full', '.yo-rc.json'), path.join(temporary, 'prompted', '.yo-rc.json'));
     })
     .run()
     .then((result) => {
       const expected = {
+        examples: false,
         name: 'Local Yo',
         appId: 'localyo',
         groupId: 'com.test.localyo',
         artifactId: 'localyo',
         version: '1.0-LOCALYO',
+        javaVersion: '8',
         aemVersion: 'localyo',
       };
-      _.defaults(expected, promptDefaults);
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
 });
@@ -148,7 +159,7 @@ test('@adobe/generator-aem - initialize merge', async (t) => {
   t.plan(1);
 
   await helpers
-    .create(generatorPath)
+    .create(noWriteGenerator)
     .withOptions({ defaults: true })
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
@@ -164,6 +175,7 @@ test('@adobe/generator-aem - initialize merge', async (t) => {
         groupId: 'com.test.pom.groupid',
         artifactId: 'pom.artifactid',
         version: '1.0.0-SNAPSHOT',
+        javaVersion: '11',
         aemVersion: 'localyo',
       };
       _.defaults(expected, promptDefaults);
@@ -177,11 +189,11 @@ test('@adobe/generator-aem - composes with module - base options', async (t) => 
   let temporaryDir;
 
   await helpers
-    .create(generatorPath)
-    .withGenerators([path.join(projectRoot, 'tests', 'fixtures', 'generators', 'simple')])
+    .create(noWriteGenerator)
+    .withGenerators([[TestGenerator, 'aem:test:simple']])
     .withOptions({
       defaults: true,
-      modules: path.join(projectRoot, 'tests', 'fixtures', 'generators', 'simple'),
+      modules: 'aem:test:simple',
     })
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
@@ -200,6 +212,7 @@ test('@adobe/generator-aem - composes with module - base options', async (t) => 
           defaults: true,
           examples: true,
           version: '1.0.0-SNAPSHOT',
+          javaVersion: '11',
           aemVersion: 'cloud',
         },
       };
@@ -215,14 +228,14 @@ test('@adobe/generator-aem - composes with module - shared options', async (t) =
   let temporaryDir;
 
   await helpers
-    .create(generatorPath)
-    .withGenerators([path.join(projectRoot, 'tests', 'fixtures', 'generators', 'simple')])
+    .create(noWriteGenerator)
+    .withGenerators([[TestGenerator, 'aem:test:simple']])
     .withOptions({
       artifactId: 'artifactId',
       name: 'name',
       appId: 'appId',
       defaults: true,
-      modules: path.join(projectRoot, 'tests', 'fixtures', 'generators', 'simple'),
+      modules: 'aem:test:simple',
     })
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
@@ -244,6 +257,7 @@ test('@adobe/generator-aem - composes with module - shared options', async (t) =
           name: 'name',
           appId: 'appId',
           version: '1.0.0-SNAPSHOT',
+          javaVersion: '11',
           aemVersion: 'cloud',
         },
       };
@@ -257,7 +271,7 @@ test('@adobe/generator-aem - prompting', async (t) => {
   t.plan(1);
 
   await helpers
-    .create(generatorPath)
+    .create(noWriteGenerator)
     .withPrompts(promptDefaults)
     .run()
     .then((result) => {
@@ -271,7 +285,7 @@ test('@adobe/generator-aem - configuring', async (t) => {
   let temporaryDir;
 
   await helpers
-    .create(generatorPath)
+    .create(noWriteGenerator)
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
       temporaryDir = temporary;
@@ -287,12 +301,34 @@ test('@adobe/generator-aem - configuring', async (t) => {
     });
 });
 
+test('@adobe/generator-aem - configuring - generateInto', async (t) => {
+  t.plan(1);
+  let temporaryDir;
+
+  await helpers
+    .create(noWriteGenerator)
+    .withOptions({ generateInto: 'subdir' })
+    .withPrompts(promptDefaults)
+    .inTmpDir((temporary) => {
+      temporaryDir = temporary;
+    })
+    .run()
+    .then(() => {
+      const expected = {
+        '@adobe/generator-aem': promptDefaults,
+      };
+
+      const yoData = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'subdir', '.yo-rc.json')));
+      t.deepEqual(yoData, expected, 'Yeoman Data saved.');
+    });
+});
+
 test('@adobe/generator-aem - configuring - fails on existing different pom', async (t) => {
   t.plan(2);
 
   const error = await t.throwsAsync(
     helpers
-      .create(generatorPath)
+      .create(noWriteGenerator)
       .withPrompts(promptDefaults)
       .inTmpDir((temporary) => {
         fs.mkdirSync(path.join(temporary, 'prompted'));
@@ -309,7 +345,7 @@ test('@adobe/generator-aem - configuring - cwd is same as appId', async (t) => {
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'), 'appId');
 
   await helpers
-    .create(generatorPath)
+    .create(noWriteGenerator)
     .withOptions({ appId: 'appId' })
     .withPrompts(promptDefaults)
     .inDir(temporaryDir)
@@ -322,5 +358,61 @@ test('@adobe/generator-aem - configuring - cwd is same as appId', async (t) => {
 
       const yoData = JSON.parse(fs.readFileSync(path.join(temporaryDir, '.yo-rc.json')));
       t.deepEqual(yoData, expected, 'Yeoman Data saved.');
+    });
+});
+
+test('@adobe/generator-aem - writing/installing - options', async () => {
+  await helpers
+    .create(generatorPath)
+    .withOptions({
+      defaults: true,
+      examples: false,
+      groupId: 'com.adobe.test.main',
+      appId: 'main',
+      name: 'Main Title',
+    })
+    .run()
+    .then((result) => {
+      result.assertFile(path.join('main', 'README.md'));
+      result.assertFile(path.join('main', '.gitignore'));
+      const pom = path.join('main', 'pom.xml');
+      result.assertFile(pom);
+      result.assertFileContent(pom, /<groupId>com.adobe.test.main<\/groupId>/);
+      result.assertFileContent(pom, /<artifactId>main<\/artifactId>/);
+      result.assertFileContent(pom, /<version>1.0.0-SNAPSHOT<\/version>/);
+      result.assertFileContent(pom, /<name>Main Title<\/name>/);
+      result.assertFileContent(pom, /<description>Parent pom for Main Title<\/description>/);
+
+      result.assertFileContent(pom, /<componentGroupName>Main Title<\/componentGroupName>/);
+      result.assertFileContent(pom, /<java.version>11<\/java.version>/);
+      result.assertFileContent(pom, /<aem.version>\d{4}\.\d+\.\d+\.\d{8}T\d{6}Z-\d+<\/aem.version>/);
+    });
+});
+
+test('@adobe/generator-aem - writing/installing - prompts', async () => {
+  await helpers
+    .create(generatorPath)
+    .withOptions({ defaults: true })
+    .withPrompts({
+      examples: false,
+      groupId: 'com.adobe.test.main',
+      appId: 'main',
+      name: 'Main Title',
+    })
+    .run()
+    .then((result) => {
+      result.assertFile(path.join('main', 'README.md'));
+      result.assertFile(path.join('main', '.gitignore'));
+      const pom = path.join('main', 'pom.xml');
+      result.assertFile(pom);
+      result.assertFileContent(pom, /<groupId>com.adobe.test.main<\/groupId>/);
+      result.assertFileContent(pom, /<artifactId>main<\/artifactId>/);
+      result.assertFileContent(pom, /<version>1.0.0-SNAPSHOT<\/version>/);
+      result.assertFileContent(pom, /<name>Main Title<\/name>/);
+      result.assertFileContent(pom, /<description>Parent pom for Main Title<\/description>/);
+
+      result.assertFileContent(pom, /<componentGroupName>Main Title<\/componentGroupName>/);
+      result.assertFileContent(pom, /<java.version>11<\/java.version>/);
+      result.assertFileContent(pom, /<aem.version>\d{4}\.\d+\.\d+\.\d{8}T\d{6}Z-\d+<\/aem.version>/);
     });
 });

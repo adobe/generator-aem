@@ -38,6 +38,7 @@ test('reads pom', (t) => {
     version: '1.0-POM',
     name: 'Pom Name',
     pomProperties: {
+      'java.version': 8,
       'aem.version': 'pom',
     },
   };

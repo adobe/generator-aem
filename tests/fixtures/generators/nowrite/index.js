@@ -14,11 +14,33 @@
  limitations under the License.
 */
 
-const config = {
-  failWithoutAssertions: false,
-  files: ['tests/**/*', '!tests/fixtures/**/*'],
-  verbose: true,
-  workerThreads: false,
+import App from '../../../../generators/app/index.js';
+
+const generator = class extends App {
+  constructor(args, options, features) {
+    super(args, options, features);
+    this.testName = 'NoWrite';
+  }
+
+  initializing() {
+    super.initializing();
+  }
+
+  prompting() {
+    return super.prompting();
+  }
+
+  configuring() {
+    super.configuring();
+  }
+
+  default() {
+    super.default();
+  }
+
+  writing() {
+    // No Op.
+  }
 };
 
-export default config;
+export default generator;

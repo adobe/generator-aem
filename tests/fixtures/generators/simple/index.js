@@ -20,8 +20,6 @@ import Generator from 'yeoman-generator';
 import GeneratorCommons from '../../../../lib/common.js';
 
 const generator = class extends Generator {
-  defaultPath = 'simple';
-
   constructor(args, options, features) {
     super(args, options, features);
     _.forIn(GeneratorCommons.options, (v, k) => {
@@ -34,12 +32,14 @@ const generator = class extends Generator {
       props.added = 'Added';
     };
 
+    const subdir = this.options.generateInto || '';
+
     this.props = {};
-    _.defaults(this.props, _.pick(this.options, ['parent']), GeneratorCommons.props(this, cb));
+    _.defaults(this.props, _.pick(this.options, ['parent']), GeneratorCommons.props(this, subdir, cb));
   }
 
   writing() {
-    const dest = this.destinationPath(this.defaultPath, 'props.json');
+    const dest = this.destinationPath('simple', 'props.json');
     if (this.props.generateInto) {
       this.destinationPath(this.props.generateInto, 'props.json');
     }

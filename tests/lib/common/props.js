@@ -76,7 +76,7 @@ test('defaults with appId', async (t) => {
     });
 });
 
-test('defaults with uses provided', async (t) => {
+test('defaults - uses provided', async (t) => {
   t.plan(1);
 
   await helpers
@@ -111,6 +111,7 @@ test('reads yo-rc', async (t) => {
     .run()
     .then((result) => {
       const expected = {
+        examples: false,
         added: 'Added',
         name: 'Local Yo',
         appId: 'localyo',
@@ -134,6 +135,7 @@ test('reads yo-rc - with parent', async (t) => {
       const expected = {
         added: 'Added',
         parent: {
+          examples: false,
           name: 'Local Yo',
           appId: 'localyo',
           artifactId: 'localyo',
@@ -202,6 +204,7 @@ test('merges configs - no subconfig', async (t) => {
         name: 'Pom Name',
         artifactId: 'pom.artifactid',
         parent: {
+          examples: false,
           name: 'Local Yo',
           appId: 'localyo',
           artifactId: 'localyo',
