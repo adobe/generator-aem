@@ -55,8 +55,8 @@ test('examples - examples set', async (t) => {
   t.false(await prompt.when(), 'Example does not prompt');
 });
 
-test('name - not specified', (t) => {
-  t.plan(1);
+test('name - not specified', async (t) => {
+  t.plan(3);
 
   const generator = {};
 
@@ -64,10 +64,12 @@ test('name - not specified', (t) => {
 
   const prompt = _.find(prompts, { name: 'name' });
   t.true(prompt.when, 'Name prompts');
+  t.is(await prompt.validate(), 'Name must be provided.', 'Validate no name.');
+  t.is(await prompt.validate(''), 'Name must be provided.', 'Validate blank name');
 });
 
-test('name - specified', (t) => {
-  t.plan(1);
+test('name - specified', async (t) => {
+  t.plan(2);
 
   const generator = { props: { name: 'MySite' } };
 
@@ -75,10 +77,11 @@ test('name - specified', (t) => {
 
   const prompt = _.find(prompts, { name: 'name' });
   t.false(prompt.when, 'Name does not prompt');
+  t.is(await prompt.validate('My Site'), true, 'Validate name.');
 });
 
-test('appId - not specified', (t) => {
-  t.plan(1);
+test('appId - not specified', async (t) => {
+  t.plan(3);
 
   const generator = {};
 
@@ -86,10 +89,12 @@ test('appId - not specified', (t) => {
 
   const prompt = _.find(prompts, { name: 'appId' });
   t.true(prompt.when, 'appId prompts');
+  t.is(await prompt.validate(), 'AppId must be provided.', 'Validate no appId.');
+  t.is(await prompt.validate(''), 'AppId must be provided.', 'Validate blank appId');
 });
 
-test('appId - specified', (t) => {
-  t.plan(1);
+test('appId - specified', async (t) => {
+  t.plan(2);
 
   const generator = { props: { appId: 'AppId' } };
 
@@ -97,10 +102,11 @@ test('appId - specified', (t) => {
 
   const prompt = _.find(prompts, { name: 'appId' });
   t.false(prompt.when, 'appId does not prompt');
+  t.is(await prompt.validate('mysite'), true, 'Validate appId.');
 });
 
 test('artifactId - not specified', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   const generator = {};
 
@@ -108,10 +114,12 @@ test('artifactId - not specified', async (t) => {
 
   const prompt = _.find(prompts, { name: 'artifactId' });
   t.true(await prompt.when(), 'artifactId prompts');
+  t.is(await prompt.validate(), 'ArtifactId must be provided.', 'Validate no artifactId.');
+  t.is(await prompt.validate(''), 'ArtifactId must be provided.', 'Validate blank artifactId');
 });
 
 test('artifactId - specified', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   const generator = { props: { artifactId: 'ArtifactId' } };
 
@@ -119,6 +127,8 @@ test('artifactId - specified', async (t) => {
 
   const prompt = _.find(prompts, { name: 'artifactId' });
   t.false(await prompt.when(), 'artifactId does not prompt');
+  t.is(await prompt.validate('Not/Allowed'), 'ArtifactId must only contain letters or periods(.).', 'Validate invalid artifactId.');
+  t.true(await prompt.validate('mysite'), 'Validate artifactId');
 });
 
 test('artifactId - defaults set', async (t) => {

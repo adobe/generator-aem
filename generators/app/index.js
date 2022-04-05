@@ -14,13 +14,12 @@
  limitations under the License.
 */
 
-import fs from 'node:fs';
 import path from 'node:path';
 import _ from 'lodash';
 import chalk from 'chalk';
 
 import got from 'got';
-import { XMLParser } from 'fast-xml-parser';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 import GeneratorCommons from '../../lib/common.js';
@@ -48,7 +47,7 @@ class AEMGenerator extends Generator {
 
       aemVersion: {
         type: String,
-        desc: 'Target AEM version (e.g. 6.5 or cloud)',
+        desc: 'Target AEM version (6.5 or cloud)',
       },
 
       modules: {
@@ -72,7 +71,7 @@ class AEMGenerator extends Generator {
 
     let dest = this.options.generateInto || path.relative(this.destinationRoot(), this.contextRoot);
 
-    if (fs.existsSync(this.destinationPath(dest, '.yo-rc.json'))) {
+    if (this.fs.exists(this.destinationPath(dest, '.yo-rc.json'))) {
       this.destinationRoot(this.destinationPath(dest));
       dest = '';
     }
@@ -82,6 +81,15 @@ class AEMGenerator extends Generator {
     // Populate Root unique properties
     this.props = {};
     _.defaults(this.props, _.pick(this.options, unique));
+
+    if (this.props.javaVersion && (this.props.javaVersion.toString() !== '8' || this.props.javaVersion.toString() !== '11')) {
+      delete this.props.javaVersion;
+    }
+
+    if (this.props.aemVersion && (this.props.aemVersion.toString() !== '6.5' || this.props.aemVersion.toString() !== 'cloud')) {
+      delete this.props.aemVersion;
+    }
+
     _.defaults(this.props, _.pick(this.config.getAll(), unique));
 
     const pom = GeneratorCommons.readPom(this.destinationPath(dest));
@@ -111,12 +119,21 @@ class AEMGenerator extends Generator {
         name: 'groupId',
         message: 'Base Maven Group ID (e.g. "com.mysite").',
         when: !this.props.groupId,
+        validate(groupId) {
+          return new Promise((resolve) => {
+            if (!groupId || groupId.length === 0) {
+              resolve('GroupId must be provided.');
+            }
+
+            resolve(true);
+          });
+        },
       },
       {
         name: 'version',
         message: 'Project version (e.g. 1.0.0-SNAPSHOT).',
         when: !this.options.defaults,
-        default: this.props.version,
+        default: this.props.version || '1.0.0-SNAPSHOT',
       },
       {
         name: 'javaVersion',
@@ -124,12 +141,14 @@ class AEMGenerator extends Generator {
         type: 'list',
         choices: ['8', '11'],
         default: 1,
-        when: !this.props.javaVersion,
+        when: !this.options.defaults || !this.props.javaVersion,
       },
       {
         name: 'aemVersion',
-        when: !this.options.defaults,
-        default: this.props.aemVersion,
+        type: 'list',
+        choices: ['6.5', 'cloud'],
+        default: 1,
+        when: !this.options.defaults || !this.options.aemVersion,
       },
     ]);
 
@@ -196,8 +215,21 @@ class AEMGenerator extends Generator {
       }
     );
 
-    return this._latestSdk().then((sdkVersion) => {
-      this.props.aemVersion = sdkVersion;
+    return this._latestApi().then((apiVersion) => {
+      this.props.aem = this._coordinates();
+      this.props.aem.version = apiVersion;
+      if (this.aemVersion !== 'cloud') {
+        const depPom = this.fs.read(this.templatePath('partials', 'v6.5', 'dependency-management', 'pom.xml'));
+
+        const parser = new XMLParser({
+          ignoreAttributes: true,
+          ignoreDeclaration: true,
+        });
+        const dependencies = parser.parse(depPom).project.dependencies;
+        const builder = new XMLBuilder({ format: true });
+        this.props.dependencies = builder.build(dependencies);
+      }
+
       GeneratorCommons.write(this, files);
     });
   }
@@ -218,14 +250,30 @@ class AEMGenerator extends Generator {
     this.log('Thanks for using the AEM Project Generator.');
   }
 
+  _coordinates() {
+    if (this.props.aemVersion === 'cloud') {
+      return {
+        groupId: 'com.adobe.aem',
+        artifactId: 'aem-sdk-api',
+        path: 'com/adobe/aem/aem-sdk-api',
+      };
+    }
+
+    return {
+      groupId: 'com.adobe.aem',
+      artifactId: 'uber-jar',
+      path: 'com/adobe/aem/uber-jar',
+    };
+  }
+
   /*
    *
    * Returns a promise that resolves to the current version of the SDK.
    */
-  _latestSdk() {
+  _latestApi() {
     return new Promise((resolve, reject) => {
       try {
-        got.get('https://repo1.maven.org/maven2/com/adobe/aem/aem-sdk-api/maven-metadata.xml', { responseType: 'text', resolveBodyOnly: true }).then((body) => {
+        got.get(`https://repo1.maven.org/maven2/${this._coordinates().path}/maven-metadata.xml`, { responseType: 'text', resolveBodyOnly: true }).then((body) => {
           try {
             const parser = new XMLParser({
               ignoreAttributes: true,

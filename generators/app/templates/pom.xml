@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- |  Copyright 2015 Adobe Systems Incorporated
+ |  Copyright 2022 Adobe Systems Incorporated
  |
  |  Licensed under the Apache License, Version 2.0 (the "License");
  |  you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@
 
   <modules>
     <$_ if(locals.modules) { _$>
-      <$_ modules.forEach((m) => { _$>
-      <module><$= m $></module>
-      <$_ }); _$>
+    <$_ modules.forEach((m) => { _$>
+    <module><$= m $></module>
+    <$_ }); _$>
     <$_ } _$>
   </modules>
 
@@ -50,7 +50,7 @@
 
 
     <java.version><$= javaVersion $></java.version>
-    <aem.version><$= aemVersion $></aem.version>
+    <aem.version><$= aem.version $></aem.version>
 
     <bnd.version>6.2.0</bnd.version>
 
@@ -299,15 +299,9 @@
                 </pluginExecution>
                 <pluginExecution>
                   <pluginExecutionFilter>
-                    <groupId>
-                      org.apache.maven.plugins
-                    </groupId>
-                    <artifactId>
-                      maven-dependency-plugin
-                    </artifactId>
-                    <versionRange>
-                      [2.2,)
-                    </versionRange>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <versionRange>[2.2,)</versionRange>
                     <goals>
                       <goal>copy-dependencies</goal>
                       <goal>unpack</goal>
@@ -319,19 +313,11 @@
                 </pluginExecution>
                 <pluginExecution>
                   <pluginExecutionFilter>
-                    <groupId>
-                      org.codehaus.mojo
-                    </groupId>
-                    <artifactId>
-                      build-helper-maven-plugin
-                    </artifactId>
-                    <versionRange>
-                      [1.5,)
-                    </versionRange>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <versionRange>[1.5,)</versionRange>
                     <goals>
-                      <goal>
-                        reserve-network-port
-                      </goal>
+                      <goal>reserve-network-port</goal>
                     </goals>
                   </pluginExecutionFilter>
                   <action>
@@ -349,7 +335,25 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- AEM Jar -->
+      <dependency>
+        <groupId><$= aem.groupId $></groupId>
+        <artifactId><$= aem.artifactId $></artifactId>
+        <version>${aem.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <$_ if(locals.dependencies) { _$>
+<$- dependencies _$>
+      <$_ } _$>
+
       <!-- Testing -->
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>1.7.25</version>
+        <scope>test</scope>
+      </dependency>
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>

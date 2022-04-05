@@ -77,6 +77,27 @@ test('@adobe/generator-aem - initialize - defaults', async (t) => {
     });
 });
 
+test('@adobe/generator-aem - initialize - invalid java/aem version', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(noWriteGenerator)
+    .withOptions({ defaults: true, javaVersion: '1.7', aemVersion: '6.4' })
+    .withPrompts(promptDefaults)
+    .run()
+    .then((result) => {
+      const expected = {
+        defaults: true,
+        examples: true,
+        version: '1.0.0-SNAPSHOT',
+        javaVersion: '11',
+        aemVersion: 'cloud',
+      };
+      _.defaults(expected, promptDefaults);
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
+
 test('@adobe/generator-aem - initialize from pom', async (t) => {
   t.plan(1);
 
@@ -361,7 +382,7 @@ test('@adobe/generator-aem - configuring - cwd is same as appId', async (t) => {
     });
 });
 
-test('@adobe/generator-aem - writing/installing - options', async () => {
+test('@adobe/generator-aem - writing/installing - options - cloud', async () => {
   await helpers
     .create(generatorPath)
     .withOptions({
@@ -386,18 +407,20 @@ test('@adobe/generator-aem - writing/installing - options', async () => {
       result.assertFileContent(pom, /<componentGroupName>Main Title<\/componentGroupName>/);
       result.assertFileContent(pom, /<java.version>11<\/java.version>/);
       result.assertFileContent(pom, /<aem.version>\d{4}\.\d+\.\d+\.\d{8}T\d{6}Z-\d+<\/aem.version>/);
+      result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
     });
 });
 
-test('@adobe/generator-aem - writing/installing - prompts', async () => {
+test('@adobe/generator-aem - writing/installing - prompts - v6.5', async () => {
   await helpers
     .create(generatorPath)
-    .withOptions({ defaults: true })
     .withPrompts({
       examples: false,
       groupId: 'com.adobe.test.main',
       appId: 'main',
       name: 'Main Title',
+      javaVersion: '8',
+      aemVersion: '6.5',
     })
     .run()
     .then((result) => {
@@ -412,7 +435,9 @@ test('@adobe/generator-aem - writing/installing - prompts', async () => {
       result.assertFileContent(pom, /<description>Parent pom for Main Title<\/description>/);
 
       result.assertFileContent(pom, /<componentGroupName>Main Title<\/componentGroupName>/);
-      result.assertFileContent(pom, /<java.version>11<\/java.version>/);
-      result.assertFileContent(pom, /<aem.version>\d{4}\.\d+\.\d+\.\d{8}T\d{6}Z-\d+<\/aem.version>/);
+      result.assertFileContent(pom, /<java.version>8<\/java.version>/);
+      result.assertFileContent(pom, /<aem.version>6\.5\.\d+<\/aem.version>/);
+      result.assertFileContent(pom, /<artifactId>uber-jar<\/artifactId>/);
+      result.assertFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
     });
 });
