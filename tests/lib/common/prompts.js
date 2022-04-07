@@ -127,7 +127,7 @@ test('artifactId - specified', async (t) => {
 
   const prompt = _.find(prompts, { name: 'artifactId' });
   t.false(await prompt.when(), 'artifactId does not prompt');
-  t.is(await prompt.validate('Not/Allowed'), 'ArtifactId must only contain letters or periods(.).', 'Validate invalid artifactId.');
+  t.is(await prompt.validate('Not/Allowed'), 'ArtifactId must only contain letters or periods (.).', 'Validate invalid artifactId.');
   t.true(await prompt.validate('mysite'), 'Validate artifactId');
 });
 

@@ -14,33 +14,19 @@
  limitations under the License.
 */
 
-import App from '../../../../generators/app/index.js';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
-const generator = class extends App {
-  constructor(args, options, features) {
-    super(args, options, features);
-    this.testName = 'NoWrite';
-  }
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
+const projectRoot = path.join(dirname, '..', '..');
+const generatorsRoot = path.join(projectRoot, 'generators');
+const fixturesRoot = path.join(projectRoot, 'tests', 'fixtures');
 
-  initializing() {
-    super.initializing();
-  }
-
-  prompting() {
-    return super.prompting();
-  }
-
-  configuring() {
-    super.configuring();
-  }
-
-  default() {
-    super.default();
-  }
-
-  writing() {
-    // No Op.
-  }
+const helpers = {
+  projectRoot,
+  generatorsRoot,
+  fixturesRoot,
 };
 
-export default generator;
+export default helpers;

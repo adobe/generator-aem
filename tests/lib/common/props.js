@@ -50,7 +50,7 @@ test('defaults set', async (t) => {
     .then((result) => {
       const expected = {
         defaults: true,
-        examples: true,
+        examples: false,
         added: 'Added',
       };
       t.deepEqual(result.generator.props, expected, 'Content matches.');
@@ -67,7 +67,7 @@ test('defaults with appId', async (t) => {
     .then((result) => {
       const expected = {
         defaults: true,
-        examples: true,
+        examples: false,
         appId: 'defaultsid',
         artifactId: 'defaultsid',
         added: 'Added',
