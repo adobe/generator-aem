@@ -23,7 +23,7 @@ const projectRoot = path.join(dirname, '..', '..');
 const generatorsRoot = path.join(projectRoot, 'generators');
 const fixturesRoot = path.join(projectRoot, 'tests', 'fixtures');
 
-const helpers = {
+export const helpers = {
   projectRoot,
   generatorsRoot,
   fixturesRoot,

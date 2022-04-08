@@ -111,7 +111,7 @@ test('reads yo-rc', async (t) => {
     .run()
     .then((result) => {
       const expected = {
-        examples: false,
+        examples: true,
         added: 'Added',
         name: 'Local Yo',
         appId: 'localyo',
@@ -135,7 +135,7 @@ test('reads yo-rc - with parent', async (t) => {
       const expected = {
         added: 'Added',
         parent: {
-          examples: false,
+          examples: true,
           name: 'Local Yo',
           appId: 'localyo',
           artifactId: 'localyo',
@@ -204,7 +204,7 @@ test('merges configs - no subconfig', async (t) => {
         name: 'Pom Name',
         artifactId: 'pom.artifactid',
         parent: {
-          examples: false,
+          examples: true,
           name: 'Local Yo',
           appId: 'localyo',
           artifactId: 'localyo',

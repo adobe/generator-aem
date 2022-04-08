@@ -7,14 +7,6 @@
     "artifactId": "localyo",
     "version": "1.0-LOCALYO",
     "javaVersion": "8",
-    "aemVersion": "localyo",
-    "core": {
-      "examples": true,
-      "name": "Local Yo",
-      "appId": "localyo",
-      "package": "com.test.localyo",
-      "artifactId": "localyo",
-      "moduleType": "bundle"
-    }
+    "aemVersion": "localyo"
   }
 }

@@ -1,0 +1,8 @@
+<metadata>
+  <groupId>com.adobe.aem</groupId>
+  <artifactId>uber-jar</artifactId>
+  <versioning>
+    <latest>6.5.12</latest>
+    <release>6.5.12</release>
+  </versioning>
+</metadata>

@@ -22,11 +22,14 @@ import _ from 'lodash';
 import tempDirectory from 'temp-dir';
 
 import test from 'ava';
+import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import project from '../fixtures/helpers.js';
 import TestGenerator from '../fixtures/generators/simple/index.js';
 import App from '../../generators/app/index.js';
+
+import Utils from '../../lib/utils.js';
 
 const generatorPath = path.join(project.generatorsRoot, 'app');
 
@@ -183,7 +186,7 @@ test('@adobe/aem - initialize from .yo-rc.json', async (t) => {
     .run()
     .then((result) => {
       const expected = {
-        examples: false,
+        examples: true,
         name: 'Local Yo',
         appId: 'localyo',
         groupId: 'com.test.localyo',
@@ -202,7 +205,7 @@ test('@adobe/aem - initialize merge', async (t) => {
   await helpers
     .create(NoWrite)
     .withOptions({ defaults: true })
-    .withPrompts(promptDefaults)
+    .withPrompts({ appId: 'prompted' })
     .inTmpDir((temporary) => {
       fs.copyFileSync(path.join(project.projectRoot, 'tests', 'fixtures', 'pom', 'partial', 'pom.xml'), path.join(temporary, 'pom.xml'));
       fs.copyFileSync(path.join(project.projectRoot, 'tests', 'fixtures', 'yo-rc', 'partial', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
@@ -213,28 +216,33 @@ test('@adobe/aem - initialize merge', async (t) => {
         defaults: true,
         examples: false,
         name: 'Local Yo',
+        appId: 'prompted',
         groupId: 'com.test.pom.groupid',
         artifactId: 'pom.artifactid',
         version: '1.0.0-SNAPSHOT',
         javaVersion: '11',
         aemVersion: 'localyo',
       };
-      _.defaults(expected, promptDefaults);
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
 });
 
-test('@adobe/aem - composes with module - base options', async (t) => {
+test('@adobe/aem - compose with module - does not exist', async (t) => {
+  t.plan(1);
+  await t.throwsAsync(helpers.create(NoWrite).withOptions({ defaults: true, modules: 'test:simple' }).withPrompts(promptDefaults).run());
+});
+
+test('@adobe/aem - compose with module - base options', async (t) => {
   t.plan(1);
 
   let temporaryDir;
 
   await helpers
     .create(NoWrite)
-    .withGenerators([[TestGenerator, 'aem:test:simple']])
+    .withGenerators([[TestGenerator, 'test:simple']])
     .withOptions({
       defaults: true,
-      modules: 'aem:test:simple',
+      modules: 'test:simple',
     })
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
@@ -244,11 +252,6 @@ test('@adobe/aem - composes with module - base options', async (t) => {
     .then(() => {
       const expected = {
         added: 'Added',
-        defaults: true,
-        examples: false,
-        appId: 'prompted',
-        artifactId: 'prompted',
-        name: 'prompted',
         parent: {
           defaults: true,
           examples: false,
@@ -263,20 +266,20 @@ test('@adobe/aem - composes with module - base options', async (t) => {
     });
 });
 
-test('@adobe/aem - composes with module - shared options', async (t) => {
+test('@adobe/aem - compose with module - shared options', async (t) => {
   t.plan(1);
 
   let temporaryDir;
 
   await helpers
     .create(NoWrite)
-    .withGenerators([[TestGenerator, 'aem:test:simple']])
+    .withGenerators([[TestGenerator, 'test:simple']])
     .withOptions({
       artifactId: 'artifactId',
       name: 'name',
       appId: 'appId',
       defaults: true,
-      modules: 'aem:test:simple',
+      modules: 'test:simple',
     })
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
@@ -286,11 +289,6 @@ test('@adobe/aem - composes with module - shared options', async (t) => {
     .then(() => {
       const expected = {
         added: 'Added',
-        defaults: true,
-        examples: false,
-        artifactId: 'artifactId',
-        name: 'name',
-        appId: 'appId',
         parent: {
           defaults: true,
           examples: false,
@@ -365,9 +363,9 @@ test('@adobe/aem - configuring - generateInto', async (t) => {
 });
 
 test('@adobe/aem - configuring - fails on existing different pom', async (t) => {
-  t.plan(2);
+  t.plan(1);
 
-  const error = await t.throwsAsync(
+  await t.throwsAsync(
     helpers
       .create(NoWrite)
       .withPrompts(promptDefaults)
@@ -377,7 +375,6 @@ test('@adobe/aem - configuring - fails on existing different pom', async (t) => 
       })
       .run()
   );
-  t.is(error.message, 'Refusing to update existing project with different group/artifact identifiers.');
 });
 
 test('@adobe/aem - configuring - cwd is same as appId', async (t) => {
@@ -402,7 +399,17 @@ test('@adobe/aem - configuring - cwd is same as appId', async (t) => {
     });
 });
 
-test('@adobe/aem - writing/installing - options - cloud', async () => {
+test.serial('@adobe/aem - writing/installing - options - cloud', async () => {
+  const aemData = {
+    artifactId: 'com.adobe.aem',
+    groupId: 'aem-sdk-api',
+    version: '2022.3.6698.20220318T233218Z-220400',
+    path: 'com/adobe/aem/aem-sdk-api',
+  };
+
+  const fake = sinon.fake.resolves(aemData);
+  sinon.replace(Utils, 'latestApi', fake);
+
   await helpers
     .create(generatorPath)
     .withOptions({
@@ -428,10 +435,21 @@ test('@adobe/aem - writing/installing - options - cloud', async () => {
       result.assertFileContent(pom, /<java.version>11<\/java.version>/);
       result.assertFileContent(pom, /<aem.version>\d{4}\.\d+\.\d+\.\d{8}T\d{6}Z-\d+<\/aem.version>/);
       result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
+      sinon.restore();
     });
 });
 
-test('@adobe/aem - writing/installing - prompts - v6.5', async () => {
+test.serial('@adobe/aem - writing/installing - prompts - v6.5', async () => {
+  const aemData = {
+    artifactId: 'com.adobe.aem',
+    groupId: 'uber-jar',
+    version: '6.5.12',
+    path: 'com/adobe/aem/uber-jar',
+  };
+
+  const fake = sinon.fake.resolves(aemData);
+  sinon.replace(Utils, 'latestApi', fake);
+
   await helpers
     .create(generatorPath)
     .withPrompts({
@@ -459,5 +477,6 @@ test('@adobe/aem - writing/installing - prompts - v6.5', async () => {
       result.assertFileContent(pom, /<aem.version>6\.5\.\d+<\/aem.version>/);
       result.assertFileContent(pom, /<artifactId>uber-jar<\/artifactId>/);
       result.assertFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
+      sinon.restore();
     });
 });

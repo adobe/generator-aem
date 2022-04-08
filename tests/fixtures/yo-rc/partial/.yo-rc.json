@@ -1,6 +1,9 @@
 {
   "@adobe/generator-aem": {
     "name": "Local Yo",
-    "aemVersion": "localyo"
+    "aemVersion": "localyo",
+    "core": {
+      "moduleType": "apps"
+    }
   }
 }
