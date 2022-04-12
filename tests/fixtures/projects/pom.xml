@@ -19,19 +19,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId><%= groupId %></groupId>
-  <artifactId><%= artifactId %></artifactId>
+  <groupId>com.adobe.test</groupId>
+  <artifactId>test</artifactId>
   <packaging>pom</packaging>
-  <version><%= version %></version>
-  <name><%= name %></name>
-  <description>Parent pom for <%= name %></description>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>Test Project</name>
+  <description>Parent pom for Test Project</description>
 
   <modules>
-    <%_ if(locals.modules) { %>
-      <%_ modules.forEach((m) => { _%>
-    <module><%= m %></module>
-      <%_ }); _%>
-    <%_ } _%>
+
+    <module>core</module>
   </modules>
 
   <properties>
@@ -49,12 +46,12 @@
     <vault.password>admin</vault.password>
 
 
-    <java.version><%= javaVersion %></java.version>
-    <aem.version><%= aem.version %></aem.version>
+    <java.version>11</java.version>
+    <aem.version>2022.3.6698.20220318T233218Z-220400</aem.version>
 
     <bnd.version>6.2.0</bnd.version>
 
-    <componentGroupName><%= name %></componentGroupName>
+    <componentGroupName>Test Project</componentGroupName>
 
     <mockito.version>4.4.0</mockito.version>
   </properties>
@@ -188,18 +185,6 @@
           <groupId>biz.aQute.bnd</groupId>
           <artifactId>bnd-maven-plugin</artifactId>
           <version>${bnd.version}</version>
-          <executions>
-            <execution>
-              <id>bnd-process</id>
-              <goals>
-                <goal>bnd-process</goal>
-              </goals>
-              <phase>prepare-package</phase>
-              <configuration>
-                <bndfile>src/main/bnd/${project.artifactId}.bnd</bndfile>
-              </configuration>
-            </execution>
-          </executions>
           <dependencies>
             <dependency>
               <groupId>org.apache.sling</groupId>
@@ -212,23 +197,6 @@
               <version>1.0.0</version>
             </dependency>
           </dependencies>
-        </plugin>
-        <plugin>
-          <groupId>biz.aQute.bnd</groupId>
-          <artifactId>bnd-baseline-maven-plugin</artifactId>
-          <version>${bnd.version}</version>
-          <configuration>
-            <failOnMissing>false</failOnMissing>
-            <includeDistributionManagement>false</includeDistributionManagement>
-          </configuration>
-          <executions>
-            <execution>
-              <id>baseline</id>
-              <goals>
-                <goal>baseline</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.jackrabbit</groupId>
@@ -299,6 +267,11 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>biz.aQute.bnd</groupId>
+          <artifactId>bnd-baseline-maven-plugin</artifactId>
+          <version>${bnd.version}</version>
+        </plugin>
         <!--This plugin's configuration is used to store Eclipse
             m2e settings only. It has no influence on the Maven build itself. -->
         <plugin>
@@ -361,15 +334,12 @@
     <dependencies>
       <!-- AEM Jar -->
       <dependency>
-        <groupId><%= aem.groupId %></groupId>
-        <artifactId><%= aem.artifactId %></artifactId>
+        <groupId>com.adobe.aem</groupId>
+        <artifactId>aem-sdk-api</artifactId>
         <version>${aem.version}</version>
         <scope>provided</scope>
       </dependency>
 
-      <%_ if(locals.dependencies) { _%>
-      <%- dependencies _%>
-      <%_ } _%>
 
       <!-- Testing -->
       <dependency>

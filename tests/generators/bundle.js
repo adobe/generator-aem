@@ -30,6 +30,8 @@ import project from '../fixtures/helpers.js';
 import AEMBundleGenerator from '../../generators/bundle/index.js';
 import Utils from '../../lib/utils.js';
 
+import { AEMAppWrapper } from '../fixtures/wrappers/index.js';
+
 const generatorPath = path.join(project.generatorsRoot, 'bundle');
 
 const Wrapper = class extends AEMBundleGenerator {
@@ -60,11 +62,6 @@ const Wrapper = class extends AEMBundleGenerator {
 };
 
 const NoWrite = class extends Wrapper {
-  constructor(args, options, features) {
-    options.resolved = path.join(generatorPath, 'index.js');
-    super(args, options, features);
-  }
-
   initializing() {
     super.initializing();
   }
@@ -75,10 +72,6 @@ const NoWrite = class extends Wrapper {
 
   configuring() {
     super.configuring();
-  }
-
-  default() {
-    super.default();
   }
 };
 
@@ -94,6 +87,7 @@ const parent = {
   groupId: 'parent',
   artifactId: 'parent',
   version: 'parent',
+  aemVersion: 'parent',
 };
 
 test('@adobe/aem:bundle - requires parent', async (t) => {
@@ -102,11 +96,16 @@ test('@adobe/aem:bundle - requires parent', async (t) => {
   await t.throwsAsync(helpers.create(NoWrite).withOptions(options).withPrompts(promptDefaults).run());
 });
 
+test('@adobe/aem:bundle - requires destination', async (t) => {
+  t.plan(1);
+  await t.throwsAsync(helpers.create(NoWrite).withOptions({ parent }).withPrompts(promptDefaults).run());
+});
+
 test('@adobe/aem:bundle - initialize - no options', async (t) => {
   t.plan(1);
   await helpers
     .create(NoWrite)
-    .withOptions({ parent })
+    .withOptions({ generateInto: 'test', parent })
     .withPrompts(promptDefaults)
     .run()
     .then((result) => {
@@ -142,6 +141,7 @@ test('@adobe/aem:bundle - initialize - defaults', async (t) => {
           groupId: 'groupId',
           artifactId: 'localyo',
           version: '1.0-LOCALYO',
+          aemVersion: 'localyo',
         },
       };
       _.defaults(expected, promptDefaults);
@@ -172,6 +172,7 @@ test('@adobe/aem:bundle - initialize - invalid package', async (t) => {
           groupId: 'com.test.localyo',
           artifactId: 'localyo',
           version: '1.0-LOCALYO',
+          aemVersion: 'localyo',
         },
       };
       _.defaults(expected, promptDefaults);
@@ -204,6 +205,7 @@ test('@adobe/aem:bundle - initialize from pom - in directory', async (t) => {
           groupId: 'com.test.localyo',
           artifactId: 'localyo',
           version: '1.0-LOCALYO',
+          aemVersion: 'localyo',
         },
       };
       _.defaults(expected, promptDefaults);
@@ -279,7 +281,7 @@ test('@adobe/aem:bundle - prompting', async (t) => {
 
   await helpers
     .create(NoWrite)
-    .withOptions({ parent })
+    .withOptions({ generateInto: 'core', parent })
     .withPrompts(promptDefaults)
     .run()
     .then((result) => {
@@ -312,17 +314,17 @@ test('@adobe/aem:bundle - configuring', async (t) => {
     });
 });
 
-test('@adobe/aem:bundle - via @adobe/generator-aem - cloud', async (t) => {
+test.serial('@adobe/aem:bundle - via @adobe/generator-aem - cloud', async (t) => {
   t.plan(5);
 
   const aemData = {
-    artifactId: 'com.adobe.aem',
-    groupId: 'aem-sdk-api',
+    groupId: 'com.adobe.aem',
+    artifactId: 'aem-sdk-api',
     version: '2022.3.6698.20220318T233218Z-220400',
     path: 'com/adobe/aem/aem-sdk-api',
   };
-  const fake = sinon.fake.resolves(aemData);
-  sinon.replace(Utils, 'latestApi', fake);
+  const stub = sinon.stub().resolves(aemData);
+  sinon.replace(Utils, 'latestApi', stub);
 
   let temporaryDir;
   await helpers
@@ -331,17 +333,25 @@ test('@adobe/aem:bundle - via @adobe/generator-aem - cloud', async (t) => {
     .withOptions({
       defaults: true,
       examples: true,
+      appId: 'test',
+      name: 'Test Project',
+      groupId: 'com.adobe.test',
       aemVersion: 'cloud',
       modules: 'bundle',
+      showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
       temporaryDir = temporary;
-      fs.copyFileSync(path.join(project.fixturesRoot, 'yo-rc', 'parent-only', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
     })
     .run()
     .then((result) => {
-      const outputDir = path.join(temporaryDir, 'core');
-      const pom = path.join(outputDir, 'pom.xml');
+      sinon.restore();
+      const properties = result.generator.props;
+      const outputRoot = path.join(temporaryDir, 'test');
+      const moduleDir = path.join(outputRoot, 'core');
+      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>core<\/module>/);
+
+      const pom = path.join(moduleDir, 'pom.xml');
       result.assertFile(pom);
       const pomString = fs.readFileSync(pom, 'utf8');
       const parser = new XMLParser({
@@ -350,22 +360,103 @@ test('@adobe/aem:bundle - via @adobe/generator-aem - cloud', async (t) => {
       });
 
       const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, 'com.test.localyo', 'Parent groupId set.');
-      t.is(pomData.project.parent.artifactId, 'localyo', 'Parent artifactId set.');
-      t.is(pomData.project.parent.version, '1.0-LOCALYO', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'localyo.core', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Local Yo - Core Bundle', 'Name set.');
+      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'test.core', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Project - Core Bundle', 'Name set.');
       result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
 
-      sinon.restore();
+      const classesRoot = path.join(moduleDir, 'src', 'main', 'java', 'com', 'adobe', 'test');
+      result.assertFile(path.join(classesRoot, 'package-info.java'));
+      result.assertFile(path.join(classesRoot, 'filters', 'LoggingFilter.java'));
+      result.assertFile(path.join(classesRoot, 'listeners', 'SimpleResourceListener.java'));
+      result.assertFile(path.join(classesRoot, 'schedulers', 'SimpleScheduledTask.java'));
+      result.assertFile(path.join(classesRoot, 'servlets', 'SimpleServlet.java'));
+
+      const testsRoot = path.join(moduleDir, 'src', 'test', 'java', 'com', 'adobe', 'test');
+      result.assertFile(path.join(testsRoot, 'filters', 'LoggingFilterTest.java'));
+      result.assertFile(path.join(testsRoot, 'listeners', 'SimpleResourceListenerTest.java'));
+      result.assertFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
+      result.assertFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
+
+      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.core-${properties.version}.jar`));
+
+      result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.core.bnd`));
     });
 });
 
-//
-// test('@adobe/aem:bundle - existing bundle', (t) => {
-//   t.fail('Not Implemented');
-// });
-//
-// test('@adobe/aem:bundle - second bundle', (t) => {
+test.serial('@adobe/aem:bundle - second bundle', async (t) => {
+  const aemData = {
+    groupId: 'com.adobe.aem',
+    artifactId: 'aem-sdk-api',
+    version: '2022.3.6698.20220318T233218Z-220400',
+    path: 'com/adobe/aem/aem-sdk-api',
+  };
+  const stub = sinon.stub().resolves(aemData);
+  sinon.replace(Utils, 'latestApi', stub);
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'test');
+
+  await helpers
+    .create(Wrapper)
+    .withGenerators([[AEMAppWrapper, '@adobe/aem:app']])
+    .withOptions({
+      defaults: true,
+      examples: false,
+      generateInto: 'bundle',
+      appId: 'bundle',
+      name: 'Second Bundle',
+      package: 'com.adobe.test.bundle',
+      showBuildOutput: false,
+    })
+    .inDir(fullPath, (temporary) => {
+      fs.copyFileSync(path.join(project.fixturesRoot, 'projects', 'pom.xml'), path.join(temporary, 'pom.xml'));
+      fs.copyFileSync(path.join(project.fixturesRoot, 'projects', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
+      fs.cpSync(path.join(project.fixturesRoot, 'projects', 'core'), path.join(temporary, 'core'), { recursive: true });
+    })
+    .run()
+    .then((result) => {
+      sinon.restore();
+      const properties = result.generator.props;
+      const outputRoot = path.join(temporaryDir, 'test');
+      const moduleDir = path.join(outputRoot, 'bundle');
+      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>bundle<\/module>/);
+
+      const pom = path.join(moduleDir, 'pom.xml');
+      result.assertFile(pom);
+      const pomString = fs.readFileSync(pom, 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'bundle', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Second Bundle', 'Name set.');
+      result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
+
+      const classesRoot = path.join(moduleDir, 'src', 'main', 'java', 'com', 'adobe', 'test', 'bundle');
+      result.assertFile(path.join(classesRoot, 'package-info.java'));
+      result.assertNoFile(path.join(classesRoot, 'filters', 'LoggingFilter.java'));
+      result.assertNoFile(path.join(classesRoot, 'listeners', 'SimpleResourceListener.java'));
+      result.assertNoFile(path.join(classesRoot, 'schedulers', 'SimpleScheduledTask.java'));
+      result.assertNoFile(path.join(classesRoot, 'servlets', 'SimpleServlet.java'));
+
+      const testsRoot = path.join(moduleDir, 'src', 'test', 'java', 'com', 'adobe', 'test');
+      result.assertNoFile(path.join(testsRoot, 'filters', 'LoggingFilterTest.java'));
+      result.assertNoFile(path.join(testsRoot, 'listeners', 'SimpleResourceListenerTest.java'));
+      result.assertNoFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
+      result.assertNoFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
+
+      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-${properties.parent.version}.jar`));
+
+      result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.bnd`));
+    });
+});
+
+// Test('@adobe/aem:bundle - existing bundle', (t) => {
 //   t.fail('Not Implemented');
 // });

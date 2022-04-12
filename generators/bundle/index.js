@@ -19,10 +19,12 @@ import Generator from 'yeoman-generator';
 
 import _ from 'lodash';
 import chalk from 'chalk';
+import { globbySync } from 'globby';
+
 import GeneratorCommons from '../../lib/common.js';
 import { ParentProperties } from '../app/index.js';
 
-import { latestApi } from '../../lib/utils.js';
+import Utils from '../../lib/utils.js';
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
 
@@ -45,6 +47,9 @@ class AEMBundleGenerator extends Generator {
   }
 
   initializing() {
+    // If we have parent options, then we don't need to re-run the root AEM Generator. It called this one.
+    this.runParent = _.isEmpty(this.options.parent);
+
     const config = this.config.getAll();
     if (_.isEmpty(config) && _.isEmpty(this.options.parent)) {
       throw new Error(
@@ -61,6 +66,11 @@ class AEMBundleGenerator extends Generator {
       );
     }
 
+    this.relativePath = this.options.generateInto || path.relative(this.destinationRoot(), this.contextRoot);
+    if (this.relativePath.length === 0) {
+      throw new Error(chalk.red('Bundle Generator must either specify an destination folder via ') + chalk.yellow('generateInto') + chalk.red(' option or from the target directory.'));
+    }
+
     this.props = {};
     _.defaults(this.props, _.pick(this.options, uniqueProperties.concat(['parent'])));
 
@@ -68,7 +78,9 @@ class AEMBundleGenerator extends Generator {
       delete this.props.package;
     }
 
-    this.relativePath = this.options.generateInto || path.relative(this.destinationRoot(), this.contextRoot);
+    if (this.relativePath.length > 0) {
+      _.defaults(this.props, this.config.get(this.relativePath));
+    }
 
     this.props.parent = this.props.parent || {};
     for (const p in ParentProperties) {
@@ -77,8 +89,6 @@ class AEMBundleGenerator extends Generator {
         this.props.parent[name] = this.props.parent[name] || this.config.get(name);
       }
     }
-
-    _.defaults(this.props, this.config.get(this.relativePath));
 
     if (this.props.parent.groupId) {
       this.props.package = this.props.package || this.props.parent.groupId;
@@ -89,7 +99,10 @@ class AEMBundleGenerator extends Generator {
     }
 
     // Populate Shared
-    _.defaults(this.props, { moduleType: 'bundle' }, GeneratorCommons.props(this, this.relativePath));
+    _.defaults(this.props, { moduleType: 'bundle' });
+    if (this.relativePath.length > 0) {
+      _.defaults(this.props, GeneratorCommons.props(this, this.relativePath));
+    }
   }
 
   prompting() {
@@ -130,22 +143,60 @@ class AEMBundleGenerator extends Generator {
   }
 
   configuring() {
+    if (this.relativePath && this.relativePath.length === 0) {
+      this.relativePath = this.props.appId;
+    }
+
     const current = this.config.get(this.relativePath) || {};
     _.merge(current, _.omit(this.props, ['parent']));
     this.config.set(this.relativePath, current);
   }
 
-  default() {}
+  default() {
+    if (this.runParent) {
+      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
+      this.composeWith('@adobe/aem:app', options);
+    }
+  }
 
   writing() {
     const files = [];
+
+    let patterns;
+    if (this.props.examples) {
+      patterns = this.templatePath('examples', '**/*');
+      const paths = globbySync(patterns, { onlyFiles: true });
+      for (const idx in paths) {
+        if (Object.prototype.hasOwnProperty.call(paths, idx)) {
+          const file = paths[idx];
+          files.push({
+            src: file,
+            dest: this.destinationPath(this.relativePath, path.relative(this.templatePath('examples'), file)),
+          });
+        }
+      }
+    }
+
+    patterns = this.templatePath('shared', '**/*');
+    const paths = globbySync(patterns, { onlyFiles: true });
+    for (const idx in paths) {
+      if (Object.prototype.hasOwnProperty.call(paths, idx)) {
+        const file = paths[idx];
+        files.push({
+          src: file,
+          dest: this.destinationPath(this.relativePath, path.relative(this.templatePath('shared'), file)),
+        });
+      }
+    }
+
     files.push({
       src: this.templatePath('pom.xml'),
       dest: this.destinationPath(this.relativePath, 'pom.xml'),
     });
-    return latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
-      this.props.aem = aemMetadata;
 
+    return Utils.latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
+      this.props.aem = aemMetadata;
+      this.props.packagePath = this.props.package.replaceAll('.', path.sep);
       GeneratorCommons.write(this, files);
     });
   }

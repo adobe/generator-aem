@@ -32,13 +32,12 @@ test.serial('AEM 6.5', async (t) => {
   sinon.replace(got, 'get', fake);
 
   await Utils.latestApi('6.5').then((data) => {
+    sinon.restore();
     t.is(data.groupId, 'com.adobe.aem', 'Group Id');
     t.is(data.artifactId, 'uber-jar', 'Artifact Id');
     t.is(data.version, '6.5.12', 'Version');
     t.is(data.path, 'com/adobe/aem/uber-jar', 'Repo Path');
-
     t.is(fake.firstArg, `https://repo1.maven.org/maven2/${data.path}/maven-metadata.xml`);
-    sinon.restore();
   });
 });
 
@@ -50,12 +49,12 @@ test.serial('AEMaaCS', async (t) => {
   sinon.replace(got, 'get', fake);
 
   await Utils.latestApi('cloud').then((data) => {
+    sinon.restore();
     t.is(data.groupId, 'com.adobe.aem', 'Group Id');
     t.is(data.artifactId, 'aem-sdk-api', 'Artifact Id');
     t.is(data.version, '2022.3.6698.20220318T233218Z-220400', 'Version');
     t.is(data.path, 'com/adobe/aem/aem-sdk-api', 'Repo Path');
 
     t.is(fake.firstArg, `https://repo1.maven.org/maven2/${data.path}/maven-metadata.xml`);
-    sinon.restore();
   });
 });

@@ -21,10 +21,10 @@ import chalk from 'chalk';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
-import { latestApi } from '../../lib/utils.js';
+import Utils from '../../lib/utils.js';
 import GeneratorCommons from '../../lib/common.js';
 
-const ParentProperties = ['groupId', 'artifactId', 'version'];
+const ParentProperties = ['groupId', 'artifactId', 'version', 'aemVersion'];
 
 const ModuleOptions = Object.freeze({
   '@adobe/aem:bundle'(parentProps) {
@@ -254,14 +254,25 @@ class AEMGenerator extends Generator {
       }
     );
 
-    return latestApi(this.props.aemVersion).then((aemMetadata) => {
+    const config = this.config.getAll();
+    this.props.modules = [];
+    _.forIn(config, (value, key) => {
+      if (value && value.moduleType) {
+        this.props.modules.push(key);
+      }
+    });
+
+    return Utils.latestApi(this.props.aemVersion).then((aemMetadata) => {
       this.props.aem = aemMetadata;
-      if (this.aemVersion !== 'cloud') {
+      if (this.props.aemVersion !== 'cloud') {
         const depPom = this.fs.read(this.templatePath('partials', 'v6.5', 'dependency-management', 'pom.xml'));
 
         const parser = new XMLParser({
           ignoreAttributes: true,
           ignoreDeclaration: true,
+          numberParseOptions: {
+            skipLike: /\d+.\d+/,
+          },
         });
         const dependencies = parser.parse(depPom).project.dependencies;
         const builder = new XMLBuilder({ format: true });
@@ -275,7 +286,8 @@ class AEMGenerator extends Generator {
   conflicts() {}
 
   install() {
-    return this.spawnCommand('mvn', ['clean', 'verify']).catch((error) => {
+    const options = this.options.showBuildOutput ? {} : { stdio: 'ignore' };
+    return this.spawnCommand('mvn', ['clean', 'verify'], options).catch((error) => {
       this.log(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
     });
   }
