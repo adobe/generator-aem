@@ -34,14 +34,14 @@ import { AEMAppWrapper } from '../fixtures/wrappers/index.js';
 
 const generatorPath = path.join(project.generatorsRoot, 'bundle');
 
-const Wrapper = class extends AEMBundleGenerator {
+class Wrapper extends AEMBundleGenerator {
   constructor(args, options, features) {
     options.resolved = path.join(generatorPath, 'index.js');
     super(args, options, features);
   }
 
   initializing() {
-    super.initializing();
+    return super.initializing();
   }
 
   prompting() {
@@ -49,21 +49,21 @@ const Wrapper = class extends AEMBundleGenerator {
   }
 
   configuring() {
-    super.configuring();
+    return super.configuring();
   }
 
   default() {
-    super.default();
+    return super.default();
   }
 
   writing() {
     return super.writing();
   }
-};
+}
 
-const NoWrite = class extends Wrapper {
+class NoWrite extends Wrapper {
   initializing() {
-    super.initializing();
+    return super.initializing();
   }
 
   prompting() {
@@ -71,9 +71,9 @@ const NoWrite = class extends Wrapper {
   }
 
   configuring() {
-    super.configuring();
+    return super.configuring();
   }
-};
+}
 
 const promptDefaults = Object.freeze({
   examples: true,
