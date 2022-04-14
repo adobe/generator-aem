@@ -18,10 +18,12 @@ import _ from 'lodash';
 import Generator from 'yeoman-generator';
 
 import GeneratorCommons from '../../../../lib/common.js';
+import AEMModuleFunctions from '../../../../lib/module.js';
 
-const generator = class extends Generator {
+class Simple extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
+
     _.forIn(GeneratorCommons.options, (v, k) => {
       this.option(k, v);
     });
@@ -46,6 +48,8 @@ const generator = class extends Generator {
 
     this.fs.write(dest, JSON.stringify(this.props));
   }
-};
+}
 
-export default generator;
+_.extend(Simple.prototype, AEMModuleFunctions);
+
+export default Simple;

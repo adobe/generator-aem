@@ -314,14 +314,14 @@ test('@adobe/aem:bundle - configuring', async (t) => {
     });
 });
 
-test.serial('@adobe/aem:bundle - via @adobe/generator-aem - cloud', async (t) => {
+test.serial('@adobe/aem:bundle - via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
   const aemData = {
     groupId: 'com.adobe.aem',
-    artifactId: 'aem-sdk-api',
-    version: '2022.3.6698.20220318T233218Z-220400',
-    path: 'com/adobe/aem/aem-sdk-api',
+    artifactId: 'uber-jar',
+    version: '6.5.12',
+    path: 'com/adobe/aem/uber-jar',
   };
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(Utils, 'latestApi', stub);
@@ -336,7 +336,7 @@ test.serial('@adobe/aem:bundle - via @adobe/generator-aem - cloud', async (t) =>
       appId: 'test',
       name: 'Test Project',
       groupId: 'com.adobe.test',
-      aemVersion: 'cloud',
+      aemVersion: '6.5',
       modules: 'bundle',
       showBuildOutput: false,
     })
@@ -365,7 +365,8 @@ test.serial('@adobe/aem:bundle - via @adobe/generator-aem - cloud', async (t) =>
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
       t.is(pomData.project.artifactId, 'test.core', 'ArtifactId set.');
       t.is(pomData.project.name, 'Test Project - Core Bundle', 'Name set.');
-      result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
+      result.assertFileContent(pom, /<artifactId>uber-jar<\/artifactId>/);
+      result.assertFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
 
       const classesRoot = path.join(moduleDir, 'src', 'main', 'java', 'com', 'adobe', 'test');
       result.assertFile(path.join(classesRoot, 'package-info.java'));
@@ -386,13 +387,14 @@ test.serial('@adobe/aem:bundle - via @adobe/generator-aem - cloud', async (t) =>
     });
 });
 
-test.serial('@adobe/aem:bundle - second bundle', async (t) => {
+test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
   const aemData = {
     groupId: 'com.adobe.aem',
     artifactId: 'aem-sdk-api',
     version: '2022.3.6698.20220318T233218Z-220400',
     path: 'com/adobe/aem/aem-sdk-api',
   };
+
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(Utils, 'latestApi', stub);
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -437,6 +439,7 @@ test.serial('@adobe/aem:bundle - second bundle', async (t) => {
       t.is(pomData.project.artifactId, 'bundle', 'ArtifactId set.');
       t.is(pomData.project.name, 'Second Bundle', 'Name set.');
       result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
+      result.assertNoFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
 
       const classesRoot = path.join(moduleDir, 'src', 'main', 'java', 'com', 'adobe', 'test', 'bundle');
       result.assertFile(path.join(classesRoot, 'package-info.java'));

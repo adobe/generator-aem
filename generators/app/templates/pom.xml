@@ -27,7 +27,7 @@
   <description>Parent pom for <%= name %></description>
 
   <modules>
-    <%_ if(locals.modules) { %>
+    <%_ if (locals.modules) { _%>
       <%_ modules.forEach((m) => { _%>
     <module><%= m %></module>
       <%_ }); _%>
@@ -188,18 +188,6 @@
           <groupId>biz.aQute.bnd</groupId>
           <artifactId>bnd-maven-plugin</artifactId>
           <version>${bnd.version}</version>
-          <executions>
-            <execution>
-              <id>bnd-process</id>
-              <goals>
-                <goal>bnd-process</goal>
-              </goals>
-              <phase>prepare-package</phase>
-              <configuration>
-                <bndfile>src/main/bnd/${project.artifactId}.bnd</bndfile>
-              </configuration>
-            </execution>
-          </executions>
           <dependencies>
             <dependency>
               <groupId>org.apache.sling</groupId>
@@ -217,18 +205,6 @@
           <groupId>biz.aQute.bnd</groupId>
           <artifactId>bnd-baseline-maven-plugin</artifactId>
           <version>${bnd.version}</version>
-          <configuration>
-            <failOnMissing>false</failOnMissing>
-            <includeDistributionManagement>false</includeDistributionManagement>
-          </configuration>
-          <executions>
-            <execution>
-              <id>baseline</id>
-              <goals>
-                <goal>baseline</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.jackrabbit</groupId>

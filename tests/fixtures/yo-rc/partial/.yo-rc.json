@@ -3,7 +3,10 @@
     "name": "Local Yo",
     "aemVersion": "localyo",
     "core": {
-      "moduleType": "apps"
+      "moduleType": "ui.apps"
+    },
+    "ui.apps": {
+      "moduleType": "bundle"
     }
   }
 }

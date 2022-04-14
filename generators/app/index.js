@@ -28,13 +28,19 @@ const ParentProperties = ['groupId', 'artifactId', 'version', 'aemVersion'];
 
 const ModuleOptions = Object.freeze({
   '@adobe/aem:bundle'(parentProps) {
-    const options = {
+    return {
       generateInto: 'core',
       package: parentProps.groupId,
       name: `${parentProps.name} - Core Bundle`,
       artifactId: `${parentProps.artifactId}.core`,
     };
-    return options;
+  },
+  '@adobe/aem:ui:apps'(parentProps) {
+    return {
+      generateInto: 'ui.apps',
+      name: `${parentProps.name} - UI Apps Package`,
+      artifactId: `${parentProps.artifactId}.ui.apps`,
+    };
   },
 });
 
@@ -194,9 +200,9 @@ class AEMGenerator extends Generator {
       if (!_.isEmpty(pomData) && pomData.groupId !== this.props.groupId && pomData.artifactId !== this.props.artifactId) {
         throw new Error(
           chalk.red('Refusing to update existing project with different group/artifact identifiers.') +
-            '\n\n' +
-            'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
-            'This is not a supported feature. Please manually update or use the defaults flag.'
+          '\n\n' +
+          'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
+          'This is not a supported feature. Please manually update or use the defaults flag.'
         );
       }
 
@@ -209,31 +215,35 @@ class AEMGenerator extends Generator {
   }
 
   default() {
-    const moduleOptions = {};
-
-    moduleOptions.parent = this.props;
 
     const modules = this.options.modules;
     const meta = this.env.getGeneratorsMeta();
     for (const idx in modules) {
+      const moduleOptions = {};
+      moduleOptions.parent = this.props;
+
       if (Object.prototype.hasOwnProperty.call(modules, idx)) {
-        let name = modules[idx];
-        if (!meta[name]) {
-          name = `@adobe/aem:${name}`;
-          if (!meta[name]) {
-            throw new Error(
-              /* eslint-disable prettier/prettier */
-              chalk.red(`Module '${modules[idx]}' is not installed.`) +
-              '\n\nInstall it with ' + chalk.yellow(`npm install -g 'generator-${modules[idx]}'`) + ' then rerun this generator.\n'
-              /* eslint-enable prettier/prettier */
-            );
-          }
-
-          _.defaults(moduleOptions, ModuleOptions[name](this.props), _.pick(this.props, _.keys(GeneratorCommons.options)));
+        let name;
+        if (meta[`@adobe/aem:${modules[idx]}`]) {
+          name = `@adobe/aem:${modules[idx]}`;
+          _.defaults(moduleOptions, ModuleOptions[name](this.props));
+        } else if (meta[`aem:${modules[idx]}`]) {
+          name = `aem:${modules[idx]}`;
+          _.defaults(moduleOptions, ModuleOptions[`@adobe/${name}`](this.props));
+        } else if (meta[modules[idx]]) {
+          name = modules[idx];
+        } else {
+          throw new Error(
+            /* eslint-disable prettier/prettier */
+            chalk.red(`Module '${modules[idx]}' is not installed.`) +
+            '\n\nInstall it with ' + chalk.yellow(`npm install -g 'generator-${modules[idx]}'`) + ' then rerun this generator.\n'
+            /* eslint-enable prettier/prettier */
+          );
         }
-
+        _.defaults(moduleOptions, _.pick(this.props, _.keys(GeneratorCommons.options)), this.options);
         this.composeWith(name, moduleOptions);
       }
+
     }
   }
 
@@ -283,7 +293,8 @@ class AEMGenerator extends Generator {
     });
   }
 
-  conflicts() {}
+  conflicts() {
+  }
 
   install() {
     const options = this.options.showBuildOutput ? {} : { stdio: 'ignore' };

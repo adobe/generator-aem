@@ -15,6 +15,13 @@
       "package": "com.test.localyo",
       "artifactId": "localyo",
       "moduleType": "bundle"
+    },
+    "ui.apps": {
+      "examples": true,
+      "name": "Local Yo",
+      "appId": "localyo",
+      "artifactId": "localyo",
+      "moduleType": "ui:apps"
     }
   }
 }
