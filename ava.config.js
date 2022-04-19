@@ -19,6 +19,7 @@ const config = {
   files: ['tests/**/*', '!tests/fixtures/**/*'],
   verbose: true,
   workerThreads: false,
+  timeout: '5m',
 };
 
 export default config;
