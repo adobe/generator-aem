@@ -1,22 +1,30 @@
+/*
+ Copyright 2022 Adobe Inc.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 import path from 'node:path';
-
 import fs from 'node:fs';
-import crypto from 'node:crypto';
-import test from 'ava';
 
+import test from 'ava';
 import helpers from 'yeoman-test';
-import _ from 'lodash';
 import { XMLParser } from 'fast-xml-parser';
-import tempDirectory from 'temp-dir';
-import sinon from 'sinon/pkg/sinon-esm.js';
 
 import project from '../../fixtures/helpers.js';
 import AEMUIFrontendGenerator from '../../../generators/ui/frontend/index.js';
-import Utils from '../../../lib/utils.js';
 
 const generatorPath = path.join(project.generatorsRoot, 'ui', 'frontend');
-
-path.join(project.generatorsRoot, 'ui', 'apps');
 
 class Wrapper extends AEMUIFrontendGenerator {
   constructor(args, options, features) {
@@ -45,151 +53,67 @@ class Wrapper extends AEMUIFrontendGenerator {
   }
 }
 
-class NoWrite extends Wrapper {
-  initializing() {
-    return super.initializing();
-  }
+test.serial('@adobe/aem:ui:frontend - via @adobe/generator-aem', async (t) => {
+  t.plan(5);
 
-  prompting() {
-    return super.prompting();
-  }
-
-  configuring() {
-    return super.configuring();
-  }
-}
-
-
-const promptDefaults = Object.freeze({
-  examples: true,
-  name: 'prompted',
-  appId: 'prompted',
-  artifactId: 'prompted',
-});
-
-const parent = {
-  groupId: 'parent',
-  artifactId: 'parent',
-  version: 'parent',
-  aemVersion: 'parent',
-};
-
-
-test('@adobe/aem:ui:frontend - requires parent', async (t) => {
-  t.plan(1);
-  const options = { defaults: true };
-  await t.throwsAsync(helpers.create(NoWrite).withOptions(options).withPrompts(promptDefaults).run());
-});
-
-
-test('@adobe/aem:ui:frontend - requires destination', async (t) => {
-  t.plan(1);
-  await t.throwsAsync(helpers.create(NoWrite).withOptions({ parent }).withPrompts(promptDefaults).run());
-});
-
-test('@adobe/aem:ui:frontend - initialize - no options', async (t) => {
-  t.plan(1);
+  let temporaryDir;
   await helpers
-    .create(NoWrite)
-    .withOptions({ generateInto: 'test', parent })
-    .withPrompts(promptDefaults)
-    .run()
-    .then((result) => {
-      const expected = {
-        parent,
-        moduleType: 'ui:frontend',
-      };
-      _.defaults(expected, promptDefaults);
-      t.deepEqual(result.generator.props, expected, 'Properties set');
-    });
-});
-
-
-test('@adobe/aem:ui:frontend - initialize - defaults', async (t) => {
-  t.plan(1);
-
-  const options = { defaults: true, generateInto: 'doesnotexist', parent: { groupId: 'groupId' } };
-  await helpers
-    .create(NoWrite)
-    .withOptions(options)
-    .withPrompts(promptDefaults)
+    .create(path.join(project.generatorsRoot, 'app'))
+    .withGenerators([[Wrapper, '@adobe/aem:ui:frontend']])
+    .withOptions({
+      defaults: true,
+      examples: true,
+      appId: 'test',
+      name: 'Test Project',
+      groupId: 'com.adobe.test',
+      aemVersion: '6.5',
+      modules: 'ui:frontend',
+      showBuildOutput: false,
+    })
     .inTmpDir((temporary) => {
-      fs.copyFileSync(path.join(project.fixturesRoot, 'yo-rc', 'parent-only', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
+      temporaryDir = temporary;
     })
     .run()
     .then((result) => {
-      const expected = {
-        defaults: true,
-        examples: false,
-        moduleType: 'ui:frontend',
-        artifactId: 'prompted.doesnotexist',
-        parent: {
-          groupId: 'groupId',
-          artifactId: 'localyo',
-          version: '1.0-LOCALYO',
-          aemVersion: 'localyo',
-        },
-      };
-      _.defaults(expected, promptDefaults);
-      t.deepEqual(result.generator.props, expected, 'Properties set');
-    });
-});
+      const properties = result.generator.props;
+      const outputRoot = path.join(temporaryDir, 'test');
+      const moduleDir = path.join(outputRoot, 'ui.frontend');
+      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui.frontend<\/module>/);
 
+      result.assertFile(path.join(moduleDir, '.babelrc'));
+      result.assertFile(path.join(moduleDir, '.eslintrc.json'));
+      result.assertFile(path.join(moduleDir, 'package.json'));
 
-test('@adobe/aem:ui:frontend - initialize from pom - in directory', async (t) => {
-  t.plan(1);
+      const pom = path.join(moduleDir, 'pom.xml');
+      result.assertFile(pom);
+      const pomString = fs.readFileSync(pom, 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
 
-  const artifact = 'ui.apps';
-  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, artifact);
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'test.ui.frontend', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Project - UI Frontend', 'Name set.');
+      result.assertFileContent(pom, /<artifactId>test.ui.frontend<\/artifactId>/);
 
-  await helpers
-    .create(NoWrite)
-    .withOptions({ destinationRoot: temporaryDir })
-    .withPrompts(promptDefaults)
-    .inDir(fullPath, (temporary) => {
-      fs.copyFileSync(path.join(project.fixturesRoot, 'yo-rc', 'parent-only', '.yo-rc.json'), path.join(temporaryDir, '.yo-rc.json'));
-      fs.copyFileSync(path.join(project.fixturesRoot, 'pom', 'full', 'pom.xml'), path.join(temporary, 'pom.xml'));
-    })
-    .run()
-    .then((result) => {
-      const expected = {
-        name: 'Pom Name',
-        artifactId: 'pom.artifactid',
-        moduleType: 'ui:frontend',
-        parent: {
-          groupId: 'com.test.localyo',
-          artifactId: 'localyo',
-          version: '1.0-LOCALYO',
-          aemVersion: 'localyo',
-        },
-      };
-      _.defaults(expected, promptDefaults);
-      t.deepEqual(result.generator.props, expected, 'Properties set.');
-    });
-});
+      result.assertFile(path.join(moduleDir, 'README.md'));
+      result.assertFile(path.join(moduleDir, 'tsconfig.json'));
 
+      result.assertFile(path.join(moduleDir, 'webpack.common.js'));
+      result.assertFile(path.join(moduleDir, 'webpack.dev.js'));
+      result.assertFile(path.join(moduleDir, 'webpack.prod.js'));
+      result.assertFile(path.join(moduleDir, 'clientlib.config.cjs'));
 
-test('@adobe/aem:ui:frontend - initialize from pom - generateInto', async (t) => {
-  t.plan(1);
-  const subdir = 'subdir';
-  await helpers
-    .create(NoWrite)
-    .withOptions({ generateInto: subdir, parent })
-    .withPrompts(promptDefaults)
-    .inTmpDir((temporary) => {
-      fs.mkdirSync(path.join(temporary, subdir));
-      fs.copyFileSync(path.join(project.fixturesRoot, 'pom', 'full', 'pom.xml'), path.join(temporary, subdir, 'pom.xml'));
-    })
-    .run()
-    .then((result) => {
-      const expected = {
-        name: 'Pom Name',
-        artifactId: 'pom.artifactid',
-        moduleType: 'ui:frontend',
-        parent,
-      };
-      _.defaults(expected, promptDefaults);
-      t.deepEqual(result.generator.props, expected, 'Properties set.');
+      result.assertFile(path.join(moduleDir, 'src', 'main', 'webpack', 'static', 'index.html'));
+
+      // Build was successful
+      result.assertFile(path.join(moduleDir, 'dist', 'clientlib-site', 'site.js'));
+      result.assertFile(path.join(moduleDir, 'src', 'main', 'content', 'jcr_root', 'apps', 'test', 'clientlibs', 'clientlib-dependencies', '.content.xml'));
+      result.assertFile(path.join(moduleDir, 'src', 'main', 'content', 'jcr_root', 'apps', 'test', 'clientlibs', 'clientlib-site', '.content.xml'));
+      result.assertFile(path.join(moduleDir, 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'));
     });
 });

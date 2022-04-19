@@ -51,6 +51,8 @@
 
     <java.version><%= javaVersion %></java.version>
     <aem.version><%= aem.version %></aem.version>
+    <node.version>v<%= nodeVersion %></node.version>
+    <npm.version><%= npmVersion %></npm.version>
 
     <bnd.version>6.2.0</bnd.version>
 
@@ -258,7 +260,7 @@
           <version>1.12.1</version>
           <configuration>
             <nodeVersion>${node.version}</nodeVersion>
-            <npmVersion>6.9.0</npmVersion>
+            <npmVersion>${npm.version}</npmVersion>
           </configuration>
           <executions>
             <execution>

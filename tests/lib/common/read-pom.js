@@ -40,6 +40,8 @@ test('reads pom', (t) => {
     pomProperties: {
       'java.version': 8,
       'aem.version': 'pom',
+      'node.version': 'pom',
+      'npm.version': 'pom',
     },
   };
   t.deepEqual(actual, expected, 'Properties match');

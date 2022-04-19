@@ -1,14 +1,16 @@
 {
   "@adobe/generator-aem": {
-    "groupId": "com.adobe.test",
-    "aemVersion": "cloud",
     "defaults": true,
     "examples": true,
     "name": "Test Project",
     "appId": "test",
+    "groupId": "com.adobe.test",
     "artifactId": "test",
     "version": "1.0.0-SNAPSHOT",
+    "aemVersion": "cloud",
     "javaVersion": "11",
+    "nodeVersion": "16.13.2",
+    "npmVersion": "8.1.2",
     "core": {
       "package": "com.adobe.test",
       "moduleType": "bundle",

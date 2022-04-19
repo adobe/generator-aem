@@ -27,5 +27,7 @@
   <properties>
     <java.version>8</java.version>
     <aem.version>pom</aem.version>
+    <node.version>pom</node.version>
+    <npm.version>pom</npm.version>
   </properties>
 </project>

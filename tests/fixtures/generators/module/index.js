@@ -14,39 +14,26 @@
  limitations under the License.
 */
 
+import { fileURLToPath } from 'node:url';
 import _ from 'lodash';
+
 import Generator from 'yeoman-generator';
+import AEMModuleFunctions from '../../../../lib/module.js';
 
-import GeneratorCommons from '../../../../lib/common.js';
+const filename = fileURLToPath(import.meta.url);
 
-class Simple extends Generator {
+class Wrapper extends Generator {
   constructor(args, options, features) {
+    options.resolved = filename;
     super(args, options, features);
-
-    _.forIn(GeneratorCommons.options, (v, k) => {
-      this.option(k, v);
-    });
+    this.moduleType = 'wrapper';
   }
 
-  initializing() {
-    const cb = (props) => {
-      props.added = 'Added';
-    };
-
-    const subdir = this.options.generateInto || '';
-
-    this.props = {};
-    _.defaults(this.props, _.pick(this.options, ['parent']), GeneratorCommons.props(this, subdir, cb));
-  }
-
-  writing() {
-    const dest = this.destinationPath('simple', 'props.json');
-    if (this.props.generateInto) {
-      this.destinationPath(this.props.generateInto, 'props.json');
-    }
-
-    this.fs.write(dest, JSON.stringify(this.props));
+  default() {
+    // Don't call builder.
   }
 }
 
-export default Simple;
+_.defaults(Wrapper.prototype, AEMModuleFunctions);
+
+export default Wrapper;

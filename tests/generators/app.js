@@ -17,6 +17,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { versions } from 'node:process';
+import { execFileSync } from 'node:child_process';
 
 import _ from 'lodash';
 import tempDirectory from 'temp-dir';
@@ -33,6 +35,10 @@ import Utils from '../../lib/utils.js';
 import { AEMAppNoWrite } from '../fixtures/wrappers/index.js';
 
 const generatorPath = path.join(project.generatorsRoot, 'app');
+const nodeVersion = versions.node;
+const npmVersion = execFileSync('npm', ['--version'])
+  .toString()
+  .replaceAll(/\r\n|\n|\r/gm, '');
 
 const promptDefaults = Object.freeze({
   examples: true,
@@ -43,6 +49,8 @@ const promptDefaults = Object.freeze({
   version: 'prompted',
   aemVersion: 'prompted',
   javaVersion: 'prompted',
+  nodeVersion,
+  npmVersion,
 });
 
 test('@adobe/aem - initialize - no options', async (t) => {
@@ -117,6 +125,8 @@ test('@adobe/aem - initialize from pom', async (t) => {
         version: '1.0-POM',
         javaVersion: '8',
         aemVersion: 'pom',
+        nodeVersion: 'pom',
+        npmVersion: 'pom',
       };
       _.defaults(expected, promptDefaults);
       t.deepEqual(result.generator.props, expected, 'Properties set');
@@ -144,6 +154,8 @@ test('@adobe/aem - initialize from pom - generateInto', async (t) => {
         version: '1.0-POM',
         javaVersion: '8',
         aemVersion: 'pom',
+        nodeVersion: 'pom',
+        npmVersion: 'pom',
       };
       _.defaults(expected, promptDefaults);
       t.deepEqual(result.generator.props, expected, 'Properties set');
@@ -172,6 +184,8 @@ test('@adobe/aem - initialize from .yo-rc.json', async (t) => {
         version: '1.0-LOCALYO',
         javaVersion: '8',
         aemVersion: 'localyo',
+        nodeVersion: 'localyo',
+        npmVersion: 'localyo',
       };
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
@@ -200,6 +214,8 @@ test('@adobe/aem - initialize merge', async (t) => {
         version: '1.0.0-SNAPSHOT',
         javaVersion: '11',
         aemVersion: 'localyo',
+        nodeVersion,
+        npmVersion,
       };
       t.deepEqual(result.generator.props, expected, 'Properties set');
     });
@@ -214,7 +230,6 @@ test('@adobe/aem - compose with module - base options', async (t) => {
   t.plan(1);
 
   let temporaryDir;
-
   await helpers
     .create(AEMAppNoWrite)
     .withGenerators([[TestGenerator, 'test:simple']])
@@ -248,15 +263,14 @@ test('@adobe/aem - compose with module - shared options', async (t) => {
   t.plan(1);
 
   let temporaryDir;
-
   await helpers
     .create(AEMAppNoWrite)
     .withGenerators([[TestGenerator, 'test:simple']])
     .withOptions({
+      defaults: true,
       artifactId: 'artifactId',
       name: 'name',
       appId: 'appId',
-      defaults: true,
       modules: 'test:simple',
     })
     .withPrompts(promptDefaults)
@@ -276,6 +290,8 @@ test('@adobe/aem - compose with module - shared options', async (t) => {
           version: '1.0.0-SNAPSHOT',
           javaVersion: '11',
           aemVersion: 'cloud',
+          nodeVersion,
+          npmVersion,
         },
       };
       _.defaults(expected.parent, promptDefaults);
@@ -414,6 +430,8 @@ test.serial('@adobe/aem - writing/installing - options - cloud', async () => {
       result.assertFileContent(pom, /<componentGroupName>Main Title<\/componentGroupName>/);
       result.assertFileContent(pom, /<java.version>11<\/java.version>/);
       result.assertFileContent(pom, /<aem.version>\d{4}\.\d+\.\d+\.\d{8}T\d{6}Z-\d+<\/aem.version>/);
+      result.assertFileContent(pom, `<node.version>v${nodeVersion}</node.version>`);
+      result.assertFileContent(pom, `<npm.version>${npmVersion}</npm.version>`);
       result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
       result.assertNoFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
     });
@@ -440,6 +458,8 @@ test.serial('@adobe/aem - writing/installing - prompts - v6.5', async () => {
       name: 'Main Title',
       javaVersion: '8',
       aemVersion: '6.5',
+      nodeVersion,
+      npmVersion,
     })
     .run()
     .then((result) => {
@@ -457,6 +477,8 @@ test.serial('@adobe/aem - writing/installing - prompts - v6.5', async () => {
       result.assertFileContent(pom, /<componentGroupName>Main Title<\/componentGroupName>/);
       result.assertFileContent(pom, /<java.version>8<\/java.version>/);
       result.assertFileContent(pom, /<aem.version>6\.5\.\d+<\/aem.version>/);
+      result.assertFileContent(pom, `<node.version>v${nodeVersion}</node.version>`);
+      result.assertFileContent(pom, `<npm.version>${npmVersion}</npm.version>`);
       result.assertFileContent(pom, /<artifactId>uber-jar<\/artifactId>/);
       result.assertFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
     });

@@ -8,6 +8,8 @@
     "version": "1.0-LOCALYO",
     "javaVersion": "8",
     "aemVersion": "localyo",
+    "nodeVersion": "localyo",
+    "npmVersion": "localyo",
     "core": {
       "examples": true,
       "name": "Local Yo",
@@ -22,6 +24,13 @@
       "appId": "localyo",
       "artifactId": "localyo",
       "moduleType": "ui:apps"
+    },
+    "wrapper": {
+      "examples": true,
+      "name": "Local Yo",
+      "appId": "localyo",
+      "artifactId": "localyo",
+      "moduleType": "wrapper"
     }
   }
 }

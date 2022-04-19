@@ -15,6 +15,9 @@
 */
 
 import path from 'node:path';
+import { versions } from 'node:process';
+import { execFileSync } from 'node:child_process';
+
 import _ from 'lodash';
 import chalk from 'chalk';
 
@@ -42,7 +45,18 @@ const ModuleOptions = Object.freeze({
       artifactId: `${parentProps.artifactId}.ui.apps`,
     };
   },
+  '@adobe/aem:ui:frontend'(parentProps) {
+    return {
+      generateInto: 'ui.frontend',
+      name: `${parentProps.name} - UI Frontend`,
+      artifactId: `${parentProps.artifactId}.ui.frontend`,
+    };
+  },
 });
+
+const npmVersion = execFileSync('npm', ['--version'])
+  .toString()
+  .replaceAll(/\r\n|\n|\r/gm, '');
 
 class AEMGenerator extends Generator {
   constructor(args, options, features) {
@@ -73,6 +87,16 @@ class AEMGenerator extends Generator {
         desc: 'Target AEM version (6.5 or cloud)',
       },
 
+      nodeVersion: {
+        type: String,
+        desc: 'Node version to use for module projects.',
+      },
+
+      npmVersion: {
+        type: String,
+        desc: 'NPM version to use for module projects.',
+      },
+
       modules: {
         type(arg) {
           return arg.split(',');
@@ -99,7 +123,7 @@ class AEMGenerator extends Generator {
       dest = '';
     }
 
-    const unique = ['groupId', 'version', 'javaVersion', 'aemVersion'];
+    const unique = ['groupId', 'version', 'javaVersion', 'aemVersion', 'nodeVersion', 'npmVersion'];
 
     // Populate Root unique properties
     this.props = {};
@@ -125,6 +149,14 @@ class AEMGenerator extends Generator {
       if (pom.pomProperties['java.version']) {
         this.props.javaVersion = this.props.javaVersion || `${pom.pomProperties['java.version']}`;
       }
+
+      if (pom.pomProperties['node.version']) {
+        this.props.nodeVersion = this.props.nodeVersion || `${pom.pomProperties['node.version']}`;
+      }
+
+      if (pom.pomProperties['npm.version']) {
+        this.props.npmVersion = this.props.npmVersion || `${pom.pomProperties['npm.version']}`;
+      }
     }
 
     // Populate Shared
@@ -132,7 +164,13 @@ class AEMGenerator extends Generator {
 
     // Fall back to defaults
     if (this.options.defaults) {
-      _.defaults(this.props, { version: '1.0.0-SNAPSHOT', javaVersion: '11', aemVersion: 'cloud' });
+      _.defaults(this.props, {
+        version: '1.0.0-SNAPSHOT',
+        javaVersion: '11',
+        aemVersion: 'cloud',
+        nodeVersion: versions.node,
+        npmVersion,
+      });
     }
   }
 
@@ -175,6 +213,18 @@ class AEMGenerator extends Generator {
         default: 1,
         when: !this.options.defaults && !this.props.aemVersion,
       },
+      {
+        name: 'nodeVersion',
+        message: 'Node version to use for module projects.',
+        when: !this.options.defaults && !this.props.nodeVersion,
+        default: this.props.nodeVersion,
+      },
+      {
+        name: 'npmVersion',
+        message: 'NPM version to use for module projects.',
+        when: !this.options.defaults && !this.props.npmVersion,
+        default: this.props.npmVersion,
+      },
     ]);
 
     return this.prompt(prompts).then((answers) => {
@@ -200,9 +250,9 @@ class AEMGenerator extends Generator {
       if (!_.isEmpty(pomData) && pomData.groupId !== this.props.groupId && pomData.artifactId !== this.props.artifactId) {
         throw new Error(
           chalk.red('Refusing to update existing project with different group/artifact identifiers.') +
-          '\n\n' +
-          'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
-          'This is not a supported feature. Please manually update or use the defaults flag.'
+            '\n\n' +
+            'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
+            'This is not a supported feature. Please manually update or use the defaults flag.'
         );
       }
 
@@ -215,21 +265,20 @@ class AEMGenerator extends Generator {
   }
 
   default() {
-
     const modules = this.options.modules;
     const meta = this.env.getGeneratorsMeta();
     for (const idx in modules) {
-      const moduleOptions = {};
-      moduleOptions.parent = this.props;
-
       if (Object.prototype.hasOwnProperty.call(modules, idx)) {
+        const moduleOptions = {};
+        moduleOptions.parent = this.props;
+
         let name;
         if (meta[`@adobe/aem:${modules[idx]}`]) {
           name = `@adobe/aem:${modules[idx]}`;
-          _.defaults(moduleOptions, ModuleOptions[name](this.props));
+          _.defaults(moduleOptions, ModuleOptions[name](this.props), _.pick(this.props, _.keys(GeneratorCommons.options)));
         } else if (meta[`aem:${modules[idx]}`]) {
           name = `aem:${modules[idx]}`;
-          _.defaults(moduleOptions, ModuleOptions[`@adobe/${name}`](this.props));
+          _.defaults(moduleOptions, ModuleOptions[`@adobe/${name}`](this.props), _.pick(this.props, _.keys(GeneratorCommons.options)));
         } else if (meta[modules[idx]]) {
           name = modules[idx];
         } else {
@@ -240,10 +289,9 @@ class AEMGenerator extends Generator {
             /* eslint-enable prettier/prettier */
           );
         }
-        _.defaults(moduleOptions, _.pick(this.props, _.keys(GeneratorCommons.options)), this.options);
+
         this.composeWith(name, moduleOptions);
       }
-
     }
   }
 
@@ -293,13 +341,12 @@ class AEMGenerator extends Generator {
     });
   }
 
-  conflicts() {
-  }
+  conflicts() {}
 
   install() {
     const options = this.options.showBuildOutput ? {} : { stdio: 'ignore' };
     return this.spawnCommand('mvn', ['clean', 'verify'], options).catch((error) => {
-      this.log(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
+      throw new Error(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
     });
   }
 
