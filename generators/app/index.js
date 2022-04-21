@@ -61,6 +61,13 @@ const ModuleOptions = Object.freeze({
       frontendRef: `ui.frontend`,
     };
   },
+  '@adobe/aem:ui:config'(parentProps) {
+    return {
+      generateInto: 'ui.config',
+      name: `${parentProps.name} - UI Config Package`,
+      artifactId: `${parentProps.artifactId}.ui.config`,
+    };
+  },
 });
 
 const npmVersion = execFileSync('npm', ['--version'])

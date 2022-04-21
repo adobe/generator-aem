@@ -75,8 +75,9 @@ class AEMUIAppsStructureGenerator extends Generator {
   }
 }
 
-AEMUIAppsStructureGenerator.prototype.initializing = AEMModuleFunctions.initializing;
-AEMUIAppsStructureGenerator.prototype.configuring = AEMModuleFunctions.configuring;
+_.extendWith(AEMUIAppsStructureGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
+  return _.isUndefined(objectValue) ? srcValue : objectValue;
+});
 
 export { AEMUIAppsStructureGenerator, UIAppsStructureModuleType };
 

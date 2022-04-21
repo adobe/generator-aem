@@ -93,7 +93,7 @@ test.serial('@adobe/aem:ui:apps:structure - via @adobe/generator-aem', async (t)
       const properties = result.generator.props;
       const outputRoot = path.join(temporaryDir, 'test');
       const moduleDir = path.join(outputRoot, 'ui.apps.structure');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui.apps.structure<\/module>/);
+      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui\.apps.structure<\/module>/);
 
       const pom = path.join(moduleDir, 'pom.xml');
       result.assertFile(pom);
@@ -112,6 +112,8 @@ test.serial('@adobe/aem:ui:apps:structure - via @adobe/generator-aem', async (t)
       result.assertFileContent(pom, /<filter><root>\/apps\/test<\/root><\/filter>/);
       result.assertFileContent(pom, /<filter><root>\/content\/dam\/test<\/root><\/filter>/);
       result.assertFile(path.join(moduleDir, 'README.md'));
+
+      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.ui.apps.structure-${properties.version}.zip`));
     });
 });
 

@@ -94,7 +94,7 @@ test.serial('@adobe/aem:ui:frontend - via @adobe/generator-aem', async (t) => {
       const properties = result.generator.props;
       const outputRoot = path.join(temporaryDir, 'test');
       const moduleDir = path.join(outputRoot, 'ui.frontend');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui.frontend<\/module>/);
+      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui\.frontend<\/module>/);
 
       result.assertFile(path.join(moduleDir, '.babelrc'));
       result.assertFile(path.join(moduleDir, '.eslintrc.json'));
@@ -167,7 +167,7 @@ test.serial('@adobe/aem:ui:frontend - second module', async (t) => {
     .then((result) => {
       sinon.restore();
       const moduleDir = path.join(fullPath, 'ui.general');
-      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<module>ui.general<\/module>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<module>ui\.general<\/module>/);
 
       const pom = path.join(moduleDir, 'pom.xml');
       result.assertFile(pom);

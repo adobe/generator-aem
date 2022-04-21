@@ -99,7 +99,7 @@ test.serial('@adobe/aem:ui:apps - via @adobe/generator-aem - v6.5', async (t) =>
       const properties = result.generator.props;
       const outputRoot = path.join(temporaryDir, 'test');
       const moduleDir = path.join(outputRoot, 'ui.apps');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui.apps<\/module>/);
+      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui\.apps<\/module>/);
 
       const pom = path.join(moduleDir, 'pom.xml');
       result.assertFile(pom);
@@ -115,8 +115,8 @@ test.serial('@adobe/aem:ui:apps - via @adobe/generator-aem - v6.5', async (t) =>
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
       t.is(pomData.project.artifactId, 'test.ui.apps', 'ArtifactId set.');
       t.is(pomData.project.name, 'Test Project - UI Apps Package', 'Name set.');
-      result.assertFileContent(pom, /<artifactId>test.core<\/artifactId>/);
-      result.assertFileContent(pom, /<artifactId>test.ui.frontend<\/artifactId>/);
+      result.assertFileContent(pom, /<artifactId>test\.core<\/artifactId>/);
+      result.assertFileContent(pom, /<artifactId>test\.ui\.frontend<\/artifactId>/);
       result.assertFileContent(pom, /<artifactId>uber-jar<\/artifactId>/);
       result.assertFileContent(pom, /<artifactId>cq-wcm-taglib<\/artifactId>/);
 

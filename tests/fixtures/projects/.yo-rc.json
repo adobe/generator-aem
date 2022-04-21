@@ -43,7 +43,14 @@
       "name": "Test Project - UI Apps Package",
       "appId": "test",
       "artifactId": "test.ui.apps"
+    },
+    "ui.config": {
+      "moduleType": "ui:config",
+      "defaults": true,
+      "examples": true,
+      "name": "Test Project - UI Config Package",
+      "appId": "test",
+      "artifactId": "test.ui.config"
     }
-
   }
 }

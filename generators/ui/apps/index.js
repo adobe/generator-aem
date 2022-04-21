@@ -26,7 +26,7 @@ import { GeneralFrontEndModuleType } from '../frontend/index.js';
 import { UIAppsStructureModuleType } from './structure/index.js';
 
 const UIAppsModuleType = 'ui:apps';
-const uniqueProperties = ['bundleRef', 'frontendRef', 'structureRef'];
+const uniqueProperties = ['bundleRef', 'frontendRef'];
 
 /* eslint-disable prettier/prettier */
 const tplFiles = [
