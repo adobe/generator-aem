@@ -19,6 +19,31 @@
       "name": "Test Project - Core Bundle",
       "appId": "test",
       "artifactId": "test.core"
+    },
+    "ui.frontend": {
+      "moduleType": "ui:frontend",
+      "defaults": true,
+      "examples": true,
+      "name": "Test Project - UI Frontend",
+      "appId": "test",
+      "artifactId": "test.ui.frontend"
+    },
+    "ui.apps.structure": {
+      "moduleType": "ui:apps:structure",
+      "defaults": true,
+      "examples": true,
+      "name": "Test Project - Repository Structure Package",
+      "appId": "test",
+      "artifactId": "test.ui.apps.structure"
+    },
+    "ui.apps": {
+      "moduleType": "ui:apps",
+      "defaults": true,
+      "examples": true,
+      "name": "Test Project - UI Apps Package",
+      "appId": "test",
+      "artifactId": "test.ui.apps"
     }
+
   }
 }

@@ -38,18 +38,27 @@ const ModuleOptions = Object.freeze({
       artifactId: `${parentProps.artifactId}.core`,
     };
   },
-  '@adobe/aem:ui:apps'(parentProps) {
-    return {
-      generateInto: 'ui.apps',
-      name: `${parentProps.name} - UI Apps Package`,
-      artifactId: `${parentProps.artifactId}.ui.apps`,
-    };
-  },
   '@adobe/aem:ui:frontend'(parentProps) {
     return {
       generateInto: 'ui.frontend',
       name: `${parentProps.name} - UI Frontend`,
       artifactId: `${parentProps.artifactId}.ui.frontend`,
+    };
+  },
+  '@adobe/aem:ui:apps:structure'(parentProps) {
+    return {
+      generateInto: 'ui.apps.structure',
+      name: `${parentProps.name} - Repository Structure Package`,
+      artifactId: `${parentProps.artifactId}.ui.apps.structure`,
+    };
+  },
+  '@adobe/aem:ui:apps'(parentProps) {
+    return {
+      generateInto: 'ui.apps',
+      name: `${parentProps.name} - UI Apps Package`,
+      artifactId: `${parentProps.artifactId}.ui.apps`,
+      bundleRef: `core`,
+      frontendRef: `ui.frontend`,
     };
   },
 });
@@ -105,7 +114,7 @@ class AEMGenerator extends Generator {
       },
     });
 
-    _.forIn(options_, (v, k) => {
+    _.forOwn(options_, (v, k) => {
       this.option(k, v);
     });
   }
@@ -314,7 +323,7 @@ class AEMGenerator extends Generator {
 
     const config = this.config.getAll();
     this.props.modules = [];
-    _.forIn(config, (value, key) => {
+    _.forOwn(config, (value, key) => {
       if (value && value.moduleType) {
         this.props.modules.push(key);
       }

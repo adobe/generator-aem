@@ -27,8 +27,10 @@
   <description>Parent pom for Test Project</description>
 
   <modules>
-
     <module>core</module>
+    <module>ui.frontend</module>
+    <module>ui.structure</module>
+    <module>ui.apps</module>
   </modules>
 
   <properties>

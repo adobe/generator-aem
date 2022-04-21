@@ -27,46 +27,6 @@
   <artifactId><%= artifactId %></artifactId>
   <name><%= name %></name>
 
-  <dependencies>
-
-    <!-- This needs to be loaded before the (possible) uber-jar until CQ-4343685 is resolved -->
-    <dependency>
-      <groupId>uk.org.lidalia</groupId>
-      <artifactId>slf4j-test</artifactId>
-    </dependency>
-
-    <!-- AEM Dependencies -->
-    <!-- AEM Jar -->
-    <dependency>
-      <groupId><%= aem.groupId %></groupId>
-      <artifactId><%= aem.artifactId %></artifactId>
-    </dependency>
-    <%_ if (parent.aemVersion !== 'cloud') { _%>
-    <%- include('partials/v6.5/dependencies.partial') -%>
-    <%_ } _%>
-
-    <!-- Testing -->
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.wcm</groupId>
-      <artifactId>io.wcm.testing.aem-mock.junit5</artifactId>
-    </dependency>
-
-  </dependencies>
-
   <build>
     <plugins>
       <plugin>
@@ -119,4 +79,44 @@
       </plugin>
     </plugins>
   </build>
+
+  <dependencies>
+
+    <!-- This needs to be loaded before the (possible) uber-jar until CQ-4343685 is resolved -->
+    <dependency>
+      <groupId>uk.org.lidalia</groupId>
+      <artifactId>slf4j-test</artifactId>
+    </dependency>
+
+    <!-- AEM Dependencies -->
+    <!-- AEM Jar -->
+    <dependency>
+      <groupId><%= aem.groupId %></groupId>
+      <artifactId><%= aem.artifactId %></artifactId>
+    </dependency>
+    <%_ if (parent.aemVersion !== 'cloud') { _%>
+    <%- include('partials/v6.5/dependencies.partial') -%>
+    <%_ } _%>
+
+    <!-- Testing -->
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.wcm</groupId>
+      <artifactId>io.wcm.testing.aem-mock.junit5</artifactId>
+    </dependency>
+
+  </dependencies>
 </project>

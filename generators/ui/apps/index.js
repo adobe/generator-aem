@@ -14,26 +14,112 @@
  limitations under the License.
 */
 
-import Generator from 'yeoman-generator';
 import _ from 'lodash';
 
+import Generator from 'yeoman-generator';
 import GeneratorCommons from '../../../lib/common.js';
 import AEMModuleFunctions from '../../../lib/module.js';
+import Utils from '../../../lib/utils.js';
+
+import { BundleModuleType } from '../../bundle/index.js';
+import { GeneralFrontEndModuleType } from '../frontend/index.js';
+import { UIAppsStructureModuleType } from './structure/index.js';
+
+const UIAppsModuleType = 'ui:apps';
+const uniqueProperties = ['bundleRef', 'frontendRef', 'structureRef'];
+
+/* eslint-disable prettier/prettier */
+const tplFiles = [
+  'pom.xml',
+];
+/* eslint-enable prettier/prettier */
 
 class AEMUIAppsGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
-    const options_ = {};
-    _.defaults(options_, GeneratorCommons.options);
 
-    _.forIn(options_, (v, k) => {
+    this.moduleType = UIAppsModuleType;
+
+    const options_ = {};
+    _.defaults(options_, GeneratorCommons.options, {
+      bundleRef: {
+        type: String,
+        desc: 'Module name of optional Java bundle dependency, in this multi-module project.',
+      },
+
+      frontendRef: {
+        type: String,
+        desc: 'Module name of optional Frontend dependency, in this multi-module project.',
+      },
+
+      precompileScripts: {
+        desc: 'Whether or not to configure Maven build to precompile HTL scripts.',
+      },
+    });
+
+    _.forOwn(options_, (v, k) => {
       this.option(k, v);
     });
-    this.moduleType = 'ui:apps';
+  }
+
+  _preProcessProperties() {
+    _.defaults(this.props, _.pick(this.options, uniqueProperties));
   }
 
   prompting() {
-    const prompts = GeneratorCommons.prompts(this);
+    const config = this.config.getAll();
+    const bundleModules = [];
+    const feModules = [];
+    _.forOwn(config, (value, key) => {
+      if (value.moduleType) {
+        switch (value.moduleType) {
+          case BundleModuleType: {
+            bundleModules.push(key);
+            break;
+          }
+
+          case GeneralFrontEndModuleType: {
+            feModules.push(key);
+            break;
+          }
+          // No default
+        }
+      }
+    });
+    const properties = this.props;
+
+    const prompts = GeneratorCommons.prompts(this).concat([
+      {
+        name: 'bundleRef',
+        message: 'Module name of optional dependency on OSGi bundle. (e.g. core)',
+        type: 'list',
+        choices: bundleModules,
+        when: !this.options.defaults && bundleModules.length > 0,
+      },
+      {
+        name: 'frontendRef',
+        message: 'Module name of optional dependency on a Front End Module containing ClientLibs. (e.g. ui.frontend)',
+        type: 'list',
+        choices: feModules,
+        when: !this.options.defaults && feModules.length > 0,
+      },
+      {
+        name: 'precompileScripts',
+        message: 'Whether nor not to precompile HTL scripts.',
+        type: 'confirm',
+        when() {
+          return new Promise((resolve) => {
+            if (properties.defaults) {
+              resolve(true);
+            }
+
+            resolve(properties.precompileScripts === undefined);
+          });
+        },
+        default: true,
+      },
+    ]);
+
     return this.prompt(prompts).then((answers) => {
       GeneratorCommons.processAnswers(this, answers);
       _.merge(this.props, answers);
@@ -41,10 +127,36 @@ class AEMUIAppsGenerator extends Generator {
   }
 
   writing() {
+    const files = [];
 
+    _.each(tplFiles, (f) => {
+      files.push({
+        src: this.templatePath(f),
+        dest: this.destinationPath(this.relativePath, f),
+      });
+    });
+
+    files.push(...GeneratorCommons.listTemplates(this));
+    return Utils.latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
+      this.props.aem = aemMetadata;
+
+      const config = this.config.getAll();
+      _.each(config, (value, key) => {
+        if (key === this.props.bundleRef) {
+          this.props.bundle = { ref: key, artifactId: value.artifactId };
+        } else if (key === this.props.frontendRef) {
+          this.props.frontend = { ref: key, artifactId: value.artifactId };
+        } else if (value.moduleType && value.moduleType === UIAppsStructureModuleType) {
+          this.props.structure = { ref: key, artifactId: value.artifactId };
+        }
+      });
+
+      GeneratorCommons.write(this, files);
+    });
   }
 }
 
 _.extend(AEMUIAppsGenerator.prototype, AEMModuleFunctions);
 
+export { AEMUIAppsGenerator, UIAppsModuleType };
 export default AEMUIAppsGenerator;

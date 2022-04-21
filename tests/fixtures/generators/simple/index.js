@@ -23,7 +23,7 @@ class Simple extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
-    _.forIn(GeneratorCommons.options, (v, k) => {
+    _.forOwn(GeneratorCommons.options, (v, k) => {
       this.option(k, v);
     });
   }

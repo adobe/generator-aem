@@ -15,11 +15,10 @@
 */
 
 import path from 'node:path';
-import Generator from 'yeoman-generator';
 
 import _ from 'lodash';
-import { globbySync } from 'globby';
 
+import Generator from 'yeoman-generator';
 import GeneratorCommons from '../../lib/common.js';
 import AEMModuleFunctions from '../../lib/module.js';
 import Utils from '../../lib/utils.js';
@@ -27,9 +26,20 @@ import Utils from '../../lib/utils.js';
 const invalidPackageRegex = /[^a-zA-Z.]/g;
 const uniqueProperties = ['package'];
 
+const BundleModuleType = 'bundle';
+
+/* eslint-disable prettier/prettier */
+const tplFiles = [
+  'pom.xml',
+];
+/* eslint-enable prettier/prettier */
+
 class AEMBundleGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
+
+    this.moduleType = BundleModuleType;
+
     const options_ = {};
     _.defaults(options_, GeneratorCommons.options, {
       package: {
@@ -38,11 +48,9 @@ class AEMBundleGenerator extends Generator {
       },
     });
 
-    _.forIn(options_, (v, k) => {
+    _.forOwn(options_, (v, k) => {
       this.option(k, v);
     });
-
-    this.moduleType = 'bundle';
   }
 
   _preProcessProperties() {
@@ -99,37 +107,14 @@ class AEMBundleGenerator extends Generator {
   writing() {
     const files = [];
 
-    let patterns;
-    if (this.props.examples) {
-      patterns = this.templatePath('examples', '**/*');
-      const paths = globbySync(patterns, { onlyFiles: true });
-      for (const idx in paths) {
-        if (Object.prototype.hasOwnProperty.call(paths, idx)) {
-          const file = paths[idx];
-          files.push({
-            src: file,
-            dest: this.destinationPath(this.relativePath, path.relative(this.templatePath('examples'), file)),
-          });
-        }
-      }
-    }
-
-    patterns = this.templatePath('shared', '**/*');
-    const paths = globbySync(patterns, { onlyFiles: true });
-    for (const idx in paths) {
-      if (Object.prototype.hasOwnProperty.call(paths, idx)) {
-        const file = paths[idx];
-        files.push({
-          src: file,
-          dest: this.destinationPath(this.relativePath, path.relative(this.templatePath('shared'), file)),
-        });
-      }
-    }
-
-    files.push({
-      src: this.templatePath('pom.xml'),
-      dest: this.destinationPath(this.relativePath, 'pom.xml'),
+    _.each(tplFiles, (f) => {
+      files.push({
+        src: this.templatePath(f),
+        dest: this.destinationPath(this.relativePath, f),
+      });
     });
+
+    files.push(...GeneratorCommons.listTemplates(this));
 
     return Utils.latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
       this.props.aem = aemMetadata;
@@ -138,6 +123,8 @@ class AEMBundleGenerator extends Generator {
     });
   }
 }
+
 _.extend(AEMBundleGenerator.prototype, AEMModuleFunctions);
 
+export { AEMBundleGenerator, BundleModuleType };
 export default AEMBundleGenerator;

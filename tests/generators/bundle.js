@@ -21,7 +21,6 @@ import tempDirectory from 'temp-dir';
 
 import test from 'ava';
 import sinon from 'sinon/pkg/sinon-esm.js';
-
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
@@ -127,13 +126,15 @@ test.serial('@adobe/aem:bundle - via @adobe/generator-aem - v6.5', async (t) => 
       result.assertFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
       result.assertFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
 
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.core-${properties.version}.jar`));
-
       result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.core.bnd`));
+
+      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.core-${properties.version}.jar`));
     });
 });
 
 test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
+  t.plan(5);
+
   const aemData = {
     groupId: 'com.adobe.aem',
     artifactId: 'aem-sdk-api',
@@ -159,9 +160,7 @@ test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
       showBuildOutput: false,
     })
     .inDir(fullPath, (temporary) => {
-      fs.copyFileSync(path.join(project.fixturesRoot, 'projects', 'pom.xml'), path.join(temporary, 'pom.xml'));
-      fs.copyFileSync(path.join(project.fixturesRoot, 'projects', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
-      fs.cpSync(path.join(project.fixturesRoot, 'projects', 'core'), path.join(temporary, 'core'), { recursive: true });
+      fs.cpSync(path.join(project.fixturesRoot, 'projects'), temporary, { recursive: true });
     })
     .run()
     .then((result) => {
@@ -200,9 +199,9 @@ test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
       result.assertNoFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
       result.assertNoFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
 
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-${properties.parent.version}.jar`));
-
       result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.bnd`));
+
+      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-${properties.parent.version}.jar`));
     });
 });
 
