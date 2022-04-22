@@ -60,8 +60,7 @@
 
   <build>
     <plugins>
-      <!-- Maven Release Plugin -->
-      <plugin>
+     <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
@@ -71,13 +70,11 @@
           <releaseProfiles>release</releaseProfiles>
         </configuration>
       </plugin>
-      <!-- Maven Source Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <inherited>true</inherited>
       </plugin>
-      <!-- Maven Enforcer Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -101,7 +98,6 @@
           </execution>
         </executions>
       </plugin>
-      <!-- Maven Compiler Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -113,7 +109,6 @@
     </plugins>
     <pluginManagement>
       <plugins>
-        <!-- Maven Jar Plugin -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
@@ -334,7 +329,6 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- AEM Jar -->
       <dependency>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aem-sdk-api</artifactId>
@@ -342,8 +336,6 @@
         <scope>provided</scope>
       </dependency>
 
-
-      <!-- Testing -->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
@@ -385,7 +377,6 @@
   </dependencyManagement>
 
   <profiles>
-    <!-- Development profile: install only the bundle -->
     <profile>
       <id>autoInstallBundle</id>
       <!--

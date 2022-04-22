@@ -17,16 +17,18 @@
 import path from 'node:path';
 
 import _ from 'lodash';
+import got from 'got';
+import { XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
-import GeneratorCommons from '../../lib/common.js';
-import AEMModuleFunctions from '../../lib/module.js';
-import Utils from '../../lib/utils.js';
+import GeneratorCommons from '../../../lib/common.js';
+import AEMModuleFunctions from '../../../lib/module.js';
+import Utils from '../../../lib/utils.js';
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
 const uniqueProperties = ['package'];
 
-const BundleModuleType = 'bundle';
+const IntegrationTestsModuleType = 'tests:it';
 
 /* eslint-disable prettier/prettier */
 const tplFiles = [
@@ -34,11 +36,11 @@ const tplFiles = [
 ];
 /* eslint-enable prettier/prettier */
 
-class AEMBundleGenerator extends Generator {
+class IntegrationTestsGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
-    this.moduleType = BundleModuleType;
+    this.moduleType = IntegrationTestsModuleType;
 
     const options_ = {};
     _.defaults(options_, GeneratorCommons.options, {
@@ -104,6 +106,59 @@ class AEMBundleGenerator extends Generator {
     });
   }
 
+  default() {
+    if (this.runParent) {
+      const config = this.config.getAll();
+      _.each(config, (value, key) => {
+        if (value.moduleType && value.moduleType === IntegrationTestsModuleType && key !== this.relativePath) {
+          throw new Error('Refusing to create a second Integration Testing module.');
+        }
+      });
+
+      AEMModuleFunctions.default.bind(this).call();
+    }
+  }
+
+  _testingClientApi(aemVersion) {
+    const coordinates = (version) => {
+      if (version === 'cloud') {
+        return {
+          groupId: 'com.adobe.cq',
+          artifactId: 'aem-cloud-testing-clients',
+          path: 'com/adobe/cq/aem-cloud-testing-clients',
+        };
+      }
+
+      return {
+        groupId: 'com.adobe.cq',
+        artifactId: 'cq-testing-clients-65',
+        path: 'com/adobe/cq/cq-testing-clients-65',
+      };
+    };
+
+    return new Promise((resolve, reject) => {
+      const metadata = coordinates(aemVersion);
+      try {
+        got.get(`https://repo1.maven.org/maven2/${metadata.path}/maven-metadata.xml`, { responseType: 'text', resolveBodyOnly: true }).then((body) => {
+          try {
+            const parser = new XMLParser({
+              ignoreAttributes: true,
+              ignoreDeclaration: true,
+            });
+            const data = parser.parse(body);
+            metadata.version = data.metadata.versioning.latest;
+            this.props.testingClient = metadata;
+            resolve(aemVersion);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      } catch (error) {
+        reject(error.response ? error.response.body : error);
+      }
+    });
+  }
+
   writing() {
     const files = [];
 
@@ -116,17 +171,20 @@ class AEMBundleGenerator extends Generator {
 
     files.push(...GeneratorCommons.listTemplates(this));
 
-    return Utils.latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
-      this.props.aem = aemMetadata;
-      this.props.packagePath = this.props.package.replaceAll('.', path.sep);
-      GeneratorCommons.write(this, files);
-    });
+    return this._testingClientApi(this.props.parent.aemVersion)
+      .then(Utils.latestApi)
+      .then((aemMetadata) => {
+        this.props.aem = aemMetadata;
+        this.props.packagePath = this.props.package.replaceAll('.', path.sep);
+        GeneratorCommons.write(this, files);
+      });
   }
 }
 
-_.extendWith(AEMBundleGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
+_.extendWith(IntegrationTestsGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
   return _.isUndefined(objectValue) ? srcValue : objectValue;
 });
 
-export { AEMBundleGenerator, BundleModuleType };
-export default AEMBundleGenerator;
+export { IntegrationTestsGenerator, IntegrationTestsModuleType };
+
+export default IntegrationTestsGenerator;

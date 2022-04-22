@@ -88,8 +88,6 @@
       <artifactId>slf4j-test</artifactId>
     </dependency>
 
-    <!-- AEM Dependencies -->
-    <!-- AEM Jar -->
     <dependency>
       <groupId><%= aem.groupId %></groupId>
       <artifactId><%= aem.artifactId %></artifactId>
@@ -97,8 +95,6 @@
     <%_ if (parent.aemVersion !== 'cloud') { _%>
     <%- include('partials/v6.5/dependencies.partial') -%>
     <%_ } _%>
-
-    <!-- Testing -->
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>

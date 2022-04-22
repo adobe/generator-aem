@@ -68,6 +68,13 @@ const ModuleOptions = Object.freeze({
       artifactId: `${parentProps.artifactId}.ui.config`,
     };
   },
+  '@adobe/aem:tests:it'(parentProps) {
+    return {
+      generateInto: 'it.tests',
+      name: `${parentProps.name} - Integration Tests`,
+      artifactId: `${parentProps.artifactId}.it.tests`,
+    };
+  },
 });
 
 const npmVersion = execFileSync('npm', ['--version'])

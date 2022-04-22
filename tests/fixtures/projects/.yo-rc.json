@@ -51,6 +51,15 @@
       "name": "Test Project - UI Config Package",
       "appId": "test",
       "artifactId": "test.ui.config"
+    },
+    "it.tests": {
+      "moduleType": "tests:it",
+      "defaults": true,
+      "examples": true,
+      "name": "Test Project - Integration Tests",
+      "appId": "test",
+      "artifactId": "test.it.tests"
     }
+
   }
 }

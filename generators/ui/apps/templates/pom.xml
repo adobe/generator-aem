@@ -154,7 +154,6 @@
     <%- include('partials/v6.5/dependencies.partial') -%>
     <%_ } _%>
 
-    <!-- HTL dependencies needed for the HTL Maven Plugin source code generation -->
     <dependency>
       <groupId>org.apache.sling</groupId>
       <artifactId>org.apache.sling.scripting.sightly.runtime</artifactId>
