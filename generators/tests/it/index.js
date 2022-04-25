@@ -18,6 +18,7 @@ import path from 'node:path';
 
 import _ from 'lodash';
 import got from 'got';
+import { globbySync } from 'globby';
 import { XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
@@ -26,7 +27,7 @@ import AEMModuleFunctions from '../../../lib/module.js';
 import Utils from '../../../lib/utils.js';
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
-const uniqueProperties = ['package'];
+const uniqueProperties = ['package', 'publish'];
 
 const IntegrationTestsModuleType = 'tests:it';
 
@@ -48,6 +49,9 @@ class IntegrationTestsGenerator extends Generator {
         type: String,
         desc: 'Java Source Package (e.g. "com.mysite").',
       },
+      publish: {
+        desc: 'Indicate whether or not there is a Publish tier in the target AEM environments.',
+      },
     });
 
     _.forOwn(options_, (v, k) => {
@@ -66,6 +70,10 @@ class IntegrationTestsGenerator extends Generator {
   _postProcessProperties() {
     if (this.props.parent.groupId) {
       this.props.package = this.props.package || this.props.parent.groupId;
+    }
+
+    if (this.options.defaults) {
+      this.props.publish = this.props.publish || true;
     }
   }
 
@@ -98,6 +106,13 @@ class IntegrationTestsGenerator extends Generator {
           });
         },
         default: this.props.package,
+      },
+      {
+        name: 'publish',
+        message: 'Whether or not there is a Publish tier in the target AEM environments.',
+        type: 'confirm',
+        when: properties.publish === undefined,
+        default: true,
       },
     ]);
     return this.prompt(prompts).then((answers) => {
@@ -168,6 +183,20 @@ class IntegrationTestsGenerator extends Generator {
         dest: this.destinationPath(this.relativePath, f),
       });
     });
+
+    if (this.props.publish) {
+      const patterns = [this.templatePath('publish', '**/*'), this.templatePath('publish', '**/.*')];
+      const paths = globbySync(patterns, { onlyFiles: true });
+      for (const idx in paths) {
+        if (Object.prototype.hasOwnProperty.call(paths, idx)) {
+          const file = paths[idx];
+          files.push({
+            src: file,
+            dest: this.destinationPath(this.relativePath, path.relative(this.templatePath('publish'), file)),
+          });
+        }
+      }
+    }
 
     files.push(...GeneratorCommons.listTemplates(this));
 

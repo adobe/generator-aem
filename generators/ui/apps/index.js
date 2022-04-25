@@ -107,15 +107,7 @@ class AEMUIAppsGenerator extends Generator {
         name: 'precompileScripts',
         message: 'Whether nor not to precompile HTL scripts.',
         type: 'confirm',
-        when() {
-          return new Promise((resolve) => {
-            if (properties.defaults) {
-              resolve(true);
-            }
-
-            resolve(properties.precompileScripts === undefined);
-          });
-        },
+        when: properties.precompileScripts === undefined,
         default: true,
       },
     ]);

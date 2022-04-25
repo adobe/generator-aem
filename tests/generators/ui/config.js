@@ -14,8 +14,8 @@
  limitations under the License.
 */
 
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
 import crypto from 'node:crypto';
 import tempDirectory from 'temp-dir';
 
@@ -25,7 +25,6 @@ import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
 import project from '../../fixtures/helpers.js';
-
 import AEMUIConfigGenerator from '../../../generators/ui/config/index.js';
 import Utils from '../../../lib/utils.js';
 

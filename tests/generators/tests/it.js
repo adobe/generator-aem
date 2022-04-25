@@ -17,6 +17,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { versions } from 'node:process';
+import { execFileSync } from 'node:child_process';
 import tempDirectory from 'temp-dir';
 
 import test from 'ava';
@@ -32,6 +34,10 @@ import Utils from '../../../lib/utils.js';
 const generatorPath = path.join(project.generatorsRoot, 'tests', 'it');
 const cloudTestingMetadata = fs.readFileSync(path.join(project.fixturesRoot, 'files', 'aem-cloud-testing-clients.metadata.xml'), 'utf8');
 const aem65TestingMetadata = fs.readFileSync(path.join(project.fixturesRoot, 'files', 'cq-testing-clients-65.metadata.xml'), 'utf8');
+const nodeVersion = versions.node;
+const npmVersion = execFileSync('npm', ['--version'])
+  .toString()
+  .replaceAll(/\r\n|\n|\r/gm, '');
 
 class Wrapper extends AEMIntegrationTestsGenerator {
   constructor(args, options, features) {
@@ -146,14 +152,22 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - cloud', async (t) 
     .create(path.join(project.generatorsRoot, 'app'))
     .withGenerators([[Wrapper, '@adobe/aem:tests:it']])
     .withOptions({
-      defaults: true,
+      defaults: false,
       examples: true,
       appId: 'test',
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: 'cloud',
       modules: 'tests:it',
+      javaVersion: 8,
+      nodeVersion,
+      npmVersion,
       showBuildOutput: false,
+    })
+    .withPrompts({
+      groupId: 'com.adobe.test',
+      artifactId: 'test',
+      publish: false,
     })
     .inTmpDir((temporary) => {
       temporaryDir = temporary;
@@ -187,7 +201,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - cloud', async (t) 
       result.assertFile(path.join(testsRoot, 'CreatePageIT.java'));
       result.assertFile(path.join(testsRoot, 'GetPageIT.java'));
       result.assertFile(path.join(testsRoot, 'HtmlUnitClient.java'));
-      result.assertFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
+      result.assertNoFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
       result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.it.tests-${properties.version}-jar-with-dependencies.jar`));
     });
 });

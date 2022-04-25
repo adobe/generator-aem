@@ -23,7 +23,6 @@ import Generator from 'yeoman-generator';
 
 import GeneratorCommons from '../../../lib/common.js';
 import AEMModuleFunctions from '../../../lib/module.js';
-import Utils from '../../../lib/utils.js';
 
 import { UIAppsStructureModuleType } from '../apps/structure/index.js';
 import { BundleModuleType } from '../../bundle/index.js';
@@ -118,10 +117,7 @@ class AEMUIConfigGenerator extends Generator {
     }
 
     files.push(...GeneratorCommons.listTemplates(this));
-    return Utils.latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
-      this.props.aem = aemMetadata;
-      GeneratorCommons.write(this, files);
-    });
+    GeneratorCommons.write(this, files);
   }
 }
 
