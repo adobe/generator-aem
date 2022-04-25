@@ -15,19 +15,18 @@
 */
 
 import fs from 'node:fs';
-import path from 'node:path';
 
 import test from 'ava';
 import sinon from 'sinon/pkg/sinon-esm.js';
 
 import got from 'got';
-import project from '../../fixtures/helpers.js';
+import { fixturePath } from '../../fixtures/helpers.js';
 import Utils from '../../../lib/utils.js';
 
 test.serial('AEM 6.5', async (t) => {
   t.plan(5);
 
-  const metadata = fs.readFileSync(path.join(project.fixturesRoot, 'files', 'uber-jar-metadata.xml'));
+  const metadata = fs.readFileSync(fixturePath('files', 'uber-jar-metadata.xml'));
   const fake = sinon.fake.resolves(metadata);
   sinon.replace(got, 'get', fake);
 
@@ -44,7 +43,7 @@ test.serial('AEM 6.5', async (t) => {
 test.serial('AEMaaCS', async (t) => {
   t.plan(5);
 
-  const metadata = fs.readFileSync(path.join(project.fixturesRoot, 'files', 'sdk-api-metadata.xml'));
+  const metadata = fs.readFileSync(fixturePath('files', 'sdk-api-metadata.xml'));
   const fake = sinon.fake.resolves(metadata);
   sinon.replace(got, 'get', fake);
 

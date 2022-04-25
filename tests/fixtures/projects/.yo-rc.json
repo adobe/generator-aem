@@ -21,7 +21,7 @@
       "artifactId": "test.core"
     },
     "ui.frontend": {
-      "moduleType": "ui:frontend",
+      "moduleType": "frontend:general",
       "defaults": true,
       "examples": true,
       "name": "Test Project - UI Frontend",
@@ -29,7 +29,7 @@
       "artifactId": "test.ui.frontend"
     },
     "ui.apps.structure": {
-      "moduleType": "ui:apps:structure",
+      "moduleType": "package:structure",
       "defaults": true,
       "examples": true,
       "name": "Test Project - Repository Structure Package",
@@ -37,7 +37,7 @@
       "artifactId": "test.ui.apps.structure"
     },
     "ui.apps": {
-      "moduleType": "ui:apps",
+      "moduleType": "package:apps",
       "defaults": true,
       "examples": true,
       "name": "Test Project - UI Apps Package",
@@ -45,12 +45,20 @@
       "artifactId": "test.ui.apps"
     },
     "ui.config": {
-      "moduleType": "ui:config",
+      "moduleType": "package:config",
       "defaults": true,
       "examples": true,
       "name": "Test Project - UI Config Package",
       "appId": "test",
       "artifactId": "test.ui.config"
+    },
+    "all": {
+      "moduleType": "package:all",
+      "defaults": true,
+      "examples": true,
+      "name": "Test Project - All Package",
+      "appId": "test",
+      "artifactId": "test.all"
     },
     "it.tests": {
       "moduleType": "tests:it",

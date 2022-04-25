@@ -24,40 +24,14 @@ import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
-import project from '../../fixtures/helpers.js';
-import AEMUIConfigGenerator from '../../../generators/ui/config/index.js';
+import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 import Utils from '../../../lib/utils.js';
 
-const generatorPath = path.join(project.generatorsRoot, 'ui', 'config');
+import AEMBundleGenerator from '../../../generators/bundle/index.js';
+import AEMStructurePackageGenerator from '../../../generators/package/structure/index.js';
+import AEMConfigPackageGenerator from '../../../generators/package/config/index.js';
 
-class Wrapper extends AEMUIConfigGenerator {
-  constructor(args, options, features) {
-    options.resolved = path.join(generatorPath, 'index.js');
-    super(args, options, features);
-  }
-
-  initializing() {
-    return super.initializing();
-  }
-
-  prompting() {
-    return super.prompting();
-  }
-
-  configuring() {
-    return super.configuring();
-  }
-
-  default() {
-    return super.default();
-  }
-
-  writing() {
-    return super.writing();
-  }
-}
-
-test.serial('@adobe/aem:ui:config - via @adobe/generator-aem - v6.5', async (t) => {
+test.serial('@adobe/aem:package:config - via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -71,13 +45,11 @@ test.serial('@adobe/aem:ui:config - via @adobe/generator-aem - v6.5', async (t) 
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
+    .create(generatorPath('app'))
     .withGenerators([
-      /* eslint-disable prettier/prettier */
-      path.join(project.generatorsRoot, 'bundle'),
-      path.join(project.generatorsRoot, 'ui', 'apps', 'structure'),
-      [Wrapper, '@adobe/aem:ui:config']
-      /* eslint-enable prettier/prettier */
+      [AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')],
+      [AEMStructurePackageGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')],
+      [AEMConfigPackageGenerator, '@adobe/aem:package:config', generatorPath('package', 'config', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -86,7 +58,7 @@ test.serial('@adobe/aem:ui:config - via @adobe/generator-aem - v6.5', async (t) 
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: '6.5',
-      modules: 'bundle,ui:apps:structure,ui:config',
+      modules: 'bundle,package:structure,package:config',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -129,7 +101,7 @@ test.serial('@adobe/aem:ui:config - via @adobe/generator-aem - v6.5', async (t) 
     });
 });
 
-test.serial('@adobe/aem:ui:config - via @adobe/generator-aem - cloud', async (t) => {
+test.serial('@adobe/aem:package:config - via @adobe/generator-aem - cloud', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -143,12 +115,10 @@ test.serial('@adobe/aem:ui:config - via @adobe/generator-aem - cloud', async (t)
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
+    .create(generatorPath('app'))
     .withGenerators([
-      /* eslint-disable prettier/prettier */
-      path.join(project.generatorsRoot, 'ui', 'apps', 'structure'),
-      [Wrapper, '@adobe/aem:ui:config']
-      /* eslint-enable prettier/prettier */
+      [AEMStructurePackageGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')],
+      [AEMConfigPackageGenerator, '@adobe/aem:package:config', generatorPath('package', 'config', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -157,7 +127,7 @@ test.serial('@adobe/aem:ui:config - via @adobe/generator-aem - cloud', async (t)
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: 'cloud',
-      modules: 'ui:apps:structure,ui:config',
+      modules: 'package:structure,package:config',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -200,7 +170,7 @@ test.serial('@adobe/aem:ui:config - via @adobe/generator-aem - cloud', async (t)
     });
 });
 
-test('@adobe/aem:ui:config - second package fails', async (t) => {
+test('@adobe/aem:package:config - second package fails', async (t) => {
   t.plan(2);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -208,7 +178,7 @@ test('@adobe/aem:ui:config - second package fails', async (t) => {
 
   const error = await t.throwsAsync(
     helpers
-      .create(Wrapper)
+      .create(generatorPath('package', 'config'))
       .withOptions({
         defaults: true,
         examples: false,
@@ -218,7 +188,7 @@ test('@adobe/aem:ui:config - second package fails', async (t) => {
         showBuildOutput: false,
       })
       .inDir(fullPath, (temporary) => {
-        fs.cpSync(path.join(project.fixturesRoot, 'projects'), temporary, { recursive: true });
+        fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
       })
       .run()
   );

@@ -23,7 +23,7 @@ import tempDirectory from 'temp-dir';
 import test from 'ava';
 import helpers from 'yeoman-test';
 
-import project from '../fixtures/helpers.js';
+import { fixturePath } from '../fixtures/helpers.js';
 import Wrapper from '../fixtures/generators/module/index.js';
 
 const parent = Object.freeze({
@@ -67,7 +67,7 @@ test('ModuleFunctions - initialize - defaults', async (t) => {
     .create(Wrapper)
     .withOptions(options)
     .inTmpDir((temporary) => {
-      fs.copyFileSync(path.join(project.fixturesRoot, 'yo-rc', 'parent-only', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
+      fs.copyFileSync(fixturePath('yo-rc', 'parent-only', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
     })
     .run()
     .then((result) => {
@@ -97,8 +97,8 @@ test('ModuleFunctions - initialize from pom - in directory', async (t) => {
     .create(Wrapper)
     .withOptions({ destinationRoot: temporaryDir })
     .inDir(fullPath, (temporary) => {
-      fs.copyFileSync(path.join(project.fixturesRoot, 'yo-rc', 'parent-only', '.yo-rc.json'), path.join(temporaryDir, '.yo-rc.json'));
-      fs.copyFileSync(path.join(project.fixturesRoot, 'pom', 'full', 'pom.xml'), path.join(temporary, 'pom.xml'));
+      fs.copyFileSync(fixturePath('yo-rc', 'parent-only', '.yo-rc.json'), path.join(temporaryDir, '.yo-rc.json'));
+      fs.copyFileSync(fixturePath('pom', 'full', 'pom.xml'), path.join(temporary, 'pom.xml'));
     })
     .run()
     .then((result) => {
@@ -125,7 +125,7 @@ test('ModuleFunctions - initialize from pom - generateInto', async (t) => {
     .withOptions({ generateInto: subdir, parent: { ...parent } })
     .inTmpDir((temporary) => {
       fs.mkdirSync(path.join(temporary, subdir));
-      fs.copyFileSync(path.join(project.fixturesRoot, 'pom', 'full', 'pom.xml'), path.join(temporary, subdir, 'pom.xml'));
+      fs.copyFileSync(fixturePath('pom', 'full', 'pom.xml'), path.join(temporary, subdir, 'pom.xml'));
     })
     .run()
     .then((result) => {
@@ -146,7 +146,7 @@ test('ModuleFunctions - initialize error - invalid moduleType', async (t) => {
       .create(Wrapper)
       .withOptions({ generateInto: 'core', parent: { ...parent } })
       .inTmpDir((temporary) => {
-        fs.copyFileSync(path.join(project.fixturesRoot, 'yo-rc', 'partial', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
+        fs.copyFileSync(fixturePath('yo-rc', 'partial', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
       })
       .run()
   );
@@ -158,7 +158,7 @@ test('ModuleFunctions - initialize from .yo-rc.json', async (t) => {
     .create(Wrapper)
     .withOptions({ generateInto: 'wrapper', parent: { ...parent } })
     .inTmpDir((temporary) => {
-      fs.copyFileSync(path.join(project.fixturesRoot, 'yo-rc', 'full', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
+      fs.copyFileSync(fixturePath('yo-rc', 'full', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
     })
     .run()
     .then((result) => {
@@ -183,7 +183,7 @@ test('ModuleFunctions - configuring', async (t) => {
     .withOptions({ generateInto: 'prompted' })
     .inTmpDir((temporary) => {
       temporaryDir = temporary;
-      fs.copyFileSync(path.join(project.fixturesRoot, 'yo-rc', 'parent-only', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
+      fs.copyFileSync(fixturePath('yo-rc', 'parent-only', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
     })
     .run()
     .then(() => {

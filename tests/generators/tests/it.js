@@ -27,44 +27,17 @@ import helpers from 'yeoman-test';
 import got from 'got';
 
 import { XMLParser } from 'fast-xml-parser';
-import project from '../../fixtures/helpers.js';
-import AEMIntegrationTestsGenerator from '../../../generators/tests/it/index.js';
+import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 import Utils from '../../../lib/utils.js';
 
-const generatorPath = path.join(project.generatorsRoot, 'tests', 'it');
-const cloudTestingMetadata = fs.readFileSync(path.join(project.fixturesRoot, 'files', 'aem-cloud-testing-clients.metadata.xml'), 'utf8');
-const aem65TestingMetadata = fs.readFileSync(path.join(project.fixturesRoot, 'files', 'cq-testing-clients-65.metadata.xml'), 'utf8');
+import AEMIntegrationTestsGenerator from '../../../generators/tests/it/index.js';
+
+const cloudTestingMetadata = fs.readFileSync(fixturePath('files', 'aem-cloud-testing-clients.metadata.xml'), 'utf8');
+const aem65TestingMetadata = fs.readFileSync(fixturePath('files', 'cq-testing-clients-65.metadata.xml'), 'utf8');
 const nodeVersion = versions.node;
 const npmVersion = execFileSync('npm', ['--version'])
   .toString()
   .replaceAll(/\r\n|\n|\r/gm, '');
-
-class Wrapper extends AEMIntegrationTestsGenerator {
-  constructor(args, options, features) {
-    options.resolved = path.join(generatorPath, 'index.js');
-    super(args, options, features);
-  }
-
-  initializing() {
-    return super.initializing();
-  }
-
-  prompting() {
-    return super.prompting();
-  }
-
-  configuring() {
-    return super.configuring();
-  }
-
-  default() {
-    return super.default();
-  }
-
-  writing() {
-    return super.writing();
-  }
-}
 
 test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
@@ -83,8 +56,8 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - v6.5', async (t) =
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
-    .withGenerators([[Wrapper, '@adobe/aem:tests:it']])
+    .create(generatorPath('app'))
+    .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests:it', generatorPath('tests', 'it', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -149,8 +122,8 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - cloud', async (t) 
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
-    .withGenerators([[Wrapper, '@adobe/aem:tests:it']])
+    .create(generatorPath('app'))
+    .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests:it', generatorPath('tests', 'it', 'index.js')]])
     .withOptions({
       defaults: false,
       examples: true,
@@ -215,8 +188,8 @@ test.serial('@adobe/aem:tests:it - metadata retrieve fails', async (t) => {
   let temporaryDir;
   await t.throwsAsync(
     helpers
-      .create(path.join(project.generatorsRoot, 'app'))
-      .withGenerators([[Wrapper, '@adobe/aem:tests:it']])
+      .create(generatorPath('app'))
+      .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests:it', generatorPath('tests', 'it', 'index.js')]])
       .withOptions({
         defaults: true,
         examples: true,
@@ -244,7 +217,7 @@ test('@adobe/aem:tests:it - second test module fails', async (t) => {
 
   const error = await t.throwsAsync(
     helpers
-      .create(Wrapper)
+      .create(generatorPath('tests', 'it'))
       .withOptions({
         defaults: true,
         examples: false,
@@ -254,7 +227,7 @@ test('@adobe/aem:tests:it - second test module fails', async (t) => {
         showBuildOutput: false,
       })
       .inDir(fullPath, (temporary) => {
-        fs.cpSync(path.join(project.fixturesRoot, 'projects'), temporary, { recursive: true });
+        fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
       })
       .run()
   );

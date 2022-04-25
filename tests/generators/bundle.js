@@ -24,40 +24,11 @@ import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
-import project from '../fixtures/helpers.js';
-import AEMBundleGenerator from '../../generators/bundle/index.js';
+import { generatorPath, fixturePath } from '../fixtures/helpers.js';
 import Utils from '../../lib/utils.js';
 
-import { AEMAppWrapper } from '../fixtures/wrappers/index.js';
-
-const generatorPath = path.join(project.generatorsRoot, 'bundle');
-
-class Wrapper extends AEMBundleGenerator {
-  constructor(args, options, features) {
-    options.resolved = path.join(generatorPath, 'index.js');
-    super(args, options, features);
-  }
-
-  initializing() {
-    return super.initializing();
-  }
-
-  prompting() {
-    return super.prompting();
-  }
-
-  configuring() {
-    return super.configuring();
-  }
-
-  default() {
-    return super.default();
-  }
-
-  writing() {
-    return super.writing();
-  }
-}
+import AEMBundleGenerator from '../../generators/bundle/index.js';
+import AEMGenerator from '../../generators/app/index.js';
 
 test.serial('@adobe/aem:bundle - via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
@@ -73,8 +44,8 @@ test.serial('@adobe/aem:bundle - via @adobe/generator-aem - v6.5', async (t) => 
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
-    .withGenerators([[Wrapper, '@adobe/aem:bundle']])
+    .create(generatorPath('app'))
+    .withGenerators([[AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -148,8 +119,8 @@ test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
   const fullPath = path.join(temporaryDir, 'test');
 
   await helpers
-    .create(Wrapper)
-    .withGenerators([[AEMAppWrapper, '@adobe/aem:app']])
+    .create(generatorPath('bundle'))
+    .withGenerators([[AEMGenerator, '@adobe/aem:app', generatorPath('app', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: false,
@@ -160,7 +131,7 @@ test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
       showBuildOutput: false,
     })
     .inDir(fullPath, (temporary) => {
-      fs.cpSync(path.join(project.fixturesRoot, 'projects'), temporary, { recursive: true });
+      fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
     })
     .run()
     .then((result) => {

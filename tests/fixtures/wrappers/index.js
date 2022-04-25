@@ -14,16 +14,12 @@
  limitations under the License.
 */
 
-import path from 'node:path';
-
 import AEMGenerator from '../../../generators/app/index.js';
-import project from '../helpers.js';
+import { generatorPath } from '../helpers.js';
 
-const generatorPath = path.join(project.generatorsRoot, 'app');
-
-export class AEMAppWrapper extends AEMGenerator {
+export class AEMAppNoWrite extends AEMGenerator {
   constructor(args, options, features) {
-    options.resolved = path.join(generatorPath, 'index.js');
+    options.resolved = generatorPath('app', 'index.js');
     super(args, options, features);
   }
 
@@ -42,36 +38,9 @@ export class AEMAppWrapper extends AEMGenerator {
   default() {
     super.default();
   }
-
-  writing() {
-    return super.writing();
-  }
-
-  install() {
-    return super.install();
-  }
-}
-
-export class AEMAppNoWrite extends AEMAppWrapper {
-  initializing() {
-    super.initializing();
-  }
-
-  prompting() {
-    return super.prompting();
-  }
-
-  configuring() {
-    super.configuring();
-  }
-
-  default() {
-    super.default();
-  }
 }
 
 const wrappers = {
-  AEMAppWrapper,
   AEMAppNoWrite,
 };
 

@@ -16,22 +16,22 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import tempDirectory from 'temp-dir';
 
 import test from 'ava';
 import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
-import project from '../../fixtures/helpers.js';
+import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 import Utils from '../../../lib/utils.js';
 
 import AEMBundleGenerator from '../../../generators/bundle/index.js';
-import AEMUIAppsGenerator from '../../../generators/ui/apps/index.js';
-import AEMUIConfigGenerator from '../../../generators/ui/config/index.js';
-import AEMUIAppsStructureGenerator from '../../../generators/ui/apps/structure/index.js';
+import AEMUIAppsGenerator from '../../../generators/package/apps/index.js';
+import AEMUIConfigGenerator from '../../../generators/package/config/index.js';
+import AEMUIAppsStructureGenerator from '../../../generators/package/structure/index.js';
 import AEMAllPackageGenerator from '../../../generators/package/all/index.js';
-
-const generatorPath = path.join(project.generatorsRoot, 'package', 'all');
 
 test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - no modules', async (t) => {
   t.plan(5);
@@ -48,8 +48,8 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - no modul
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
-    .withGenerators([[AEMAllPackageGenerator, '@adobe/aem:package:all', path.join(generatorPath, 'index.js')]])
+    .create(generatorPath('app'))
+    .withGenerators([[AEMAllPackageGenerator, '@adobe/aem:package:all', generatorPath('package', 'all', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -109,10 +109,10 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - bundle',
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
+    .create(generatorPath('app'))
     .withGenerators([
-      [AEMBundleGenerator, '@adobe/aem:bundle', path.join(project.generatorsRoot, 'bundle', 'index.js')],
-      [AEMAllPackageGenerator, '@adobe/aem:package:all', path.join(generatorPath, 'index.js')],
+      [AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')],
+      [AEMAllPackageGenerator, '@adobe/aem:package:all', generatorPath('package', 'all', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -173,12 +173,12 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - cloud - package
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
+    .create(generatorPath('app'))
     .withGenerators([
-      [AEMUIAppsGenerator, '@adobe/aem:ui:apps', path.join(project.generatorsRoot, 'ui', 'apps', 'index.js')],
-      [AEMUIConfigGenerator, '@adobe/aem:ui:config', path.join(project.generatorsRoot, 'ui', 'config', 'index.js')],
-      [AEMUIAppsStructureGenerator, '@adobe/aem:ui:apps:structure', path.join(project.generatorsRoot, 'ui', 'apps', 'structure', 'index.js')],
-      [AEMAllPackageGenerator, '@adobe/aem:package:all', path.join(generatorPath, 'index.js')],
+      [AEMUIAppsStructureGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')],
+      [AEMUIAppsGenerator, '@adobe/aem:package:apps', generatorPath('package', 'apps', 'index.js')],
+      [AEMUIConfigGenerator, '@adobe/aem:package:config', generatorPath('package', 'config', 'index.js')],
+      [AEMAllPackageGenerator, '@adobe/aem:package:all', generatorPath('package', 'all', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -187,7 +187,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - cloud - package
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: 6.5,
-      modules: 'ui:apps,ui:config,ui:apps:structure,package:all',
+      modules: 'package:apps,package:config,package:structure,package:all',
       showBuildOutput: false,
     })
     .inTmpDir((dir) => {
@@ -223,4 +223,30 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - cloud - package
 
       result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.all-${properties.version}.zip`));
     });
+});
+
+test('@adobe/aem:package:all - second module fails', async (t) => {
+  t.plan(2);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'test');
+
+  const error = await t.throwsAsync(
+    helpers
+      .create(generatorPath('package', 'all'))
+      .withOptions({
+        defaults: true,
+        examples: false,
+        generateInto: 'ui.all.other',
+        appId: 'other',
+        name: 'Second All',
+        showBuildOutput: false,
+      })
+      .inDir(fullPath, (temporary) => {
+        fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
+      })
+      .run()
+  );
+
+  t.regex(error.message, /Refusing to create a second All Package module\./);
 });

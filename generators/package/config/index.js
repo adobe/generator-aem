@@ -24,10 +24,10 @@ import Generator from 'yeoman-generator';
 import GeneratorCommons from '../../../lib/common.js';
 import AEMModuleFunctions from '../../../lib/module.js';
 
-import { UIAppsStructureModuleType } from '../apps/structure/index.js';
 import { BundleModuleType } from '../../bundle/index.js';
+import { StructurePackageModuleType } from '../structure/index.js';
 
-const UIConfigModuleType = 'ui:config';
+const ConfigPackageModuleType = 'package:config';
 
 /* eslint-disable prettier/prettier */
 const tplFiles = [
@@ -35,11 +35,11 @@ const tplFiles = [
 ];
 /* eslint-enable prettier/prettier */
 
-class AEMUIConfigGenerator extends Generator {
+class AEMConfigPackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
-    this.moduleType = UIConfigModuleType;
+    this.moduleType = ConfigPackageModuleType;
 
     const options_ = {};
     _.defaults(options_, GeneratorCommons.options, {
@@ -65,7 +65,7 @@ class AEMUIConfigGenerator extends Generator {
     if (this.runParent) {
       const config = this.config.getAll();
       _.each(config, (value, key) => {
-        if (value.moduleType && value.moduleType === UIConfigModuleType && key !== this.relativePath) {
+        if (value.moduleType && value.moduleType === ConfigPackageModuleType && key !== this.relativePath) {
           throw new Error('Refusing to create a second UI Config module.');
         }
       });
@@ -87,7 +87,7 @@ class AEMUIConfigGenerator extends Generator {
     _.each(config, (value, key) => {
       if (value.moduleType) {
         switch (value.moduleType) {
-          case UIAppsStructureModuleType: {
+          case StructurePackageModuleType: {
             this.props.structure = { ref: key, artifactId: value.artifactId };
             break;
           }
@@ -121,10 +121,10 @@ class AEMUIConfigGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMUIConfigGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
+_.extendWith(AEMConfigPackageGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
   return _.isUndefined(objectValue) ? srcValue : objectValue;
 });
 
-export { AEMUIConfigGenerator, UIConfigModuleType };
+export { AEMConfigPackageGenerator, ConfigPackageModuleType };
 
-export default AEMUIConfigGenerator;
+export default AEMConfigPackageGenerator;

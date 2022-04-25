@@ -24,41 +24,16 @@ import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
-import project from '../../fixtures/helpers.js';
-import AEMUIAppsGenerator from '../../../generators/ui/apps/index.js';
+import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 import Utils from '../../../lib/utils.js';
-import { AEMAppWrapper } from '../../fixtures/wrappers/index.js';
 
-const generatorPath = path.join(project.generatorsRoot, 'ui', 'apps');
+import AEMGenerator from '../../../generators/app/index.js';
+import AEMBundleGenerator from '../../../generators/bundle/index.js';
+import AEMGeneralFEGenerator from '../../../generators/frontend/general/index.js';
+import AEMStructurePackageGenerator from '../../../generators/package/structure/index.js';
+import AEMAppsPackageGenerator from '../../../generators/package/apps/index.js';
 
-class Wrapper extends AEMUIAppsGenerator {
-  constructor(args, options, features) {
-    options.resolved = path.join(generatorPath, 'index.js');
-    super(args, options, features);
-  }
-
-  initializing() {
-    return super.initializing();
-  }
-
-  prompting() {
-    return super.prompting();
-  }
-
-  configuring() {
-    return super.configuring();
-  }
-
-  default() {
-    return super.default();
-  }
-
-  writing() {
-    return super.writing();
-  }
-}
-
-test.serial('@adobe/aem:ui:apps - via @adobe/generator-aem - v6.5', async (t) => {
+test.serial('@adobe/aem:package:apps - via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -73,12 +48,12 @@ test.serial('@adobe/aem:ui:apps - via @adobe/generator-aem - v6.5', async (t) =>
   let temporaryDir;
 
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
+    .create(generatorPath('app'))
     .withGenerators([
-      path.join(project.generatorsRoot, 'bundle'),
-      path.join(project.generatorsRoot, 'ui', 'frontend'),
-      path.join(project.generatorsRoot, 'ui', 'apps', 'structure'),
-      [Wrapper, '@adobe/aem:ui:apps'],
+      [AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')],
+      [AEMGeneralFEGenerator, '@adobe/aem:frontend:general', generatorPath('frontend', 'general', 'index.js')],
+      [AEMStructurePackageGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')],
+      [AEMAppsPackageGenerator, '@adobe/aem:package:apps', generatorPath('package', 'apps', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -87,7 +62,7 @@ test.serial('@adobe/aem:ui:apps - via @adobe/generator-aem - v6.5', async (t) =>
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: '6.5',
-      modules: 'bundle,ui:frontend,ui:apps:structure,ui:apps',
+      modules: 'bundle,frontend:general,package:structure,package:apps',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -135,7 +110,7 @@ test.serial('@adobe/aem:ui:apps - via @adobe/generator-aem - v6.5', async (t) =>
     });
 });
 
-test.serial('@adobe/aem:ui:apps - second package - cloud', async (t) => {
+test.serial('@adobe/aem:package:apps - second package - cloud', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -151,8 +126,8 @@ test.serial('@adobe/aem:ui:apps - second package - cloud', async (t) => {
   const fullPath = path.join(temporaryDir, 'test');
 
   await helpers
-    .create(Wrapper)
-    .withGenerators([[AEMAppWrapper, '@adobe/aem:app']])
+    .create(generatorPath('package', 'apps'))
+    .withGenerators([[AEMGenerator, '@adobe/aem:app', generatorPath('app', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: false,
@@ -162,7 +137,7 @@ test.serial('@adobe/aem:ui:apps - second package - cloud', async (t) => {
       showBuildOutput: false,
     })
     .inDir(fullPath, (temporary) => {
-      fs.cpSync(path.join(project.fixturesRoot, 'projects'), temporary, { recursive: true });
+      fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
     })
     .run()
     .then((result) => {

@@ -20,13 +20,19 @@ import path from 'node:path';
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 const projectRoot = path.join(dirname, '..', '..');
-const generatorsRoot = path.join(projectRoot, 'generators');
-const fixturesRoot = path.join(projectRoot, 'tests', 'fixtures');
 
-export const helpers = {
+export function generatorPath(...dest) {
+  return path.join(projectRoot, 'generators', ...dest);
+}
+
+export function fixturePath(...dest) {
+  return path.join(projectRoot, 'tests', 'fixtures', ...dest);
+}
+
+const helpers = {
   projectRoot,
-  generatorsRoot,
-  fixturesRoot,
+  generatorPath,
+  fixturePath,
 };
 
 export default helpers;

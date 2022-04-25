@@ -24,41 +24,13 @@ import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
-import project from '../../fixtures/helpers.js';
-import AEMUIFrontendGenerator from '../../../generators/ui/frontend/index.js';
-import { AEMAppWrapper } from '../../fixtures/wrappers/index.js';
+import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 import Utils from '../../../lib/utils.js';
 
-const generatorPath = path.join(project.generatorsRoot, 'ui', 'frontend');
+import AEMGenerator from '../../../generators/app/index.js';
+import AEMGeneralFEGenerator from '../../../generators/frontend/general/index.js';
 
-class Wrapper extends AEMUIFrontendGenerator {
-  constructor(args, options, features) {
-    options.resolved = path.join(generatorPath, 'index.js');
-    super(args, options, features);
-  }
-
-  initializing() {
-    return super.initializing();
-  }
-
-  prompting() {
-    return super.prompting();
-  }
-
-  configuring() {
-    return super.configuring();
-  }
-
-  default() {
-    return super.default();
-  }
-
-  writing() {
-    return super.writing();
-  }
-}
-
-test.serial('@adobe/aem:ui:frontend - via @adobe/generator-aem', async (t) => {
+test.serial('@adobe/aem:frontend:general - via @adobe/generator-aem', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -73,8 +45,8 @@ test.serial('@adobe/aem:ui:frontend - via @adobe/generator-aem', async (t) => {
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
-    .withGenerators([[Wrapper, '@adobe/aem:ui:frontend']])
+    .create(generatorPath('app'))
+    .withGenerators([[AEMGeneralFEGenerator, '@adobe/aem:frontend:general', generatorPath('frontend', 'general', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -82,7 +54,7 @@ test.serial('@adobe/aem:ui:frontend - via @adobe/generator-aem', async (t) => {
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: '6.5',
-      modules: 'ui:frontend',
+      modules: 'frontend:general',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -134,7 +106,7 @@ test.serial('@adobe/aem:ui:frontend - via @adobe/generator-aem', async (t) => {
     });
 });
 
-test.serial('@adobe/aem:ui:frontend - second module', async (t) => {
+test.serial('@adobe/aem:frontend:general - second module', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -150,8 +122,8 @@ test.serial('@adobe/aem:ui:frontend - second module', async (t) => {
   const fullPath = path.join(temporaryDir, 'test');
 
   await helpers
-    .create(Wrapper)
-    .withGenerators([[AEMAppWrapper, '@adobe/aem:app']])
+    .create(generatorPath('frontend', 'general'))
+    .withGenerators([[AEMGenerator, '@adobe/aem:app', generatorPath('app', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: false,
@@ -161,7 +133,7 @@ test.serial('@adobe/aem:ui:frontend - second module', async (t) => {
       showBuildOutput: false,
     })
     .inDir(fullPath, (temporary) => {
-      fs.cpSync(path.join(project.fixturesRoot, 'projects'), path.join(temporary), { recursive: true });
+      fs.cpSync(fixturePath('projects'), path.join(temporary), { recursive: true });
     })
     .run()
     .then((result) => {

@@ -22,10 +22,10 @@ import AEMModuleFunctions from '../../../lib/module.js';
 import Utils from '../../../lib/utils.js';
 
 import { BundleModuleType } from '../../bundle/index.js';
-import { GeneralFrontEndModuleType } from '../frontend/index.js';
-import { UIAppsStructureModuleType } from './structure/index.js';
+import { GeneralFEModuleType } from '../../frontend/general/index.js';
+import { StructurePackageModuleType } from '../structure/index.js';
 
-const UIAppsModuleType = 'ui:apps';
+const AppsPackageModuleType = 'package:apps';
 const uniqueProperties = ['bundleRef', 'frontendRef'];
 
 /* eslint-disable prettier/prettier */
@@ -34,11 +34,11 @@ const tplFiles = [
 ];
 /* eslint-enable prettier/prettier */
 
-class AEMUIAppsGenerator extends Generator {
+class AEMAppsPackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
-    this.moduleType = UIAppsModuleType;
+    this.moduleType = AppsPackageModuleType;
 
     const options_ = {};
     _.defaults(options_, GeneratorCommons.options, {
@@ -78,7 +78,7 @@ class AEMUIAppsGenerator extends Generator {
             break;
           }
 
-          case GeneralFrontEndModuleType: {
+          case GeneralFEModuleType: {
             feModules.push(key);
             break;
           }
@@ -138,7 +138,7 @@ class AEMUIAppsGenerator extends Generator {
           this.props.bundle = { ref: key, artifactId: value.artifactId };
         } else if (key === this.props.frontendRef) {
           this.props.frontend = { ref: key, artifactId: value.artifactId };
-        } else if (value.moduleType && value.moduleType === UIAppsStructureModuleType) {
+        } else if (value.moduleType && value.moduleType === StructurePackageModuleType) {
           this.props.structure = { ref: key, artifactId: value.artifactId };
         }
       });
@@ -148,7 +148,7 @@ class AEMUIAppsGenerator extends Generator {
   }
 }
 
-_.extend(AEMUIAppsGenerator.prototype, AEMModuleFunctions);
+_.extend(AEMAppsPackageGenerator.prototype, AEMModuleFunctions);
 
-export { AEMUIAppsGenerator, UIAppsModuleType };
-export default AEMUIAppsGenerator;
+export { AEMAppsPackageGenerator, AppsPackageModuleType };
+export default AEMAppsPackageGenerator;

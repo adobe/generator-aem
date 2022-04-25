@@ -14,29 +14,39 @@
  limitations under the License.
 */
 
+import path from 'node:path';
 import _ from 'lodash';
+import { globbySync } from 'globby';
 
 import Generator from 'yeoman-generator';
 
-import GeneratorCommons from '../../../../lib/common.js';
-import AEMModuleFunctions from '../../../../lib/module.js';
+import GeneratorCommons from '../../../lib/common.js';
+import AEMModuleFunctions from '../../../lib/module.js';
 
-const UIAppsStructureModuleType = 'ui:apps:structure';
+const GeneralFEModuleType = 'frontend:general';
 
 /* eslint-disable prettier/prettier */
 const tplFiles = [
   'pom.xml',
   'README.md',
+  '.babelrc',
+  '.eslintrc.json',
+  'tsconfig.json',
+  'webpack.common.js',
+  'webpack.dev.js',
+  'webpack.prod.js',
+  'clientlib.config.cjs',
 ];
 /* eslint-enable prettier/prettier */
 
-class AEMUIAppsStructureGenerator extends Generator {
+class AEMGeneralFEGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
-    this.moduleType = UIAppsStructureModuleType;
+    this.moduleType = GeneralFEModuleType;
 
     const options_ = {};
     _.defaults(options_, GeneratorCommons.options);
+
     _.forOwn(options_, (v, k) => {
       this.option(k, v);
     });
@@ -50,35 +60,42 @@ class AEMUIAppsStructureGenerator extends Generator {
     });
   }
 
-  default() {
-    if (this.runParent) {
-      const config = this.config.getAll();
-      _.each(config, (value, key) => {
-        if (value.moduleType && value.moduleType === UIAppsStructureModuleType && key !== this.relativePath) {
-          throw new Error('Refusing to create a second Repository Structure module.');
-        }
-      });
-
-      AEMModuleFunctions.default.bind(this).call();
-    }
-  }
-
   writing() {
     const files = [];
+
     _.each(tplFiles, (f) => {
       files.push({
         src: this.templatePath(f),
         dest: this.destinationPath(this.relativePath, f),
       });
     });
+
+    const patterns = [this.templatePath('src', '**/*'), this.templatePath('src', '**/.*')];
+    const paths = globbySync(patterns, { onlyFiles: true });
+    for (const idx in paths) {
+      if (Object.prototype.hasOwnProperty.call(paths, idx)) {
+        const file = paths[idx];
+        files.push({
+          src: file,
+          dest: this.destinationPath(this.relativePath, path.relative(this.templatePath(), file)),
+        });
+      }
+    }
+
+    const pkg = _.defaults(
+      {
+        name: this.props.artifactId,
+        version: this.props.parent.version,
+      },
+      this.fs.readJSON(this.templatePath('package.json'), {})
+    );
+    this.writeDestinationJSON(path.join(this.relativePath, 'package.json'), pkg);
     GeneratorCommons.write(this, files);
   }
 }
 
-_.extendWith(AEMUIAppsStructureGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
-  return _.isUndefined(objectValue) ? srcValue : objectValue;
-});
+_.extend(AEMGeneralFEGenerator.prototype, AEMModuleFunctions);
 
-export { AEMUIAppsStructureGenerator, UIAppsStructureModuleType };
+export { AEMGeneralFEGenerator, GeneralFEModuleType };
 
-export default AEMUIAppsStructureGenerator;
+export default AEMGeneralFEGenerator;

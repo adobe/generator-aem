@@ -38,21 +38,21 @@ const ModuleOptions = Object.freeze({
       artifactId: `${parentProps.artifactId}.core`,
     };
   },
-  '@adobe/aem:ui:frontend'(parentProps) {
+  '@adobe/aem:frontend:general'(parentProps) {
     return {
       generateInto: 'ui.frontend',
       name: `${parentProps.name} - UI Frontend`,
       artifactId: `${parentProps.artifactId}.ui.frontend`,
     };
   },
-  '@adobe/aem:ui:apps:structure'(parentProps) {
+  '@adobe/aem:package:structure'(parentProps) {
     return {
       generateInto: 'ui.apps.structure',
       name: `${parentProps.name} - Repository Structure Package`,
       artifactId: `${parentProps.artifactId}.ui.apps.structure`,
     };
   },
-  '@adobe/aem:ui:apps'(parentProps) {
+  '@adobe/aem:package:apps'(parentProps) {
     return {
       generateInto: 'ui.apps',
       name: `${parentProps.name} - UI Apps Package`,
@@ -61,7 +61,7 @@ const ModuleOptions = Object.freeze({
       frontendRef: `ui.frontend`,
     };
   },
-  '@adobe/aem:ui:config'(parentProps) {
+  '@adobe/aem:package:config'(parentProps) {
     return {
       generateInto: 'ui.config',
       name: `${parentProps.name} - UI Config Package`,

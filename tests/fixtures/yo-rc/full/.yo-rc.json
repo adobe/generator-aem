@@ -23,7 +23,7 @@
       "name": "Local Yo",
       "appId": "localyo",
       "artifactId": "localyo",
-      "moduleType": "ui:apps"
+      "moduleType": "package:apps"
     },
     "wrapper": {
       "examples": true,

@@ -27,14 +27,13 @@ import test from 'ava';
 import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
-import project from '../fixtures/helpers.js';
+import { generatorPath, fixturePath } from '../fixtures/helpers.js';
 import TestGenerator from '../fixtures/generators/simple/index.js';
 
 import Utils from '../../lib/utils.js';
 
 import { AEMAppNoWrite } from '../fixtures/wrappers/index.js';
 
-const generatorPath = path.join(project.generatorsRoot, 'app');
 const nodeVersion = versions.node;
 const npmVersion = execFileSync('npm', ['--version'])
   .toString()
@@ -114,7 +113,7 @@ test('@adobe/aem - initialize from pom', async (t) => {
     .create(AEMAppNoWrite)
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
-      fs.copyFileSync(path.join(project.projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(temporary, 'pom.xml'));
+      fs.copyFileSync(fixturePath('pom', 'full', 'pom.xml'), path.join(temporary, 'pom.xml'));
     })
     .run()
     .then((result) => {
@@ -143,7 +142,7 @@ test('@adobe/aem - initialize from pom - generateInto', async (t) => {
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
       fs.mkdirSync(path.join(temporary, subdir));
-      fs.copyFileSync(path.join(project.projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(temporary, subdir, 'pom.xml'));
+      fs.copyFileSync(fixturePath('pom', 'full', 'pom.xml'), path.join(temporary, subdir, 'pom.xml'));
     })
     .run()
     .then((result) => {
@@ -171,7 +170,7 @@ test('@adobe/aem - initialize from .yo-rc.json', async (t) => {
     .withPrompts(promptDefaults)
     .inTmpDir((temporary) => {
       fs.mkdirSync(path.join(temporary, 'prompted'));
-      fs.copyFileSync(path.join(project.projectRoot, 'tests', 'fixtures', 'yo-rc', 'full', '.yo-rc.json'), path.join(temporary, 'prompted', '.yo-rc.json'));
+      fs.copyFileSync(fixturePath('yo-rc', 'full', '.yo-rc.json'), path.join(temporary, 'prompted', '.yo-rc.json'));
     })
     .run()
     .then((result) => {
@@ -199,8 +198,8 @@ test('@adobe/aem - initialize merge', async (t) => {
     .withOptions({ defaults: true })
     .withPrompts({ appId: 'prompted' })
     .inTmpDir((temporary) => {
-      fs.copyFileSync(path.join(project.projectRoot, 'tests', 'fixtures', 'pom', 'partial', 'pom.xml'), path.join(temporary, 'pom.xml'));
-      fs.copyFileSync(path.join(project.projectRoot, 'tests', 'fixtures', 'yo-rc', 'partial', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
+      fs.copyFileSync(fixturePath('pom', 'partial', 'pom.xml'), path.join(temporary, 'pom.xml'));
+      fs.copyFileSync(fixturePath('yo-rc', 'partial', '.yo-rc.json'), path.join(temporary, '.yo-rc.json'));
     })
     .run()
     .then((result) => {
@@ -365,7 +364,7 @@ test('@adobe/aem - configuring - fails on existing different pom', async (t) => 
       .withPrompts(promptDefaults)
       .inTmpDir((temporary) => {
         fs.mkdirSync(path.join(temporary, 'prompted'));
-        fs.copyFileSync(path.join(project.projectRoot, 'tests', 'fixtures', 'pom', 'full', 'pom.xml'), path.join(temporary, 'prompted', 'pom.xml'));
+        fs.copyFileSync(fixturePath('pom', 'full', 'pom.xml'), path.join(temporary, 'prompted', 'pom.xml'));
       })
       .run()
   );
@@ -405,7 +404,7 @@ test.serial('@adobe/aem - writing/installing - options - cloud', async () => {
   sinon.replace(Utils, 'latestApi', stub);
 
   await helpers
-    .create(generatorPath)
+    .create(generatorPath('app'))
     .withOptions({
       defaults: true,
       examples: false,
@@ -449,7 +448,7 @@ test.serial('@adobe/aem - writing/installing - prompts - v6.5', async () => {
   sinon.replace(Utils, 'latestApi', stub);
 
   await helpers
-    .create(generatorPath)
+    .create(generatorPath('app'))
     .withOptions({ showBuildOutput: false })
     .withPrompts({
       examples: false,

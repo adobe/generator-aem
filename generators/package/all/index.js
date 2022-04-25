@@ -21,18 +21,18 @@ import AEMModuleFunctions from '../../../lib/module.js';
 import GeneratorCommons from '../../../lib/common.js';
 
 import { BundleModuleType } from '../../bundle/index.js';
-import { UIAppsModuleType } from '../../ui/apps/index.js';
-import { UIAppsStructureModuleType } from '../../ui/apps/structure/index.js';
-import { UIConfigModuleType } from '../../ui/config/index.js';
+import { StructurePackageModuleType } from '../structure/index.js';
+import { ConfigPackageModuleType } from '../config/index.js';
+import { AppsPackageModuleType } from '../apps/index.js';
 
 const AllPackageModuleType = 'package:all';
 /* eslint-disable prettier/prettier */
 
 const packagedModules = new Set([
   BundleModuleType,
-  UIAppsModuleType,
-  UIAppsStructureModuleType,
-  UIConfigModuleType
+  StructurePackageModuleType,
+  ConfigPackageModuleType,
+  AppsPackageModuleType,
 ]);
 
 const tplFiles = [
@@ -44,6 +44,19 @@ class AEMAllPackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
     this.moduleType = AllPackageModuleType;
+  }
+
+  default() {
+    if (this.runParent) {
+      const config = this.config.getAll();
+      _.each(config, (value, key) => {
+        if (value.moduleType && value.moduleType === AllPackageModuleType && key !== this.relativePath) {
+          throw new Error('Refusing to create a second All Package module.');
+        }
+      });
+
+      AEMModuleFunctions.default.bind(this).call();
+    }
   }
 
   writing() {

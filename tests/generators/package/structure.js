@@ -24,40 +24,12 @@ import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
-import project from '../../../fixtures/helpers.js';
-import AEMUIAppsStructureGenerator from '../../../../generators/ui/apps/structure/index.js';
-import Utils from '../../../../lib/utils.js';
+import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
+import Utils from '../../../lib/utils.js';
 
-const generatorPath = path.join(project.generatorsRoot, 'ui', 'apps', 'structure');
+import AEMStructurePackageGenerator from '../../../generators/package/structure/index.js';
 
-class Wrapper extends AEMUIAppsStructureGenerator {
-  constructor(args, options, features) {
-    options.resolved = path.join(generatorPath, 'index.js');
-    super(args, options, features);
-  }
-
-  initializing() {
-    return super.initializing();
-  }
-
-  prompting() {
-    return super.prompting();
-  }
-
-  configuring() {
-    return super.configuring();
-  }
-
-  default() {
-    return super.default();
-  }
-
-  writing() {
-    return super.writing();
-  }
-}
-
-test.serial('@adobe/aem:ui:apps:structure - via @adobe/generator-aem', async (t) => {
+test.serial('@adobe/aem:package:structure - via @adobe/generator-aem', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -72,8 +44,8 @@ test.serial('@adobe/aem:ui:apps:structure - via @adobe/generator-aem', async (t)
 
   let temporaryDir;
   await helpers
-    .create(path.join(project.generatorsRoot, 'app'))
-    .withGenerators([[Wrapper, '@adobe/aem:ui:apps:structure']])
+    .create(generatorPath('app'))
+    .withGenerators([[AEMStructurePackageGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -81,7 +53,7 @@ test.serial('@adobe/aem:ui:apps:structure - via @adobe/generator-aem', async (t)
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: '6.5',
-      modules: 'ui:apps:structure',
+      modules: 'package:structure',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -117,7 +89,7 @@ test.serial('@adobe/aem:ui:apps:structure - via @adobe/generator-aem', async (t)
     });
 });
 
-test('@adobe/aem:ui:apps:structure - second package fails', async (t) => {
+test('@adobe/aem:package:structure - second package fails', async (t) => {
   t.plan(2);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -125,7 +97,7 @@ test('@adobe/aem:ui:apps:structure - second package fails', async (t) => {
 
   const error = await t.throwsAsync(
     helpers
-      .create(Wrapper)
+      .create(generatorPath('package', 'structure'))
       .withOptions({
         defaults: true,
         examples: false,
@@ -135,7 +107,7 @@ test('@adobe/aem:ui:apps:structure - second package fails', async (t) => {
         showBuildOutput: false,
       })
       .inDir(fullPath, (temporary) => {
-        fs.cpSync(path.join(project.fixturesRoot, 'projects'), temporary, { recursive: true });
+        fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
       })
       .run()
   );
