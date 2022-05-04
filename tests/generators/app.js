@@ -30,9 +30,8 @@ import helpers from 'yeoman-test';
 import { generatorPath, fixturePath } from '../fixtures/helpers.js';
 import TestGenerator from '../fixtures/generators/simple/index.js';
 
-import Utils from '../../lib/utils.js';
-
 import { AEMAppNoWrite } from '../fixtures/wrappers/index.js';
+import AEMGenerator from '../../generators/app/index.js';
 
 const nodeVersion = versions.node;
 const npmVersion = execFileSync('npm', ['--version'])
@@ -244,6 +243,7 @@ test('@adobe/aem - compose with module - base options', async (t) => {
     .then(() => {
       const expected = {
         added: 'Added',
+        moduleType: 'test:simple',
         parent: {
           defaults: true,
           examples: false,
@@ -280,6 +280,7 @@ test('@adobe/aem - compose with module - shared options', async (t) => {
     .then(() => {
       const expected = {
         added: 'Added',
+        moduleType: 'test:simple',
         parent: {
           defaults: true,
           examples: false,
@@ -401,7 +402,7 @@ test.serial('@adobe/aem - writing/installing - options - cloud', async () => {
   };
 
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
 
   await helpers
     .create(generatorPath('app'))
@@ -445,7 +446,7 @@ test.serial('@adobe/aem - writing/installing - prompts - v6.5', async () => {
   };
 
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
 
   await helpers
     .create(generatorPath('app'))

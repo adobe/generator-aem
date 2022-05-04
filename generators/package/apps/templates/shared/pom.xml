@@ -151,7 +151,7 @@
       <artifactId><%= aem.artifactId %></artifactId>
     </dependency>
     <%_ if (parent.aemVersion !== 'cloud') { _%>
-    <%- include('partials/v6.5/dependencies.partial') -%>
+    <%- include('../partials/v6.5/dependencies.partial') -%>
     <%_ } _%>
 
     <dependency>

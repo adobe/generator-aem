@@ -14,24 +14,20 @@
  limitations under the License.
 */
 
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
 import test from 'ava';
+import { fixturePath } from '../../fixtures/helpers.js';
 
-import GeneratorCommons from '../../../lib/common.js';
-
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
+import ModuleMixins from '../../../lib/module-mixins.js';
 
 test('pom not found', (t) => {
   t.plan(1);
-  t.deepEqual(GeneratorCommons.readPom('.'), {}, 'Properties empty');
+  t.deepEqual(ModuleMixins._readPom('.'), {}, 'Properties empty');
 });
 
-test('reads pom', (t) => {
+test('reads', (t) => {
   t.plan(1);
 
-  const actual = GeneratorCommons.readPom(path.join(dirname, '..', '..', 'fixtures', 'pom', 'full'));
+  const actual = ModuleMixins._readPom(fixturePath('pom', 'full'));
   const expected = {
     groupId: 'com.test.pom.groupid',
     artifactId: 'pom.artifactid',
@@ -47,10 +43,10 @@ test('reads pom', (t) => {
   t.deepEqual(actual, expected, 'Properties match');
 });
 
-test('reads partial pom', (t) => {
+test('reads partial', (t) => {
   t.plan(1);
 
-  const actual = GeneratorCommons.readPom(path.join(dirname, '..', '..', 'fixtures', 'pom', 'partial'));
+  const actual = ModuleMixins._readPom(fixturePath('pom', 'partial'));
   const expected = {
     groupId: 'com.test.pom.groupid',
     artifactId: 'pom.artifactid',

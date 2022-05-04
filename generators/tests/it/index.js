@@ -18,33 +18,24 @@ import path from 'node:path';
 
 import _ from 'lodash';
 import got from 'got';
-import { globbySync } from 'globby';
 import { XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
-import GeneratorCommons from '../../../lib/common.js';
-import AEMModuleFunctions from '../../../lib/module.js';
-import Utils from '../../../lib/utils.js';
+import ModuleMixins from '../../../lib/module-mixins.js';
+import UtilMixins from '../../../lib/util-mixins.js';
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
 const uniqueProperties = ['package', 'publish'];
 
 const IntegrationTestsModuleType = 'tests:it';
 
-/* eslint-disable prettier/prettier */
-const tplFiles = [
-  'pom.xml',
-];
-/* eslint-enable prettier/prettier */
-
-class IntegrationTestsGenerator extends Generator {
+class AEMIntegrationTestsGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
     this.moduleType = IntegrationTestsModuleType;
 
-    const options_ = {};
-    _.defaults(options_, GeneratorCommons.options, {
+    _.defaults(this._options, {
       package: {
         type: String,
         desc: 'Java Source Package (e.g. "com.mysite").',
@@ -54,20 +45,21 @@ class IntegrationTestsGenerator extends Generator {
       },
     });
 
-    _.forOwn(options_, (v, k) => {
+    _.forOwn(this._options, (v, k) => {
       this.option(k, v);
     });
   }
 
-  _preProcessProperties() {
+  initializing() {
+    this.props = {};
     _.defaults(this.props, _.pick(this.options, uniqueProperties));
 
     if (this.props.package && invalidPackageRegex.test(this.props.package)) {
       delete this.props.package;
     }
-  }
 
-  _postProcessProperties() {
+    this._initializing();
+
     if (this.props.parent.groupId) {
       this.props.package = this.props.package || this.props.parent.groupId;
     }
@@ -79,7 +71,7 @@ class IntegrationTestsGenerator extends Generator {
 
   prompting() {
     const properties = this.props;
-    const prompts = GeneratorCommons.prompts(this).concat([
+    const prompts = [
       {
         name: 'package',
         message: 'Java Source Package (e.g. "com.mysite").',
@@ -114,15 +106,16 @@ class IntegrationTestsGenerator extends Generator {
         when: properties.publish === undefined,
         default: true,
       },
-    ]);
-    return this.prompt(prompts).then((answers) => {
-      GeneratorCommons.processAnswers(this, answers);
-      _.merge(this.props, answers);
-    });
+    ];
+    return this._prompting(prompts);
+  }
+
+  configuring() {
+    this._configuring();
   }
 
   default() {
-    if (this.runParent) {
+    if (_.isEmpty(this.options.parent)) {
       const config = this.config.getAll();
       _.each(config, (value, key) => {
         if (value.moduleType && value.moduleType === IntegrationTestsModuleType && key !== this.relativePath) {
@@ -130,8 +123,27 @@ class IntegrationTestsGenerator extends Generator {
         }
       });
 
-      AEMModuleFunctions.default.bind(this).call();
+      // Need to have parent update module list.
+      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
+      this.composeWith('@adobe/aem:app', options);
     }
+  }
+
+  writing() {
+    const files = [];
+    files.push(...this._listTemplates('shared'));
+
+    if (this.props.publish) {
+      files.push(...this._listTemplates('publish'));
+    }
+
+    return this._testingClientApi(this.props.parent.aemVersion)
+      .then(this._latestApi)
+      .then((aemMetadata) => {
+        this.props.aem = aemMetadata;
+        this.props.packagePath = this.props.package.replaceAll('.', path.sep);
+        this._writing(files);
+      });
   }
 
   _testingClientApi(aemVersion) {
@@ -173,47 +185,12 @@ class IntegrationTestsGenerator extends Generator {
       }
     });
   }
-
-  writing() {
-    const files = [];
-
-    _.each(tplFiles, (f) => {
-      files.push({
-        src: this.templatePath(f),
-        dest: this.destinationPath(this.relativePath, f),
-      });
-    });
-
-    if (this.props.publish) {
-      const patterns = [this.templatePath('publish', '**/*'), this.templatePath('publish', '**/.*')];
-      const paths = globbySync(patterns, { onlyFiles: true });
-      for (const idx in paths) {
-        if (Object.prototype.hasOwnProperty.call(paths, idx)) {
-          const file = paths[idx];
-          files.push({
-            src: file,
-            dest: this.destinationPath(this.relativePath, path.relative(this.templatePath('publish'), file)),
-          });
-        }
-      }
-    }
-
-    files.push(...GeneratorCommons.listTemplates(this));
-
-    return this._testingClientApi(this.props.parent.aemVersion)
-      .then(Utils.latestApi)
-      .then((aemMetadata) => {
-        this.props.aem = aemMetadata;
-        this.props.packagePath = this.props.package.replaceAll('.', path.sep);
-        GeneratorCommons.write(this, files);
-      });
-  }
 }
 
-_.extendWith(IntegrationTestsGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
-  return _.isUndefined(objectValue) ? srcValue : objectValue;
+_.extendWith(AEMIntegrationTestsGenerator.prototype, ModuleMixins, UtilMixins, (objectValue, srcValue) => {
+  return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { IntegrationTestsGenerator, IntegrationTestsModuleType };
+export { AEMIntegrationTestsGenerator, IntegrationTestsModuleType };
 
-export default IntegrationTestsGenerator;
+export default AEMIntegrationTestsGenerator;

@@ -20,8 +20,8 @@ import test from 'ava';
 import sinon from 'sinon/pkg/sinon-esm.js';
 
 import got from 'got';
-import { fixturePath } from '../../fixtures/helpers.js';
-import Utils from '../../../lib/utils.js';
+import { fixturePath } from '../fixtures/helpers.js';
+import UtilMixins from '../../lib/util-mixins.js';
 
 test.serial('AEM 6.5', async (t) => {
   t.plan(5);
@@ -30,7 +30,7 @@ test.serial('AEM 6.5', async (t) => {
   const fake = sinon.fake.resolves(metadata);
   sinon.replace(got, 'get', fake);
 
-  await Utils.latestApi('6.5').then((data) => {
+  await UtilMixins._latestApi('6.5').then((data) => {
     sinon.restore();
     t.is(data.groupId, 'com.adobe.aem', 'Group Id');
     t.is(data.artifactId, 'uber-jar', 'Artifact Id');
@@ -47,7 +47,7 @@ test.serial('AEMaaCS', async (t) => {
   const fake = sinon.fake.resolves(metadata);
   sinon.replace(got, 'get', fake);
 
-  await Utils.latestApi('cloud').then((data) => {
+  await UtilMixins._latestApi('cloud').then((data) => {
     sinon.restore();
     t.is(data.groupId, 'com.adobe.aem', 'Group Id');
     t.is(data.artifactId, 'aem-sdk-api', 'Artifact Id');

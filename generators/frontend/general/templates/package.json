@@ -9,7 +9,7 @@
     "prod": "webpack --config webpack.prod.js && clientlib clientlib.config.cjs --verbose",
     "start": "webpack-dev-server --open --config webpack.dev.js",
     "sync": "aemsync -d -p src/main/content",
-    "watch": "webpack-dev-server --config webpack.dev.js --env writeToDisk & chokidar -c \\\\\\\"clientlib\\\\\\\" ./dist & aemsync -w src/main/content"
+    "watch": "webpack-dev-server --config webpack.dev.js --env writeToDisk & chokidar -c \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"clientlib\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" ./dist & aemsync -w src/main/content"
   },
   "engines": {
     "npm": ">= 4.0.0",

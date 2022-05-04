@@ -31,6 +31,13 @@
       "appId": "localyo",
       "artifactId": "localyo",
       "moduleType": "wrapper"
+    },
+    "test": {
+      "examples": true,
+      "name": "Local Yo",
+      "appId": "localyo",
+      "artifactId": "localyo",
+      "moduleType": "test:simple"
     }
   }
 }

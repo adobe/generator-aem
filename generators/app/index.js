@@ -24,10 +24,9 @@ import chalk from 'chalk';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
-import Utils from '../../lib/utils.js';
-import GeneratorCommons from '../../lib/common.js';
+import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
 
-const ParentProperties = ['groupId', 'artifactId', 'version', 'aemVersion'];
+import UtilMixins from '../../lib/util-mixins.js';
 
 const ModuleOptions = Object.freeze({
   '@adobe/aem:bundle'(parentProps) {
@@ -95,8 +94,7 @@ class AEMGenerator extends Generator {
 
     super(args, options, features);
 
-    const options_ = {};
-    _.defaults(options_, GeneratorCommons.options, {
+    _.defaults(this._options, {
       groupId: {
         type: String,
         desc: 'Base Maven Group ID (e.g. "com.mysite").',
@@ -135,7 +133,7 @@ class AEMGenerator extends Generator {
       },
     });
 
-    _.forOwn(options_, (v, k) => {
+    _.forOwn(this._options, (v, k) => {
       this.option(k, v);
     });
   }
@@ -153,9 +151,8 @@ class AEMGenerator extends Generator {
       dest = '';
     }
 
-    const unique = ['groupId', 'version', 'javaVersion', 'aemVersion', 'nodeVersion', 'npmVersion'];
-
     // Populate Root unique properties
+    const unique = ['groupId', 'version', 'javaVersion', 'aemVersion', 'nodeVersion', 'npmVersion'];
     this.props = {};
     _.defaults(this.props, _.pick(this.options, unique));
 
@@ -169,7 +166,7 @@ class AEMGenerator extends Generator {
 
     _.defaults(this.props, _.pick(this.config.getAll(), unique));
 
-    const pom = GeneratorCommons.readPom(this.destinationPath(dest));
+    const pom = this._readPom(this.destinationPath(dest));
     _.defaults(this.props, _.omit(pom, ['pomProperties']));
     if (pom.pomProperties) {
       if (pom.pomProperties['aem.version']) {
@@ -190,11 +187,22 @@ class AEMGenerator extends Generator {
     }
 
     // Populate Shared
-    _.defaults(this.props, GeneratorCommons.props(this));
+    _.defaults(this.props, _.pick(this.options, SharedOptions));
+
+    const config = this.config.getAll();
+    _.defaults(this.props, _.pick(config, SharedOptions));
+
+    const pomProps = this._readPom(this.destinationPath());
+    _.defaults(this.props, _.pick(pomProps, SharedOptions));
 
     // Fall back to defaults
     if (this.options.defaults) {
+      if (this.props.appId) {
+        _.defaults(this.props, { artifactId: this.props.appId });
+      }
+
       _.defaults(this.props, {
+        examples: false,
         version: '1.0.0-SNAPSHOT',
         javaVersion: '11',
         aemVersion: 'cloud',
@@ -205,7 +213,7 @@ class AEMGenerator extends Generator {
   }
 
   prompting() {
-    const prompts = GeneratorCommons.prompts(this).concat([
+    const prompts = [
       {
         name: 'groupId',
         message: 'Base Maven Group ID (e.g. "com.mysite").',
@@ -229,38 +237,37 @@ class AEMGenerator extends Generator {
         default: this.props.version || '1.0.0-SNAPSHOT',
       },
       {
-        name: 'javaVersion',
-        message: 'Java Version',
-        type: 'list',
-        choices: ['8', '11'],
-        default: 1,
-        when: !this.options.defaults && !this.props.javaVersion,
-      },
-      {
         name: 'aemVersion',
+        message: 'AEM Release',
         type: 'list',
         choices: ['6.5', 'cloud'],
         default: 1,
         when: !this.options.defaults && !this.props.aemVersion,
       },
       {
+        name: 'javaVersion',
+        message: 'Java Version',
+        type: 'list',
+        choices: ['8', '11'],
+        default: 1,
+        when: !this.options.defaults && !this.props.javaVersion, // TODO: Dont prompt when using AEM Cloud
+      },
+
+      {
         name: 'nodeVersion',
         message: 'Node version to use for module projects.',
         when: !this.options.defaults && !this.props.nodeVersion,
-        default: this.props.nodeVersion,
+        default: versions.node,
       },
       {
         name: 'npmVersion',
         message: 'NPM version to use for module projects.',
         when: !this.options.defaults && !this.props.npmVersion,
-        default: this.props.npmVersion,
+        default: npmVersion,
       },
-    ]);
+    ];
 
-    return this.prompt(prompts).then((answers) => {
-      GeneratorCommons.processAnswers(this, answers);
-      _.merge(this.props, answers);
-    });
+    return this._prompting(prompts);
   }
 
   configuring() {
@@ -276,7 +283,7 @@ class AEMGenerator extends Generator {
         dest = this.destinationPath(this.props.appId);
       }
 
-      const pomData = GeneratorCommons.readPom(dest);
+      const pomData = this._readPom(dest);
       if (!_.isEmpty(pomData) && pomData.groupId !== this.props.groupId && pomData.artifactId !== this.props.artifactId) {
         throw new Error(
           chalk.red('Refusing to update existing project with different group/artifact identifiers.') +
@@ -305,10 +312,10 @@ class AEMGenerator extends Generator {
         let name;
         if (meta[`@adobe/aem:${modules[idx]}`]) {
           name = `@adobe/aem:${modules[idx]}`;
-          _.defaults(moduleOptions, ModuleOptions[name](this.props), _.pick(this.props, _.keys(GeneratorCommons.options)));
+          _.defaults(moduleOptions, ModuleOptions[name](this.props), _.pick(this.props, _.keys(ModuleMixins._options)));
         } else if (meta[`aem:${modules[idx]}`]) {
           name = `aem:${modules[idx]}`;
-          _.defaults(moduleOptions, ModuleOptions[`@adobe/${name}`](this.props), _.pick(this.props, _.keys(GeneratorCommons.options)));
+          _.defaults(moduleOptions, ModuleOptions[`@adobe/${name}`](this.props), _.pick(this.props, _.keys(ModuleMixins._options)));
         } else if (meta[modules[idx]]) {
           name = modules[idx];
         } else {
@@ -350,7 +357,7 @@ class AEMGenerator extends Generator {
       }
     });
 
-    return Utils.latestApi(this.props.aemVersion).then((aemMetadata) => {
+    return this._latestApi(this.props.aemVersion).then((aemMetadata) => {
       this.props.aem = aemMetadata;
       if (this.props.aemVersion !== 'cloud') {
         const depPom = this.fs.read(this.templatePath('partials', 'v6.5', 'dependency-management', 'pom.xml'));
@@ -367,7 +374,7 @@ class AEMGenerator extends Generator {
         this.props.dependencies = builder.build(dependencies);
       }
 
-      GeneratorCommons.write(this, files);
+      this._writing(files);
     });
   }
 
@@ -385,5 +392,9 @@ class AEMGenerator extends Generator {
   }
 }
 
+_.extendWith(AEMGenerator.prototype, ModuleMixins, UtilMixins, (objectValue, srcValue) => {
+  return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
+});
+
+export { AEMGenerator };
 export default AEMGenerator;
-export { ParentProperties, AEMGenerator };

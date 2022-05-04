@@ -25,7 +25,7 @@ import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
-import Utils from '../../../lib/utils.js';
+import UtilMixins from '../../../lib/util-mixins.js';
 
 import AEMGenerator from '../../../generators/app/index.js';
 import AEMGeneralFEGenerator from '../../../generators/frontend/general/index.js';
@@ -41,7 +41,7 @@ test.serial('@adobe/aem:frontend:general - via @adobe/generator-aem', async (t) 
   };
 
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(UtilMixins, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
@@ -117,7 +117,7 @@ test.serial('@adobe/aem:frontend:general - second module', async (t) => {
   };
 
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(UtilMixins, '_latestApi', stub);
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');
 

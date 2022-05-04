@@ -25,7 +25,6 @@ import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
-import Utils from '../../../lib/utils.js';
 
 import AEMGenerator from '../../../generators/app/index.js';
 import AEMBundleGenerator from '../../../generators/bundle/index.js';
@@ -43,7 +42,7 @@ test.serial('@adobe/aem:package:apps - via @adobe/generator-aem - v6.5', async (
     path: 'com/adobe/aem/uber-jar',
   };
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
 
@@ -121,7 +120,8 @@ test.serial('@adobe/aem:package:apps - second package - cloud', async (t) => {
   };
 
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');
 

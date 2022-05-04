@@ -19,20 +19,13 @@ import path from 'node:path';
 import _ from 'lodash';
 
 import Generator from 'yeoman-generator';
-import GeneratorCommons from '../../lib/common.js';
-import AEMModuleFunctions from '../../lib/module.js';
-import Utils from '../../lib/utils.js';
+import ModuleMixins from '../../lib/module-mixins.js';
+import UtilMixins from '../../lib/util-mixins.js';
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
 const uniqueProperties = ['package'];
 
 const BundleModuleType = 'bundle';
-
-/* eslint-disable prettier/prettier */
-const tplFiles = [
-  'pom.xml',
-];
-/* eslint-enable prettier/prettier */
 
 class AEMBundleGenerator extends Generator {
   constructor(args, options, features) {
@@ -40,28 +33,28 @@ class AEMBundleGenerator extends Generator {
 
     this.moduleType = BundleModuleType;
 
-    const options_ = {};
-    _.defaults(options_, GeneratorCommons.options, {
+    _.defaults(this._options, {
       package: {
         type: String,
         desc: 'Java Source Package (e.g. "com.mysite").',
       },
     });
 
-    _.forOwn(options_, (v, k) => {
+    _.forOwn(this._options, (v, k) => {
       this.option(k, v);
     });
   }
 
-  _preProcessProperties() {
+  initializing() {
+    this.props = {};
     _.defaults(this.props, _.pick(this.options, uniqueProperties));
 
     if (this.props.package && invalidPackageRegex.test(this.props.package)) {
       delete this.props.package;
     }
-  }
 
-  _postProcessProperties() {
+    this._initializing();
+
     if (this.props.parent.groupId) {
       this.props.package = this.props.package || this.props.parent.groupId;
     }
@@ -69,7 +62,7 @@ class AEMBundleGenerator extends Generator {
 
   prompting() {
     const properties = this.props;
-    const prompts = GeneratorCommons.prompts(this).concat([
+    const prompts = [
       {
         name: 'package',
         message: 'Java Source Package (e.g. "com.mysite").',
@@ -97,35 +90,40 @@ class AEMBundleGenerator extends Generator {
         },
         default: this.props.package,
       },
-    ]);
-    return this.prompt(prompts).then((answers) => {
-      GeneratorCommons.processAnswers(this, answers);
-      _.merge(this.props, answers);
-    });
+    ];
+    return this._prompting(prompts);
+  }
+
+  configuring() {
+    this._configuring();
+  }
+
+  default() {
+    if (_.isEmpty(this.options.parent)) {
+      // Need to have parent update module list.
+      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
+      this.composeWith('@adobe/aem:app', options);
+    }
   }
 
   writing() {
     const files = [];
+    files.push(...this._listTemplates('shared'));
 
-    _.each(tplFiles, (f) => {
-      files.push({
-        src: this.templatePath(f),
-        dest: this.destinationPath(this.relativePath, f),
-      });
-    });
+    if (this.props.examples) {
+      files.push(...this._listTemplates('examples'));
+    }
 
-    files.push(...GeneratorCommons.listTemplates(this));
-
-    return Utils.latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
+    return this._latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
       this.props.aem = aemMetadata;
       this.props.packagePath = this.props.package.replaceAll('.', path.sep);
-      GeneratorCommons.write(this, files);
+      this._writing(files);
     });
   }
 }
 
-_.extendWith(AEMBundleGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
-  return _.isUndefined(objectValue) ? srcValue : objectValue;
+_.extendWith(AEMBundleGenerator.prototype, ModuleMixins, UtilMixins, (objectValue, srcValue) => {
+  return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
 export { AEMBundleGenerator, BundleModuleType };

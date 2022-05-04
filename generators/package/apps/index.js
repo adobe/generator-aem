@@ -17,9 +17,9 @@
 import _ from 'lodash';
 
 import Generator from 'yeoman-generator';
-import GeneratorCommons from '../../../lib/common.js';
-import AEMModuleFunctions from '../../../lib/module.js';
-import Utils from '../../../lib/utils.js';
+
+import ModuleMixins from '../../../lib/module-mixins.js';
+import UtilMixins from '../../../lib/util-mixins.js';
 
 import { BundleModuleType } from '../../bundle/index.js';
 import { GeneralFEModuleType } from '../../frontend/general/index.js';
@@ -28,20 +28,13 @@ import { StructurePackageModuleType } from '../structure/index.js';
 const AppsPackageModuleType = 'package:apps';
 const uniqueProperties = ['bundleRef', 'frontendRef'];
 
-/* eslint-disable prettier/prettier */
-const tplFiles = [
-  'pom.xml',
-];
-/* eslint-enable prettier/prettier */
-
 class AEMAppsPackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
     this.moduleType = AppsPackageModuleType;
 
-    const options_ = {};
-    _.defaults(options_, GeneratorCommons.options, {
+    _.defaults(this._options, {
       bundleRef: {
         type: String,
         desc: 'Module name of optional Java bundle dependency, in this multi-module project.',
@@ -57,16 +50,19 @@ class AEMAppsPackageGenerator extends Generator {
       },
     });
 
-    _.forOwn(options_, (v, k) => {
+    _.forOwn(this._options, (v, k) => {
       this.option(k, v);
     });
   }
 
-  _preProcessProperties() {
+  initializing() {
+    this.props = {};
     _.defaults(this.props, _.pick(this.options, uniqueProperties));
+    this._initializing();
   }
 
   prompting() {
+    const properties = this.props;
     const config = this.config.getAll();
     const bundleModules = [];
     const feModules = [];
@@ -86,9 +82,7 @@ class AEMAppsPackageGenerator extends Generator {
         }
       }
     });
-    const properties = this.props;
-
-    const prompts = GeneratorCommons.prompts(this).concat([
+    const prompts = [
       {
         name: 'bundleRef',
         message: 'Module name of optional dependency on OSGi bundle. (e.g. core)',
@@ -110,26 +104,33 @@ class AEMAppsPackageGenerator extends Generator {
         when: properties.precompileScripts === undefined,
         default: true,
       },
-    ]);
+    ];
 
-    return this.prompt(prompts).then((answers) => {
-      GeneratorCommons.processAnswers(this, answers);
-      _.merge(this.props, answers);
-    });
+    return this._prompting(prompts);
+  }
+
+  configuring() {
+    this._configuring();
+  }
+
+  default() {
+    if (_.isEmpty(this.options.parent)) {
+      // Need to have parent update module list.
+      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
+      this.composeWith('@adobe/aem:app', options);
+    }
   }
 
   writing() {
     const files = [];
 
-    _.each(tplFiles, (f) => {
-      files.push({
-        src: this.templatePath(f),
-        dest: this.destinationPath(this.relativePath, f),
-      });
-    });
+    files.push(...this._listTemplates('shared'));
 
-    files.push(...GeneratorCommons.listTemplates(this));
-    return Utils.latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
+    if (this.props.examples) {
+      files.push(...this._listTemplates('examples'));
+    }
+
+    return this._latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
       this.props.aem = aemMetadata;
 
       const config = this.config.getAll();
@@ -143,12 +144,15 @@ class AEMAppsPackageGenerator extends Generator {
         }
       });
 
-      GeneratorCommons.write(this, files);
+      this._writing(files);
     });
   }
 }
 
-_.extend(AEMAppsPackageGenerator.prototype, AEMModuleFunctions);
+_.extendWith(AEMAppsPackageGenerator.prototype, ModuleMixins, UtilMixins, (objectValue, srcValue) => {
+  return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
+});
 
 export { AEMAppsPackageGenerator, AppsPackageModuleType };
+
 export default AEMAppsPackageGenerator;

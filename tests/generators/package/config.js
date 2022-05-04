@@ -25,8 +25,8 @@ import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
-import Utils from '../../../lib/utils.js';
 
+import AEMGenerator from '../../../generators/app/index.js';
 import AEMBundleGenerator from '../../../generators/bundle/index.js';
 import AEMStructurePackageGenerator from '../../../generators/package/structure/index.js';
 import AEMConfigPackageGenerator from '../../../generators/package/config/index.js';
@@ -41,7 +41,7 @@ test.serial('@adobe/aem:package:config - via @adobe/generator-aem - v6.5', async
     path: 'com/adobe/aem/uber-jar',
   };
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
@@ -111,7 +111,7 @@ test.serial('@adobe/aem:package:config - via @adobe/generator-aem - cloud', asyn
     path: 'com/adobe/aem/aem-sdk-api',
   };
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
@@ -193,5 +193,5 @@ test('@adobe/aem:package:config - second package fails', async (t) => {
       .run()
   );
 
-  t.regex(error.message, /Refusing to create a second UI Config module\./);
+  t.regex(error.message, /Refusing to create a second Config Package module\./);
 });

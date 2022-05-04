@@ -28,8 +28,8 @@ import got from 'got';
 
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
-import Utils from '../../../lib/utils.js';
 
+import AEMGenerator from '../../../generators/app/index.js';
 import AEMIntegrationTestsGenerator from '../../../generators/tests/it/index.js';
 
 const cloudTestingMetadata = fs.readFileSync(fixturePath('files', 'aem-cloud-testing-clients.metadata.xml'), 'utf8');
@@ -49,7 +49,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - v6.5', async (t) =
     path: 'com/adobe/aem/uber-jar',
   };
   const apiStub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', apiStub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', apiStub);
 
   const gotStub = sinon.stub().resolves(aem65TestingMetadata);
   sinon.replace(got, 'get', gotStub);
@@ -115,7 +115,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - cloud', async (t) 
     path: 'com/adobe/aem/aem-sdk-api',
   };
   const apiStub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', apiStub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', apiStub);
 
   const gotStub = sinon.stub().resolves(cloudTestingMetadata);
   sinon.replace(got, 'get', gotStub);

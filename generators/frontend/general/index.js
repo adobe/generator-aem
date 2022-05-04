@@ -20,8 +20,7 @@ import { globbySync } from 'globby';
 
 import Generator from 'yeoman-generator';
 
-import GeneratorCommons from '../../../lib/common.js';
-import AEMModuleFunctions from '../../../lib/module.js';
+import ModuleMixins from '../../../lib/module-mixins.js';
 
 const GeneralFEModuleType = 'frontend:general';
 
@@ -44,20 +43,30 @@ class AEMGeneralFEGenerator extends Generator {
     super(args, options, features);
     this.moduleType = GeneralFEModuleType;
 
-    const options_ = {};
-    _.defaults(options_, GeneratorCommons.options);
-
-    _.forOwn(options_, (v, k) => {
+    _.forOwn(this._options, (v, k) => {
       this.option(k, v);
     });
   }
 
+  initializing() {
+    this.props = {};
+    this._initializing();
+  }
+
   prompting() {
-    const prompts = GeneratorCommons.prompts(this);
-    return this.prompt(prompts).then((answers) => {
-      GeneratorCommons.processAnswers(this, answers);
-      _.merge(this.props, answers);
-    });
+    return this._prompting();
+  }
+
+  configuring() {
+    this._configuring();
+  }
+
+  default() {
+    if (_.isEmpty(this.options.parent)) {
+      // Need to have parent update module list.
+      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
+      this.composeWith('@adobe/aem:app', options);
+    }
   }
 
   writing() {
@@ -90,11 +99,13 @@ class AEMGeneralFEGenerator extends Generator {
       this.fs.readJSON(this.templatePath('package.json'), {})
     );
     this.writeDestinationJSON(path.join(this.relativePath, 'package.json'), pkg);
-    GeneratorCommons.write(this, files);
+    this._writing(files);
   }
 }
 
-_.extend(AEMGeneralFEGenerator.prototype, AEMModuleFunctions);
+_.extendWith(AEMGeneralFEGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+  return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
+});
 
 export { AEMGeneralFEGenerator, GeneralFEModuleType };
 

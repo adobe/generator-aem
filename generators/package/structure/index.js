@@ -18,40 +18,34 @@ import _ from 'lodash';
 
 import Generator from 'yeoman-generator';
 
-import GeneratorCommons from '../../../lib/common.js';
-import AEMModuleFunctions from '../../../lib/module.js';
+import ModuleMixins from '../../../lib/module-mixins.js';
 
 const StructurePackageModuleType = 'package:structure';
-
-/* eslint-disable prettier/prettier */
-const tplFiles = [
-  'pom.xml',
-  'README.md',
-];
-/* eslint-enable prettier/prettier */
 
 class AEMStructurePackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
     this.moduleType = StructurePackageModuleType;
 
-    const options_ = {};
-    _.defaults(options_, GeneratorCommons.options);
-    _.forOwn(options_, (v, k) => {
+    _.forOwn(this._options, (v, k) => {
       this.option(k, v);
     });
   }
 
+  initializing() {
+    this._initializing();
+  }
+
   prompting() {
-    const prompts = GeneratorCommons.prompts(this);
-    return this.prompt(prompts).then((answers) => {
-      GeneratorCommons.processAnswers(this, answers);
-      _.merge(this.props, answers);
-    });
+    return this._prompting();
+  }
+
+  configuring() {
+    this._configuring();
   }
 
   default() {
-    if (this.runParent) {
+    if (_.isEmpty(this.options.parent)) {
       const config = this.config.getAll();
       _.each(config, (value, key) => {
         if (value.moduleType && value.moduleType === StructurePackageModuleType && key !== this.relativePath) {
@@ -59,24 +53,26 @@ class AEMStructurePackageGenerator extends Generator {
         }
       });
 
-      AEMModuleFunctions.default.bind(this).call();
+      // Need to have parent update module list.
+      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
+      this.composeWith('@adobe/aem:app', options);
     }
   }
 
   writing() {
     const files = [];
-    _.each(tplFiles, (f) => {
+    _.each(['pom.xml', 'README.md'], (f) => {
       files.push({
         src: this.templatePath(f),
         dest: this.destinationPath(this.relativePath, f),
       });
     });
-    GeneratorCommons.write(this, files);
+    this._writing(files);
   }
 }
 
-_.extendWith(AEMStructurePackageGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
-  return _.isUndefined(objectValue) ? srcValue : objectValue;
+_.extendWith(AEMStructurePackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+  return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
 export { AEMStructurePackageGenerator, StructurePackageModuleType };

@@ -17,8 +17,7 @@
 import _ from 'lodash';
 
 import Generator from 'yeoman-generator';
-import AEMModuleFunctions from '../../../lib/module.js';
-import GeneratorCommons from '../../../lib/common.js';
+import ModuleMixins from '../../../lib/module-mixins.js';
 
 import { BundleModuleType } from '../../bundle/index.js';
 import { StructurePackageModuleType } from '../structure/index.js';
@@ -26,28 +25,40 @@ import { ConfigPackageModuleType } from '../config/index.js';
 import { AppsPackageModuleType } from '../apps/index.js';
 
 const AllPackageModuleType = 'package:all';
-/* eslint-disable prettier/prettier */
 
+/* eslint-disable prettier/prettier */
 const packagedModules = new Set([
   BundleModuleType,
   StructurePackageModuleType,
   ConfigPackageModuleType,
   AppsPackageModuleType,
 ]);
-
-const tplFiles = [
-  'pom.xml',
-];
 /* eslint-enable prettier/prettier */
 
 class AEMAllPackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
     this.moduleType = AllPackageModuleType;
+
+    _.forOwn(this._options, (v, k) => {
+      this.option(k, v);
+    });
+  }
+
+  initializing() {
+    this._initializing();
+  }
+
+  prompting() {
+    return this._prompting();
+  }
+
+  configuring() {
+    this._configuring();
   }
 
   default() {
-    if (this.runParent) {
+    if (_.isEmpty(this.options.parent)) {
       const config = this.config.getAll();
       _.each(config, (value, key) => {
         if (value.moduleType && value.moduleType === AllPackageModuleType && key !== this.relativePath) {
@@ -55,18 +66,16 @@ class AEMAllPackageGenerator extends Generator {
         }
       });
 
-      AEMModuleFunctions.default.bind(this).call();
+      // Need to have parent update module list.
+      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
+      this.composeWith('@adobe/aem:app', options);
     }
   }
 
   writing() {
     const files = [];
-    _.each(tplFiles, (f) => {
-      files.push({
-        src: this.templatePath(f),
-        dest: this.destinationPath(this.relativePath, f),
-      });
-    });
+
+    files.push(...this._listTemplates('shared'));
 
     const config = this.config.getAll();
     const dependencies = [];
@@ -85,13 +94,12 @@ class AEMAllPackageGenerator extends Generator {
     });
     this.props.dependencies = dependencies;
 
-    files.push(...GeneratorCommons.listTemplates(this));
-    GeneratorCommons.write(this, files);
+    this._writing(files);
   }
 }
 
-_.extendWith(AEMAllPackageGenerator.prototype, AEMModuleFunctions, (objectValue, srcValue) => {
-  return _.isUndefined(objectValue) ? srcValue : objectValue;
+_.extendWith(AEMAllPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+  return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
 export { AEMAllPackageGenerator, AllPackageModuleType };

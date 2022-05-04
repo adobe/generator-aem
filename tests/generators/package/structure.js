@@ -25,8 +25,8 @@ import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
-import Utils from '../../../lib/utils.js';
 
+import AEMGenerator from '../../../generators/app/index.js';
 import AEMStructurePackageGenerator from '../../../generators/package/structure/index.js';
 
 test.serial('@adobe/aem:package:structure - via @adobe/generator-aem', async (t) => {
@@ -40,7 +40,7 @@ test.serial('@adobe/aem:package:structure - via @adobe/generator-aem', async (t)
   };
 
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers

@@ -25,8 +25,8 @@ import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
-import Utils from '../../../lib/utils.js';
 
+import AEMGenerator from '../../../generators/app/index.js';
 import AEMBundleGenerator from '../../../generators/bundle/index.js';
 import AEMUIAppsGenerator from '../../../generators/package/apps/index.js';
 import AEMUIConfigGenerator from '../../../generators/package/config/index.js';
@@ -44,7 +44,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - no modul
   };
 
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
@@ -105,7 +105,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - bundle',
   };
 
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
@@ -169,7 +169,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - cloud - package
   };
 
   const stub = sinon.stub().resolves(aemData);
-  sinon.replace(Utils, 'latestApi', stub);
+  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
@@ -186,7 +186,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - cloud - package
       appId: 'test',
       name: 'Test Project',
       groupId: 'com.adobe.test',
-      aemVersion: 6.5,
+      aemVersion: 'cloud',
       modules: 'package:apps,package:config,package:structure,package:all',
       showBuildOutput: false,
     })

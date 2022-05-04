@@ -17,26 +17,22 @@
 import _ from 'lodash';
 import Generator from 'yeoman-generator';
 
-import GeneratorCommons from '../../../../lib/common.js';
+import ModuleMixins from '../../../../lib/module-mixins.js';
 
 class Simple extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
-    _.forOwn(GeneratorCommons.options, (v, k) => {
+    this.moduleType = 'test:simple';
+    _.forOwn(this._options, (v, k) => {
       this.option(k, v);
     });
   }
 
   initializing() {
-    const cb = (props) => {
-      props.added = 'Added';
-    };
-
-    const subdir = this.options.generateInto || '';
-
     this.props = {};
-    _.defaults(this.props, _.pick(this.options, ['parent']), GeneratorCommons.props(this, subdir, cb));
+    this.props.added = 'Added';
+    this._initializing();
   }
 
   writing() {
@@ -48,5 +44,8 @@ class Simple extends Generator {
     this.fs.write(dest, JSON.stringify(this.props));
   }
 }
+_.extendWith(Simple.prototype, ModuleMixins, (objectValue, srcValue) => {
+  return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
+});
 
 export default Simple;

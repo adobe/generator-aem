@@ -18,7 +18,7 @@ import path from 'node:path';
 import test from 'ava';
 import sinon from 'sinon/pkg/sinon-esm.js';
 
-import GeneratorCommons from '../../../lib/common.js';
+import ModuleMixins from '../../../lib/module-mixins.js';
 
 const generatorProps = {
   pathProperty: 'pathreplacement',
@@ -46,7 +46,7 @@ test('default options', (t) => {
     },
   ];
 
-  GeneratorCommons.write(generator, templates, { delimiter: '%' });
+  ModuleMixins._writing.call(generator, templates);
   t.is(copyTplStub.callCount, 1, 'Stub Called correctly.');
   const [src, dest, props, options] = copyTplStub.getCall(0).args;
   t.is(path.join('/', 'source', 'path', 'parent', '__pathProperty__', 'file'), src, 'Source parameter correct.');
@@ -81,18 +81,18 @@ test('custom delimiter', (t) => {
     },
   ];
 
-  GeneratorCommons.write(generator, templates);
+  ModuleMixins._writing.call(generator, templates, { delimiter: '$' });
   t.is(copyTplStub.callCount, 3, 'Stub Called correctly.');
   let [src, dest, props, options] = copyTplStub.getCall(0).args;
   t.is(path.join('/', 'source', 'path', 'parent', '__pathProperty__', 'file'), src, 'Source parameter correct.');
   t.is(path.join('/', 'target', 'path', 'parent', 'pathreplacement', 'file'), dest, 'Destination parameter correct');
   t.deepEqual(props, { pathProperty: 'pathreplacement' }, 'Property parameter correct.');
-  t.deepEqual(options, { delimiter: '%' }, 'Options correct.');
+  t.deepEqual(options, { delimiter: '$' }, 'Options correct.');
   [src, dest, props, options] = copyTplStub.getCall(1).args;
   t.is(path.join('/', 'source', 'path', '__pathProperty__', 'file'), src, 'Source parameter correct.');
   t.is(path.join('/', 'target', 'path', 'pathreplacement', 'file'), dest, 'Destination parameter correct');
   t.deepEqual(props, { pathProperty: 'pathreplacement' }, 'Property parameter correct.');
-  t.deepEqual(options, { delimiter: '%' }, 'Options correct.');
+  t.deepEqual(options, { delimiter: '$' }, 'Options correct.');
   [src, dest] = copyTplStub.getCall(2).args;
   t.is(path.join('/', 'source', 'path', 'notmodified', 'file'), src, 'Source parameter correct.');
   t.is(path.join('/', 'target', 'path', 'notmodified', 'file'), dest, 'Destination parameter correct');
