@@ -36,7 +36,14 @@ export class AEMAppNoWrite extends AEMGenerator {
   }
 
   default() {
-    super.default();
+    const modules = this.options.modules;
+    for (const idx in modules) {
+      if (Object.prototype.hasOwnProperty.call(modules, idx)) {
+        const moduleOptions = {};
+        moduleOptions.parent = this.props;
+        this.composeWith(modules[idx], moduleOptions);
+      }
+    }
   }
 }
 

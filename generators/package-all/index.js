@@ -14,15 +14,21 @@
  limitations under the License.
 */
 
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import _ from 'lodash';
 
 import Generator from 'yeoman-generator';
-import ModuleMixins from '../../../lib/module-mixins.js';
+import ModuleMixins from '../../lib/module-mixins.js';
 
-import { BundleModuleType } from '../../bundle/index.js';
-import { StructurePackageModuleType } from '../structure/index.js';
-import { ConfigPackageModuleType } from '../config/index.js';
-import { AppsPackageModuleType } from '../apps/index.js';
+import { BundleModuleType } from '../bundle/index.js';
+import { StructurePackageModuleType } from '../package-structure/index.js';
+import { ConfigPackageModuleType } from '../package-config/index.js';
+import { AppsPackageModuleType } from '../package-apps/index.js';
+
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
 const AllPackageModuleType = 'package:all';
 
@@ -68,7 +74,7 @@ class AEMAllPackageGenerator extends Generator {
 
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith('@adobe/aem:app', options);
+      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
     }
   }
 

@@ -28,9 +28,10 @@ import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 import UtilMixins from '../../../lib/util-mixins.js';
 
 import AEMGenerator from '../../../generators/app/index.js';
-import AEMGeneralFEGenerator from '../../../generators/frontend/general/index.js';
+import AEMGeneralFEGenerator from '../../../generators/frontend-general/index.js';
+import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
 
-test.serial('@adobe/aem:frontend:general - via @adobe/generator-aem', async (t) => {
+test.serial('@adobe/aem:frontend-general - via @adobe/generator-aem', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -46,7 +47,10 @@ test.serial('@adobe/aem:frontend:general - via @adobe/generator-aem', async (t) 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMGeneralFEGenerator, '@adobe/aem:frontend:general', generatorPath('frontend', 'general', 'index.js')]])
+    .withGenerators([
+      [AEMParentPomGenerator, '@adobe/aem:parent', generatorPath('parent', 'index.js')],
+      [AEMGeneralFEGenerator, '@adobe/aem:frontend-general', generatorPath('frontend-general', 'index.js')],
+    ])
     .withOptions({
       defaults: true,
       examples: true,
@@ -54,7 +58,7 @@ test.serial('@adobe/aem:frontend:general - via @adobe/generator-aem', async (t) 
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: '6.5',
-      modules: 'frontend:general',
+      modules: 'frontend-general',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -106,7 +110,7 @@ test.serial('@adobe/aem:frontend:general - via @adobe/generator-aem', async (t) 
     });
 });
 
-test.serial('@adobe/aem:frontend:general - second module', async (t) => {
+test.serial('@adobe/aem:frontend-general - second module', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -122,8 +126,11 @@ test.serial('@adobe/aem:frontend:general - second module', async (t) => {
   const fullPath = path.join(temporaryDir, 'test');
 
   await helpers
-    .create(generatorPath('frontend', 'general'))
-    .withGenerators([[AEMGenerator, '@adobe/aem:app', generatorPath('app', 'index.js')]])
+    .create(generatorPath('frontend-general'))
+    .withGenerators([
+      [AEMParentPomGenerator, '@adobe/aem:parent', generatorPath('parent', 'index.js')],
+      [AEMGenerator, '@adobe/aem:app', generatorPath('app', 'index.js')],
+    ])
     .withOptions({
       defaults: true,
       examples: false,

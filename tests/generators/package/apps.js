@@ -28,11 +28,12 @@ import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 
 import AEMGenerator from '../../../generators/app/index.js';
 import AEMBundleGenerator from '../../../generators/bundle/index.js';
-import AEMGeneralFEGenerator from '../../../generators/frontend/general/index.js';
-import AEMStructurePackageGenerator from '../../../generators/package/structure/index.js';
-import AEMAppsPackageGenerator from '../../../generators/package/apps/index.js';
+import AEMGeneralFEGenerator from '../../../generators/frontend-general/index.js';
+import AEMStructurePackageGenerator from '../../../generators/package-structure/index.js';
+import AEMAppsPackageGenerator from '../../../generators/package-apps/index.js';
+import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
 
-test.serial('@adobe/aem:package:apps - via @adobe/generator-aem - v6.5', async (t) => {
+test.serial('@adobe/aem:package-apps - via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -43,6 +44,7 @@ test.serial('@adobe/aem:package:apps - via @adobe/generator-aem - v6.5', async (
   };
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
 
@@ -50,9 +52,9 @@ test.serial('@adobe/aem:package:apps - via @adobe/generator-aem - v6.5', async (
     .create(generatorPath('app'))
     .withGenerators([
       [AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')],
-      [AEMGeneralFEGenerator, '@adobe/aem:frontend:general', generatorPath('frontend', 'general', 'index.js')],
-      [AEMStructurePackageGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')],
-      [AEMAppsPackageGenerator, '@adobe/aem:package:apps', generatorPath('package', 'apps', 'index.js')],
+      [AEMGeneralFEGenerator, '@adobe/aem:frontend-general', generatorPath('frontend-general', 'index.js')],
+      [AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
+      [AEMAppsPackageGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -61,7 +63,7 @@ test.serial('@adobe/aem:package:apps - via @adobe/generator-aem - v6.5', async (
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: '6.5',
-      modules: 'bundle,frontend:general,package:structure,package:apps',
+      modules: 'bundle,frontend-general,package-structure,package-apps',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -109,7 +111,7 @@ test.serial('@adobe/aem:package:apps - via @adobe/generator-aem - v6.5', async (
     });
 });
 
-test.serial('@adobe/aem:package:apps - second package - cloud', async (t) => {
+test.serial('@adobe/aem:package-apps - second package - cloud', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -121,12 +123,13 @@ test.serial('@adobe/aem:package:apps - second package - cloud', async (t) => {
 
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');
 
   await helpers
-    .create(generatorPath('package', 'apps'))
+    .create(generatorPath('package-apps'))
     .withGenerators([[AEMGenerator, '@adobe/aem:app', generatorPath('app', 'index.js')]])
     .withOptions({
       defaults: true,

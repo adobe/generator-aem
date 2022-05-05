@@ -28,6 +28,7 @@ import { generatorPath, fixturePath } from '../fixtures/helpers.js';
 
 import AEMGenerator from '../../generators/app/index.js';
 import AEMBundleGenerator from '../../generators/bundle/index.js';
+import AEMParentPomGenerator from '../../generators/app/pom/index.js';
 
 test.serial('@adobe/aem:bundle - via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
@@ -40,6 +41,7 @@ test.serial('@adobe/aem:bundle - via @adobe/generator-aem - v6.5', async (t) => 
   };
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
@@ -114,6 +116,7 @@ test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
 
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');

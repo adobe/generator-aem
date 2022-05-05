@@ -15,14 +15,18 @@
 */
 
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import _ from 'lodash';
 import got from 'got';
 import { XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
-import ModuleMixins from '../../../lib/module-mixins.js';
-import UtilMixins from '../../../lib/util-mixins.js';
+import ModuleMixins from '../../lib/module-mixins.js';
+import UtilMixins from '../../lib/util-mixins.js';
+
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
 const uniqueProperties = ['package', 'publish'];
@@ -125,7 +129,7 @@ class AEMIntegrationTestsGenerator extends Generator {
 
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith('@adobe/aem:app', options);
+      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
     }
   }
 

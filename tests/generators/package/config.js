@@ -28,10 +28,11 @@ import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 
 import AEMGenerator from '../../../generators/app/index.js';
 import AEMBundleGenerator from '../../../generators/bundle/index.js';
-import AEMStructurePackageGenerator from '../../../generators/package/structure/index.js';
-import AEMConfigPackageGenerator from '../../../generators/package/config/index.js';
+import AEMStructurePackageGenerator from '../../../generators/package-structure/index.js';
+import AEMConfigPackageGenerator from '../../../generators/package-config/index.js';
+import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
 
-test.serial('@adobe/aem:package:config - via @adobe/generator-aem - v6.5', async (t) => {
+test.serial('@adobe/aem:package-config - via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -42,14 +43,15 @@ test.serial('@adobe/aem:package:config - via @adobe/generator-aem - v6.5', async
   };
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([
       [AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')],
-      [AEMStructurePackageGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')],
-      [AEMConfigPackageGenerator, '@adobe/aem:package:config', generatorPath('package', 'config', 'index.js')],
+      [AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
+      [AEMConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -58,7 +60,7 @@ test.serial('@adobe/aem:package:config - via @adobe/generator-aem - v6.5', async
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: '6.5',
-      modules: 'bundle,package:structure,package:config',
+      modules: 'bundle,package-structure,package-config',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -101,7 +103,7 @@ test.serial('@adobe/aem:package:config - via @adobe/generator-aem - v6.5', async
     });
 });
 
-test.serial('@adobe/aem:package:config - via @adobe/generator-aem - cloud', async (t) => {
+test.serial('@adobe/aem:package-config - via @adobe/generator-aem - cloud', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -112,13 +114,14 @@ test.serial('@adobe/aem:package:config - via @adobe/generator-aem - cloud', asyn
   };
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([
-      [AEMStructurePackageGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')],
-      [AEMConfigPackageGenerator, '@adobe/aem:package:config', generatorPath('package', 'config', 'index.js')],
+      [AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
+      [AEMConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -127,7 +130,7 @@ test.serial('@adobe/aem:package:config - via @adobe/generator-aem - cloud', asyn
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: 'cloud',
-      modules: 'package:structure,package:config',
+      modules: 'package-structure,package-config',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -170,7 +173,7 @@ test.serial('@adobe/aem:package:config - via @adobe/generator-aem - cloud', asyn
     });
 });
 
-test('@adobe/aem:package:config - second package fails', async (t) => {
+test('@adobe/aem:package-config - second package fails', async (t) => {
   t.plan(2);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -178,7 +181,7 @@ test('@adobe/aem:package:config - second package fails', async (t) => {
 
   const error = await t.throwsAsync(
     helpers
-      .create(generatorPath('package', 'config'))
+      .create(generatorPath('package-config'))
       .withOptions({
         defaults: true,
         examples: false,

@@ -28,12 +28,13 @@ import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 
 import AEMGenerator from '../../../generators/app/index.js';
 import AEMBundleGenerator from '../../../generators/bundle/index.js';
-import AEMUIAppsGenerator from '../../../generators/package/apps/index.js';
-import AEMUIConfigGenerator from '../../../generators/package/config/index.js';
-import AEMUIAppsStructureGenerator from '../../../generators/package/structure/index.js';
-import AEMAllPackageGenerator from '../../../generators/package/all/index.js';
+import AEMUIAppsGenerator from '../../../generators/package-apps/index.js';
+import AEMUIConfigGenerator from '../../../generators/package-config/index.js';
+import AEMUIAppsStructureGenerator from '../../../generators/package-structure/index.js';
+import AEMAllPackageGenerator from '../../../generators/package-all/index.js';
+import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
 
-test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - no modules', async (t) => {
+test.serial('@adobe/aem:package-all - via @adobe/generator-aem - v6.5 - no modules', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -45,11 +46,12 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - no modul
 
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMAllPackageGenerator, '@adobe/aem:package:all', generatorPath('package', 'all', 'index.js')]])
+    .withGenerators([[AEMAllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -57,7 +59,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - no modul
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: 6.5,
-      modules: 'package:all',
+      modules: 'package-all',
       showBuildOutput: false,
     })
     .inTmpDir((dir) => {
@@ -94,7 +96,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - no modul
     });
 });
 
-test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - bundle', async (t) => {
+test.serial('@adobe/aem:package-all - via @adobe/generator-aem - v6.5 - bundle', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -106,13 +108,14 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - bundle',
 
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([
       [AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')],
-      [AEMAllPackageGenerator, '@adobe/aem:package:all', generatorPath('package', 'all', 'index.js')],
+      [AEMAllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -121,7 +124,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - bundle',
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: 6.5,
-      modules: 'bundle,package:all',
+      modules: 'bundle,package-all',
       showBuildOutput: false,
     })
     .inTmpDir((dir) => {
@@ -158,7 +161,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - v6.5 - bundle',
     });
 });
 
-test.serial('@adobe/aem:package:all - via @adobe/generator-aem - cloud - packages', async (t) => {
+test.serial('@adobe/aem:package-all - via @adobe/generator-aem - cloud - packages', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -170,15 +173,16 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - cloud - package
 
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([
-      [AEMUIAppsStructureGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')],
-      [AEMUIAppsGenerator, '@adobe/aem:package:apps', generatorPath('package', 'apps', 'index.js')],
-      [AEMUIConfigGenerator, '@adobe/aem:package:config', generatorPath('package', 'config', 'index.js')],
-      [AEMAllPackageGenerator, '@adobe/aem:package:all', generatorPath('package', 'all', 'index.js')],
+      [AEMUIAppsStructureGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
+      [AEMUIAppsGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
+      [AEMUIConfigGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
+      [AEMAllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -187,7 +191,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - cloud - package
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: 'cloud',
-      modules: 'package:apps,package:config,package:structure,package:all',
+      modules: 'package-apps,package-config,package-structure,package-all',
       showBuildOutput: false,
     })
     .inTmpDir((dir) => {
@@ -225,7 +229,7 @@ test.serial('@adobe/aem:package:all - via @adobe/generator-aem - cloud - package
     });
 });
 
-test('@adobe/aem:package:all - second module fails', async (t) => {
+test('@adobe/aem:package-all - second module fails', async (t) => {
   t.plan(2);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -233,7 +237,7 @@ test('@adobe/aem:package:all - second module fails', async (t) => {
 
   const error = await t.throwsAsync(
     helpers
-      .create(generatorPath('package', 'all'))
+      .create(generatorPath('package-all'))
       .withOptions({
         defaults: true,
         examples: false,

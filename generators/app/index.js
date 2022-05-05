@@ -17,16 +17,18 @@
 import path from 'node:path';
 import { versions } from 'node:process';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 import _ from 'lodash';
 import chalk from 'chalk';
 
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
-
 import Generator from 'yeoman-generator';
-import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
 
+import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
 import UtilMixins from '../../lib/util-mixins.js';
+
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
 const ModuleOptions = Object.freeze({
   '@adobe/aem:bundle'(parentProps) {
@@ -37,21 +39,21 @@ const ModuleOptions = Object.freeze({
       artifactId: `${parentProps.artifactId}.core`,
     };
   },
-  '@adobe/aem:frontend:general'(parentProps) {
+  '@adobe/aem:frontend-general'(parentProps) {
     return {
       generateInto: 'ui.frontend',
       name: `${parentProps.name} - UI Frontend`,
       artifactId: `${parentProps.artifactId}.ui.frontend`,
     };
   },
-  '@adobe/aem:package:structure'(parentProps) {
+  '@adobe/aem:package-structure'(parentProps) {
     return {
       generateInto: 'ui.apps.structure',
       name: `${parentProps.name} - Repository Structure Package`,
       artifactId: `${parentProps.artifactId}.ui.apps.structure`,
     };
   },
-  '@adobe/aem:package:apps'(parentProps) {
+  '@adobe/aem:package-apps'(parentProps) {
     return {
       generateInto: 'ui.apps',
       name: `${parentProps.name} - UI Apps Package`,
@@ -60,21 +62,21 @@ const ModuleOptions = Object.freeze({
       frontendRef: `ui.frontend`,
     };
   },
-  '@adobe/aem:package:config'(parentProps) {
+  '@adobe/aem:package-config'(parentProps) {
     return {
       generateInto: 'ui.config',
       name: `${parentProps.name} - UI Config Package`,
       artifactId: `${parentProps.artifactId}.ui.config`,
     };
   },
-  '@adobe/aem:tests:it'(parentProps) {
+  '@adobe/aem:tests-it'(parentProps) {
     return {
       generateInto: 'it.tests',
       name: `${parentProps.name} - Integration Tests`,
       artifactId: `${parentProps.artifactId}.it.tests`,
     };
   },
-  '@adobe/aem:package:all'(parentProps) {
+  '@adobe/aem:package-all'(parentProps) {
     return {
       generateInto: 'all',
       name: `${parentProps.name} - All`,
@@ -89,9 +91,6 @@ const npmVersion = execFileSync('npm', ['--version'])
 
 class AEMGenerator extends Generator {
   constructor(args, options, features) {
-    features = features || {};
-    features.customInstallTask = true;
-
     super(args, options, features);
 
     _.defaults(this._options, {
@@ -330,61 +329,8 @@ class AEMGenerator extends Generator {
         this.composeWith(name, moduleOptions);
       }
     }
-  }
 
-  writing() {
-    const files = [];
-    files.push(
-      {
-        src: this.templatePath('README.md'),
-        dest: this.destinationPath('README.md'),
-      },
-      {
-        src: this.templatePath('.gitignore'),
-        dest: this.destinationPath('.gitignore'),
-      },
-      {
-        src: this.templatePath('pom.xml'),
-        dest: this.destinationPath('pom.xml'),
-      }
-    );
-
-    const config = this.config.getAll();
-    this.props.modules = [];
-    _.forOwn(config, (value, key) => {
-      if (value && value.moduleType) {
-        this.props.modules.push(key);
-      }
-    });
-
-    return this._latestApi(this.props.aemVersion).then((aemMetadata) => {
-      this.props.aem = aemMetadata;
-      if (this.props.aemVersion !== 'cloud') {
-        const depPom = this.fs.read(this.templatePath('partials', 'v6.5', 'dependency-management', 'pom.xml'));
-
-        const parser = new XMLParser({
-          ignoreAttributes: true,
-          ignoreDeclaration: true,
-          numberParseOptions: {
-            skipLike: /\d+.\d+/,
-          },
-        });
-        const dependencies = parser.parse(depPom).project.dependencies;
-        const builder = new XMLBuilder({ format: true });
-        this.props.dependencies = builder.build(dependencies);
-      }
-
-      this._writing(files);
-    });
-  }
-
-  conflicts() {}
-
-  install() {
-    const options = this.options.showBuildOutput ? {} : { stdio: 'ignore' };
-    return this.spawnCommand('mvn', ['clean', 'verify'], options).catch((error) => {
-      throw new Error(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
-    });
+    this.composeWith(path.join(dirname, 'pom'), this.props);
   }
 
   end() {

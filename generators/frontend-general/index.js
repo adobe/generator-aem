@@ -15,12 +15,16 @@
 */
 
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import _ from 'lodash';
 import { globbySync } from 'globby';
 
 import Generator from 'yeoman-generator';
 
-import ModuleMixins from '../../../lib/module-mixins.js';
+import ModuleMixins from '../../lib/module-mixins.js';
+
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
 const GeneralFEModuleType = 'frontend:general';
 
@@ -65,7 +69,7 @@ class AEMGeneralFEGenerator extends Generator {
     if (_.isEmpty(this.options.parent)) {
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith('@adobe/aem:app', options);
+      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
     }
   }
 

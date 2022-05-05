@@ -30,7 +30,8 @@ import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 
 import AEMGenerator from '../../../generators/app/index.js';
-import AEMIntegrationTestsGenerator from '../../../generators/tests/it/index.js';
+import AEMIntegrationTestsGenerator from '../../../generators/tests-it/index.js';
+import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
 
 const cloudTestingMetadata = fs.readFileSync(fixturePath('files', 'aem-cloud-testing-clients.metadata.xml'), 'utf8');
 const aem65TestingMetadata = fs.readFileSync(fixturePath('files', 'cq-testing-clients-65.metadata.xml'), 'utf8');
@@ -39,7 +40,7 @@ const npmVersion = execFileSync('npm', ['--version'])
   .toString()
   .replaceAll(/\r\n|\n|\r/gm, '');
 
-test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - v6.5', async (t) => {
+test.serial('@adobe/aem:tests-it - via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -50,6 +51,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - v6.5', async (t) =
   };
   const apiStub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', apiStub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', apiStub);
 
   const gotStub = sinon.stub().resolves(aem65TestingMetadata);
   sinon.replace(got, 'get', gotStub);
@@ -57,7 +59,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - v6.5', async (t) =
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests:it', generatorPath('tests', 'it', 'index.js')]])
+    .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -65,7 +67,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - v6.5', async (t) =
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: '6.5',
-      modules: 'tests:it',
+      modules: 'tests-it',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -105,7 +107,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - v6.5', async (t) =
     });
 });
 
-test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - cloud', async (t) => {
+test.serial('@adobe/aem:tests-it - via @adobe/generator-aem - cloud', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -116,6 +118,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - cloud', async (t) 
   };
   const apiStub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', apiStub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', apiStub);
 
   const gotStub = sinon.stub().resolves(cloudTestingMetadata);
   sinon.replace(got, 'get', gotStub);
@@ -123,7 +126,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - cloud', async (t) 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests:it', generatorPath('tests', 'it', 'index.js')]])
+    .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
     .withOptions({
       defaults: false,
       examples: true,
@@ -131,7 +134,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - cloud', async (t) 
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: 'cloud',
-      modules: 'tests:it',
+      modules: 'tests-it',
       javaVersion: 8,
       nodeVersion,
       npmVersion,
@@ -179,7 +182,7 @@ test.serial('@adobe/aem:tests:it - via @adobe/generator-aem - cloud', async (t) 
     });
 });
 
-test.serial('@adobe/aem:tests:it - metadata retrieve fails', async (t) => {
+test.serial('@adobe/aem:tests-it - metadata retrieve fails', async (t) => {
   t.plan(2);
 
   const gotStub = sinon.stub().throws('Error', 'Maven Repo Not found');
@@ -189,7 +192,7 @@ test.serial('@adobe/aem:tests:it - metadata retrieve fails', async (t) => {
   await t.throwsAsync(
     helpers
       .create(generatorPath('app'))
-      .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests:it', generatorPath('tests', 'it', 'index.js')]])
+      .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
       .withOptions({
         defaults: true,
         examples: true,
@@ -197,7 +200,7 @@ test.serial('@adobe/aem:tests:it - metadata retrieve fails', async (t) => {
         name: 'Test Project',
         groupId: 'com.adobe.test',
         aemVersion: '6.5',
-        modules: 'tests:it',
+        modules: 'tests-it',
         showBuildOutput: false,
       })
       .inTmpDir((temporary) => {
@@ -209,7 +212,7 @@ test.serial('@adobe/aem:tests:it - metadata retrieve fails', async (t) => {
   t.falsy(fs.existsSync(path.join(temporaryDir, 'test', 'pom.xml')));
 });
 
-test('@adobe/aem:tests:it - second test module fails', async (t) => {
+test('@adobe/aem:tests-it - second test module fails', async (t) => {
   t.plan(2);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -217,7 +220,7 @@ test('@adobe/aem:tests:it - second test module fails', async (t) => {
 
   const error = await t.throwsAsync(
     helpers
-      .create(generatorPath('tests', 'it'))
+      .create(generatorPath('tests-it'))
       .withOptions({
         defaults: true,
         examples: false,

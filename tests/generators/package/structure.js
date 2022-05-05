@@ -27,9 +27,10 @@ import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 
 import AEMGenerator from '../../../generators/app/index.js';
-import AEMStructurePackageGenerator from '../../../generators/package/structure/index.js';
+import AEMStructurePackageGenerator from '../../../generators/package-structure/index.js';
+import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
 
-test.serial('@adobe/aem:package:structure - via @adobe/generator-aem', async (t) => {
+test.serial('@adobe/aem:package-structure - via @adobe/generator-aem', async (t) => {
   t.plan(5);
 
   const aemData = {
@@ -41,11 +42,12 @@ test.serial('@adobe/aem:package:structure - via @adobe/generator-aem', async (t)
 
   const stub = sinon.stub().resolves(aemData);
   sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMStructurePackageGenerator, '@adobe/aem:package:structure', generatorPath('package', 'structure', 'index.js')]])
+    .withGenerators([[AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -53,7 +55,7 @@ test.serial('@adobe/aem:package:structure - via @adobe/generator-aem', async (t)
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: '6.5',
-      modules: 'package:structure',
+      modules: 'package-structure',
       showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
@@ -89,7 +91,7 @@ test.serial('@adobe/aem:package:structure - via @adobe/generator-aem', async (t)
     });
 });
 
-test('@adobe/aem:package:structure - second package fails', async (t) => {
+test('@adobe/aem:package-structure - second package fails', async (t) => {
   t.plan(2);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -97,7 +99,7 @@ test('@adobe/aem:package:structure - second package fails', async (t) => {
 
   const error = await t.throwsAsync(
     helpers
-      .create(generatorPath('package', 'structure'))
+      .create(generatorPath('package-structure'))
       .withOptions({
         defaults: true,
         examples: false,

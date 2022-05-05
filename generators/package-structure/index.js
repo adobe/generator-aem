@@ -14,11 +14,16 @@
  limitations under the License.
 */
 
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import _ from 'lodash';
 
 import Generator from 'yeoman-generator';
 
-import ModuleMixins from '../../../lib/module-mixins.js';
+import ModuleMixins from '../../lib/module-mixins.js';
+
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
 const StructurePackageModuleType = 'package:structure';
 
@@ -55,7 +60,7 @@ class AEMStructurePackageGenerator extends Generator {
 
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith('@adobe/aem:app', options);
+      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
     }
   }
 

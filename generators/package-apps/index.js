@@ -14,16 +14,22 @@
  limitations under the License.
 */
 
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import _ from 'lodash';
 
 import Generator from 'yeoman-generator';
 
-import ModuleMixins from '../../../lib/module-mixins.js';
-import UtilMixins from '../../../lib/util-mixins.js';
+import ModuleMixins from '../../lib/module-mixins.js';
+import UtilMixins from '../../lib/util-mixins.js';
 
-import { BundleModuleType } from '../../bundle/index.js';
-import { GeneralFEModuleType } from '../../frontend/general/index.js';
-import { StructurePackageModuleType } from '../structure/index.js';
+import { BundleModuleType } from '../bundle/index.js';
+import { GeneralFEModuleType } from '../frontend-general/index.js';
+import { StructurePackageModuleType } from '../package-structure/index.js';
+
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
 const AppsPackageModuleType = 'package:apps';
 const uniqueProperties = ['bundleRef', 'frontendRef'];
@@ -117,7 +123,7 @@ class AEMAppsPackageGenerator extends Generator {
     if (_.isEmpty(this.options.parent)) {
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith('@adobe/aem:app', options);
+      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
     }
   }
 
