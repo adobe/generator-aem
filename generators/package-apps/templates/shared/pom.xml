@@ -124,7 +124,7 @@
     <dependency>
       <groupId><%= parent.groupId %></groupId>
       <artifactId><%= bundle.artifactId %></artifactId>
-      <version><%= parent.version %></version>
+      <version>${project.version}</version>
     </dependency>
     <%_ } _%>
 
@@ -132,7 +132,7 @@
     <dependency>
       <groupId><%= parent.groupId %></groupId>
       <artifactId><%= frontend.artifactId %></artifactId>
-      <version><%= parent.version %></version>
+      <version>${project.version}</version>
       <type>pom</type>
     </dependency>
     <%_ } _%>
@@ -141,7 +141,7 @@
     <dependency>
       <groupId><%= parent.groupId %></groupId>
       <artifactId><%= structure.artifactId %></artifactId>
-      <version><%= parent.version %></version>
+      <version>${project.version}</version>
       <type>zip</type>
     </dependency>
     <%_ } _%>

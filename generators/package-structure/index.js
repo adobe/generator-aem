@@ -21,11 +21,12 @@ import _ from 'lodash';
 import Generator from 'yeoman-generator';
 
 import ModuleMixins from '../../lib/module-mixins.js';
+import { AppsPackageModuleType } from '../package-apps/index.js';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const StructurePackageModuleType = 'package:structure';
+const StructurePackageModuleType = 'package-structure';
 
 class AEMStructurePackageGenerator extends Generator {
   constructor(args, options, features) {
@@ -60,7 +61,7 @@ class AEMStructurePackageGenerator extends Generator {
 
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
+      this.composeWith(path.join(dirname, '..', 'app'), options);
     }
   }
 
@@ -71,6 +72,12 @@ class AEMStructurePackageGenerator extends Generator {
         src: this.templatePath(f),
         dest: this.destinationPath(this.relativePath, f),
       });
+    });
+    this.props.appIds = [];
+    _.forOwn(this.config.getAll(), (value) => {
+      if (value && value.moduleType && value.moduleType === AppsPackageModuleType) {
+        this.props.appIds.push(value.appId);
+      }
     });
     this._writing(files);
   }

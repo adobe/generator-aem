@@ -22,7 +22,6 @@ import _ from 'lodash';
 import Generator from 'yeoman-generator';
 
 import ModuleMixins from '../../lib/module-mixins.js';
-import UtilMixins from '../../lib/util-mixins.js';
 
 import { BundleModuleType } from '../bundle/index.js';
 import { GeneralFEModuleType } from '../frontend-general/index.js';
@@ -31,7 +30,7 @@ import { StructurePackageModuleType } from '../package-structure/index.js';
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const AppsPackageModuleType = 'package:apps';
+const AppsPackageModuleType = 'package-apps';
 const uniqueProperties = ['bundleRef', 'frontendRef'];
 
 class AEMAppsPackageGenerator extends Generator {
@@ -123,7 +122,7 @@ class AEMAppsPackageGenerator extends Generator {
     if (_.isEmpty(this.options.parent)) {
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
+      this.composeWith(path.join(dirname, '..', 'app'), options);
     }
   }
 
@@ -136,9 +135,8 @@ class AEMAppsPackageGenerator extends Generator {
       files.push(...this._listTemplates('examples'));
     }
 
-    return this._latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
+    return this._latestRelease(this._apiCoordinates(this.props.parent.aemVersion)).then((aemMetadata) => {
       this.props.aem = aemMetadata;
-
       const config = this.config.getAll();
       _.each(config, (value, key) => {
         if (key === this.props.bundleRef) {
@@ -155,7 +153,7 @@ class AEMAppsPackageGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMAppsPackageGenerator.prototype, ModuleMixins, UtilMixins, (objectValue, srcValue) => {
+_.extendWith(AEMAppsPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 

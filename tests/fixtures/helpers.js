@@ -21,6 +21,18 @@ const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 const projectRoot = path.join(dirname, '..', '..');
 
+export const cloudSdkApiMetadata = {
+  groupId: 'com.adobe.aem',
+  artifactId: 'aem-sdk-api',
+  version: '2022.3.6698.20220318T233218Z-220400',
+};
+
+export const aem65ApiMetadata = {
+  groupId: 'com.adobe.aem',
+  artifactId: 'uber-jar',
+  version: '6.5.12',
+};
+
 export function generatorPath(...dest) {
   return path.join(projectRoot, 'generators', ...dest);
 }
@@ -30,6 +42,8 @@ export function fixturePath(...dest) {
 }
 
 const helpers = {
+  cloudSdkApiMetadata,
+  aem65ApiMetadata,
   projectRoot,
   generatorPath,
   fixturePath,

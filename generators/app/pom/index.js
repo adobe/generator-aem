@@ -22,7 +22,6 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import Generator from 'yeoman-generator';
 
 import ModuleMixins from '../../../lib/module-mixins.js';
-import UtilMixins from '../../../lib/util-mixins.js';
 
 class AEMParentPomGenerator extends Generator {
   constructor(args, options, features) {
@@ -52,7 +51,7 @@ class AEMParentPomGenerator extends Generator {
       }
     );
 
-    return this._latestApi(this.props.aemVersion).then((aemMetadata) => {
+    return this._latestRelease(this._apiCoordinates(this.props.aemVersion)).then((aemMetadata) => {
       const config = this.config.getAll();
       this.props.modules = [];
       _.forOwn(config, (value, key) => {
@@ -84,14 +83,14 @@ class AEMParentPomGenerator extends Generator {
   conflicts() {}
 
   install() {
-    const options = this.options.showBuildOutput ? {} : { stdio: 'ignore' };
+    const options = this.options.showBuildOutput ? { stdio: 'inherit' } : { stdio: 'ignore' };
     return this.spawnCommand('mvn', ['clean', 'verify'], options).catch((error) => {
       throw new Error(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
     });
   }
 }
 
-_.extendWith(AEMParentPomGenerator.prototype, ModuleMixins, UtilMixins, (objectValue, srcValue) => {
+_.extendWith(AEMParentPomGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 

@@ -24,29 +24,20 @@ import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
-import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
+import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
 
-import AEMGenerator from '../../../generators/app/index.js';
 import AEMBundleGenerator from '../../../generators/bundle/index.js';
-import AEMUIAppsGenerator from '../../../generators/package-apps/index.js';
-import AEMUIConfigGenerator from '../../../generators/package-config/index.js';
-import AEMUIAppsStructureGenerator from '../../../generators/package-structure/index.js';
+import AEMConfigPackageGenerator from '../../../generators/package-config/index.js';
+import AEMStructurePackageGenerator from '../../../generators/package-structure/index.js';
 import AEMAllPackageGenerator from '../../../generators/package-all/index.js';
 import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
+import AEMAppsPackageGenerator from '../../../generators/package-apps/index.js';
 
-test.serial('@adobe/aem:package-all - via @adobe/generator-aem - v6.5 - no modules', async (t) => {
+test.serial('via @adobe/generator-aem - v6.5 - no modules', async (t) => {
   t.plan(5);
 
-  const aemData = {
-    groupId: 'com.adobe.aem',
-    artifactId: 'uber-jar',
-    version: '6.5.12',
-    path: 'com/adobe/aem/uber-jar',
-  };
-
-  const stub = sinon.stub().resolves(aemData);
-  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
+  const stub = sinon.stub().resolves(aem65ApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
   let temporaryDir;
   await helpers
@@ -96,19 +87,11 @@ test.serial('@adobe/aem:package-all - via @adobe/generator-aem - v6.5 - no modul
     });
 });
 
-test.serial('@adobe/aem:package-all - via @adobe/generator-aem - v6.5 - bundle', async (t) => {
+test.serial('via @adobe/generator-aem - v6.5 - bundle', async (t) => {
   t.plan(5);
 
-  const aemData = {
-    groupId: 'com.adobe.aem',
-    artifactId: 'uber-jar',
-    version: '6.5.12',
-    path: 'com/adobe/aem/uber-jar',
-  };
-
-  const stub = sinon.stub().resolves(aemData);
-  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
+  const stub = sinon.stub().resolves(aem65ApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
   let temporaryDir;
   await helpers
@@ -161,27 +144,19 @@ test.serial('@adobe/aem:package-all - via @adobe/generator-aem - v6.5 - bundle',
     });
 });
 
-test.serial('@adobe/aem:package-all - via @adobe/generator-aem - cloud - packages', async (t) => {
+test.serial('via @adobe/generator-aem - cloud - packages', async (t) => {
   t.plan(5);
 
-  const aemData = {
-    groupId: 'com.adobe.aem',
-    artifactId: 'aem-sdk-api',
-    version: '2022.3.6698.20220318T233218Z-220400',
-    path: 'com/adobe/aem/aem-sdk-api',
-  };
-
-  const stub = sinon.stub().resolves(aemData);
-  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
+  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([
-      [AEMUIAppsStructureGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
-      [AEMUIAppsGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
-      [AEMUIConfigGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
+      [AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
+      [AEMAppsPackageGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
+      [AEMConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
       [AEMAllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')],
     ])
     .withOptions({
@@ -229,7 +204,71 @@ test.serial('@adobe/aem:package-all - via @adobe/generator-aem - cloud - package
     });
 });
 
-test('@adobe/aem:package-all - second module fails', async (t) => {
+test.serial('add module to existing project', async (t) => {
+  t.plan(5);
+  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'test');
+  await helpers
+    .create(generatorPath('package-all'))
+    .withGenerators([
+      [AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
+      [AEMAppsPackageGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
+      [AEMConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
+      [AEMAllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')],
+    ])
+    .withOptions({
+      defaults: true,
+      examples: false,
+      generateInto: 'ui.all.other',
+      appId: 'other',
+      name: 'Second All',
+      showBuildOutput: false,
+    })
+    .inDir(fullPath, (temporary) => {
+      fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
+      fs.rmSync(path.join(temporary, 'all'), { recursive: true });
+      const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
+      delete data['@adobe/generator-aem'].all;
+      delete data['@adobe/generator-aem'].core;
+      delete data['@adobe/generator-aem']['it.tests'];
+      delete data['@adobe/generator-aem']['ui.frontend'];
+      fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
+    })
+    .run()
+    .then((result) => {
+      sinon.restore();
+      const properties = result.generator.props;
+      const outputRoot = path.join(temporaryDir, 'test');
+      const moduleDir = path.join(fullPath, 'ui.all.other');
+      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui\.all\.other<\/module>/);
+
+      const pom = path.join(moduleDir, 'pom.xml');
+      result.assertFile(pom);
+      const pomString = fs.readFileSync(pom, 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, properties.parent.groupId, 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'other', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Second All', 'Name set.');
+
+      result.assertFileContent(pom, /<artifactId>test\.ui\.apps<\/artifactId>/);
+      result.assertFileContent(pom, /<artifactId>test\.ui\.config<\/artifactId>/);
+      result.assertFileContent(pom, /<artifactId>test\.ui\.apps\.structure<\/artifactId>/);
+      result.assertFileContent(pom, /<target>\/apps\/other-packages\/application\/install<\/target>/);
+
+      result.assertFile(path.join(moduleDir, 'target', `other-${properties.parent.version}.zip`));
+    });
+});
+
+test('second module fails', async (t) => {
   t.plan(2);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));

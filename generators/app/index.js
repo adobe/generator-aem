@@ -25,7 +25,6 @@ import chalk from 'chalk';
 import Generator from 'yeoman-generator';
 
 import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
-import UtilMixins from '../../lib/util-mixins.js';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -249,7 +248,19 @@ class AEMGenerator extends Generator {
         type: 'list',
         choices: ['8', '11'],
         default: 1,
-        when: !this.options.defaults && !this.props.javaVersion, // TODO: Dont prompt when using AEM Cloud
+        when: (answers) => {
+          return new Promise((resolve) => {
+            if (this.options.defaults || this.props.javaVersion) {
+              resolve(false);
+            }
+
+            if (this.props.aemVersion === 'cloud' || answers.aemVersion === 'cloud') {
+              resolve(false);
+            }
+
+            resolve(true);
+          });
+        },
       },
 
       {
@@ -266,7 +277,11 @@ class AEMGenerator extends Generator {
       },
     ];
 
-    return this._prompting(prompts);
+    return this._prompting(prompts).then((answers = {}) => {
+      if (this.props.aemVersion === 'cloud' || answers.aemVersion === 'cloud') {
+        this.props.javaVersion = '11';
+      }
+    });
   }
 
   configuring() {
@@ -312,9 +327,6 @@ class AEMGenerator extends Generator {
         if (meta[`@adobe/aem:${modules[idx]}`]) {
           name = `@adobe/aem:${modules[idx]}`;
           _.defaults(moduleOptions, ModuleOptions[name](this.props), _.pick(this.props, _.keys(ModuleMixins._options)));
-        } else if (meta[`aem:${modules[idx]}`]) {
-          name = `aem:${modules[idx]}`;
-          _.defaults(moduleOptions, ModuleOptions[`@adobe/${name}`](this.props), _.pick(this.props, _.keys(ModuleMixins._options)));
         } else if (meta[modules[idx]]) {
           name = modules[idx];
         } else {
@@ -330,7 +342,13 @@ class AEMGenerator extends Generator {
       }
     }
 
-    this.composeWith(path.join(dirname, 'pom'), this.props);
+    _.each(this.config.getAll(), (value, key) => {
+      if (value.moduleType && this.env.rootGenerator().relativePath !== key) {
+        this.composeWith(`@adobe/aem:${value.moduleType}`, { generateInto: key, parent: this.props });
+      }
+    });
+
+    this.composeWith(path.join(dirname, 'pom'), { showBuildOutput: this.options.showBuildOutput, ...this.props });
   }
 
   end() {
@@ -338,7 +356,7 @@ class AEMGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMGenerator.prototype, ModuleMixins, UtilMixins, (objectValue, srcValue) => {
+_.extendWith(AEMGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 

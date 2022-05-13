@@ -24,24 +24,17 @@ import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
-import { generatorPath, fixturePath } from '../fixtures/helpers.js';
+import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
 
-import AEMGenerator from '../../generators/app/index.js';
 import AEMBundleGenerator from '../../generators/bundle/index.js';
 import AEMParentPomGenerator from '../../generators/app/pom/index.js';
 
-test.serial('@adobe/aem:bundle - via @adobe/generator-aem - v6.5', async (t) => {
+test.serial('via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
-  const aemData = {
-    groupId: 'com.adobe.aem',
-    artifactId: 'uber-jar',
-    version: '6.5.12',
-    path: 'com/adobe/aem/uber-jar',
-  };
-  const stub = sinon.stub().resolves(aemData);
-  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
+  const stub = sinon.stub().resolves(aem65ApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(AEMBundleGenerator.prototype, '_latestRelease', stub);
 
   let temporaryDir;
   await helpers
@@ -104,26 +97,19 @@ test.serial('@adobe/aem:bundle - via @adobe/generator-aem - v6.5', async (t) => 
     });
 });
 
-test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
+test.serial('second bundle - cloud', async (t) => {
   t.plan(5);
 
-  const aemData = {
-    groupId: 'com.adobe.aem',
-    artifactId: 'aem-sdk-api',
-    version: '2022.3.6698.20220318T233218Z-220400',
-    path: 'com/adobe/aem/aem-sdk-api',
-  };
-
-  const stub = sinon.stub().resolves(aemData);
-  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestApi', stub);
+  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(AEMBundleGenerator.prototype, '_latestRelease', stub);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');
 
   await helpers
     .create(generatorPath('bundle'))
-    .withGenerators([[AEMGenerator, '@adobe/aem:app', generatorPath('app', 'index.js')]])
+    .withGenerators([[AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: false,
@@ -135,6 +121,16 @@ test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
     })
     .inDir(fullPath, (temporary) => {
       fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
+
+      // Delete additional things to reduce context
+      const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
+      delete data['@adobe/generator-aem'].all;
+      delete data['@adobe/generator-aem']['ui.apps'];
+      delete data['@adobe/generator-aem']['ui.apps.structure'];
+      delete data['@adobe/generator-aem']['ui.config'];
+      delete data['@adobe/generator-aem']['it.tests'];
+      delete data['@adobe/generator-aem']['ui.frontend'];
+      fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
     })
     .run()
     .then((result) => {
@@ -179,6 +175,4 @@ test.serial('@adobe/aem:bundle - second bundle - cloud', async (t) => {
     });
 });
 
-// Test('@adobe/aem:bundle - existing bundle', (t) => {
-//   t.fail('Not Implemented');
-// });
+// TODO: Tests to update existing bundle

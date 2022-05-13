@@ -18,9 +18,8 @@
     "url": "https://www.adobe.com"
   },
   "scripts": {
-    "lint-fix": "xo --fix",
     "unit-test": "ava",
-    "test": "xo && c8 ava"
+    "test": "xo --fix && c8 ava"
   },
   "files": [
     "generators",

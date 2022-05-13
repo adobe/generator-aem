@@ -29,7 +29,7 @@ import { StructurePackageModuleType } from '../package-structure/index.js';
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const ConfigPackageModuleType = 'package:config';
+const ConfigPackageModuleType = 'package-config';
 
 class AEMConfigPackageGenerator extends Generator {
   constructor(args, options, features) {
@@ -62,10 +62,9 @@ class AEMConfigPackageGenerator extends Generator {
           throw new Error('Refusing to create a second Config Package module.');
         }
       });
-
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
+      this.composeWith(path.join(dirname, '..', 'app'), options);
     }
   }
 

@@ -24,33 +24,21 @@ import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
-import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
-import UtilMixins from '../../../lib/util-mixins.js';
+import { generatorPath, fixturePath, cloudSdkApiMetadata } from '../../fixtures/helpers.js';
 
-import AEMGenerator from '../../../generators/app/index.js';
 import AEMGeneralFEGenerator from '../../../generators/frontend-general/index.js';
 import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
 
-test.serial('@adobe/aem:frontend-general - via @adobe/generator-aem', async (t) => {
+test.serial('via @adobe/generator-aem', async (t) => {
   t.plan(5);
 
-  const aemData = {
-    groupId: 'com.adobe.aem',
-    artifactId: 'aem-sdk-api',
-    version: '2022.3.6698.20220318T233218Z-220400',
-    path: 'com/adobe/aem/aem-sdk-api',
-  };
-
-  const stub = sinon.stub().resolves(aemData);
-  sinon.replace(UtilMixins, '_latestApi', stub);
+  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
   let temporaryDir;
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([
-      [AEMParentPomGenerator, '@adobe/aem:parent', generatorPath('parent', 'index.js')],
-      [AEMGeneralFEGenerator, '@adobe/aem:frontend-general', generatorPath('frontend-general', 'index.js')],
-    ])
+    .withGenerators([[AEMGeneralFEGenerator, '@adobe/aem:frontend-general', generatorPath('frontend-general', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -110,27 +98,18 @@ test.serial('@adobe/aem:frontend-general - via @adobe/generator-aem', async (t) 
     });
 });
 
-test.serial('@adobe/aem:frontend-general - second module', async (t) => {
+test.serial('second module', async (t) => {
   t.plan(5);
 
-  const aemData = {
-    groupId: 'com.adobe.aem',
-    artifactId: 'aem-sdk-api',
-    version: '2022.3.6698.20220318T233218Z-220400',
-    path: 'com/adobe/aem/aem-sdk-api',
-  };
+  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
-  const stub = sinon.stub().resolves(aemData);
-  sinon.replace(UtilMixins, '_latestApi', stub);
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');
 
   await helpers
     .create(generatorPath('frontend-general'))
-    .withGenerators([
-      [AEMParentPomGenerator, '@adobe/aem:parent', generatorPath('parent', 'index.js')],
-      [AEMGenerator, '@adobe/aem:app', generatorPath('app', 'index.js')],
-    ])
+    .withGenerators([[AEMGeneralFEGenerator, '@adobe/aem:frontend-general', generatorPath('frontend-general', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: false,
@@ -141,6 +120,14 @@ test.serial('@adobe/aem:frontend-general - second module', async (t) => {
     })
     .inDir(fullPath, (temporary) => {
       fs.cpSync(fixturePath('projects'), path.join(temporary), { recursive: true });
+      const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
+      delete data['@adobe/generator-aem'].all;
+      delete data['@adobe/generator-aem'].core;
+      delete data['@adobe/generator-aem']['ui.apps'];
+      delete data['@adobe/generator-aem']['ui.apps.structure'];
+      delete data['@adobe/generator-aem']['ui.config'];
+      delete data['@adobe/generator-aem']['it.tests'];
+      fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
     })
     .run()
     .then((result) => {

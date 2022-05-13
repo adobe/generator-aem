@@ -26,7 +26,7 @@ import ModuleMixins from '../../lib/module-mixins.js';
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const GeneralFEModuleType = 'frontend:general';
+const GeneralFEModuleType = 'frontend-general';
 
 /* eslint-disable prettier/prettier */
 const tplFiles = [
@@ -69,7 +69,7 @@ class AEMGeneralFEGenerator extends Generator {
     if (_.isEmpty(this.options.parent)) {
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
+      this.composeWith(path.join(dirname, '..', 'app'), options);
     }
   }
 

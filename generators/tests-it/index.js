@@ -18,12 +18,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import _ from 'lodash';
-import got from 'got';
-import { XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 import ModuleMixins from '../../lib/module-mixins.js';
-import UtilMixins from '../../lib/util-mixins.js';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -31,7 +28,21 @@ const dirname = path.dirname(filename);
 const invalidPackageRegex = /[^a-zA-Z.]/g;
 const uniqueProperties = ['package', 'publish'];
 
-const IntegrationTestsModuleType = 'tests:it';
+const IntegrationTestsModuleType = 'tests-it';
+
+const testClientCoordinates = (version) => {
+  if (version === 'cloud') {
+    return {
+      groupId: 'com.adobe.cq',
+      artifactId: 'aem-cloud-testing-clients',
+    };
+  }
+
+  return {
+    groupId: 'com.adobe.cq',
+    artifactId: 'cq-testing-clients-65',
+  };
+};
 
 class AEMIntegrationTestsGenerator extends Generator {
   constructor(args, options, features) {
@@ -129,7 +140,7 @@ class AEMIntegrationTestsGenerator extends Generator {
 
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
+      this.composeWith(path.join(dirname, '..', 'app'), options);
     }
   }
 
@@ -141,57 +152,20 @@ class AEMIntegrationTestsGenerator extends Generator {
       files.push(...this._listTemplates('publish'));
     }
 
-    return this._testingClientApi(this.props.parent.aemVersion)
-      .then(this._latestApi)
+    return this._latestRelease(testClientCoordinates(this.props.parent.aemVersion))
+      .then((clientMetadata) => {
+        this.props.testingClient = clientMetadata;
+      })
+      .then(this._latestRelease(this._apiCoordinates(this.props.parent.aemVersion)))
       .then((aemMetadata) => {
         this.props.aem = aemMetadata;
         this.props.packagePath = this.props.package.replaceAll('.', path.sep);
         this._writing(files);
       });
   }
-
-  _testingClientApi(aemVersion) {
-    const coordinates = (version) => {
-      if (version === 'cloud') {
-        return {
-          groupId: 'com.adobe.cq',
-          artifactId: 'aem-cloud-testing-clients',
-          path: 'com/adobe/cq/aem-cloud-testing-clients',
-        };
-      }
-
-      return {
-        groupId: 'com.adobe.cq',
-        artifactId: 'cq-testing-clients-65',
-        path: 'com/adobe/cq/cq-testing-clients-65',
-      };
-    };
-
-    return new Promise((resolve, reject) => {
-      const metadata = coordinates(aemVersion);
-      try {
-        got.get(`https://repo1.maven.org/maven2/${metadata.path}/maven-metadata.xml`, { responseType: 'text', resolveBodyOnly: true }).then((body) => {
-          try {
-            const parser = new XMLParser({
-              ignoreAttributes: true,
-              ignoreDeclaration: true,
-            });
-            const data = parser.parse(body);
-            metadata.version = data.metadata.versioning.latest;
-            this.props.testingClient = metadata;
-            resolve(aemVersion);
-          } catch (error) {
-            reject(error);
-          }
-        });
-      } catch (error) {
-        reject(error.response ? error.response.body : error);
-      }
-    });
-  }
 }
 
-_.extendWith(AEMIntegrationTestsGenerator.prototype, ModuleMixins, UtilMixins, (objectValue, srcValue) => {
+_.extendWith(AEMIntegrationTestsGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 

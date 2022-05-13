@@ -24,6 +24,78 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test.ui.apps</artifactId>
+  <packaging>content-package</packaging>
   <name>Test Project - UI Frontend</name>
+
+  <build>
+    <sourceDirectory>src/main/content/jcr_root</sourceDirectory>
+    <plugins>
+      <!-- ====================================================================== -->
+      <!-- V A U L T   P A C K A G E   P L U G I N S                              -->
+      <!-- ====================================================================== -->
+      <plugin>
+        <groupId>org.apache.jackrabbit</groupId>
+        <artifactId>filevault-package-maven-plugin</artifactId>
+        <configuration>
+          <properties>
+            <cloudManagerTarget>none</cloudManagerTarget>
+          </properties>
+          <group>com.adobe.test</group>
+          <name>test.ui.apps</name>
+          <packageType>application</packageType>
+          <repositoryStructurePackages>
+            <repositoryStructurePackage>
+              <groupId>com.adobe.test</groupId>
+              <artifactId>test.ui.apps.structure</artifactId>
+            </repositoryStructurePackage>
+          </repositoryStructurePackages>
+          <dependencies>
+          </dependencies>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.day.jcr.vault</groupId>
+        <artifactId>content-package-maven-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <verbose>true</verbose>
+          <failOnError>true</failOnError>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.sling</groupId>
+        <artifactId>htl-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>validate-htl-scripts</id>
+            <goals>
+              <goal>validate</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <generateJavaClasses>true</generateJavaClasses>
+              <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+              <allowedExpressionOptions>
+                <allowedExpressionOption>cssClassName</allowedExpressionOption>
+                <allowedExpressionOption>decoration</allowedExpressionOption>
+                <allowedExpressionOption>decorationTagName</allowedExpressionOption>
+                <allowedExpressionOption>wcmmode</allowedExpressionOption>
+              </allowedExpressionOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+
+    <dependency>
+      <groupId>com.adobe.test</groupId>
+      <artifactId>test.ui.apps.structure</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+  </dependencies>
 
 </project>

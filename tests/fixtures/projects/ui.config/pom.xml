@@ -23,7 +23,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>test.ui.apps.structure</artifactId>
+  <artifactId>test.ui.config</artifactId>
   <packaging>content-package</packaging>
   <name>Test Project - Repository Structure Package</name>
 

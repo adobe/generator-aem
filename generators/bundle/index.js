@@ -22,7 +22,6 @@ import _ from 'lodash';
 import Generator from 'yeoman-generator';
 
 import ModuleMixins from '../../lib/module-mixins.js';
-import UtilMixins from '../../lib/util-mixins.js';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -107,7 +106,7 @@ class AEMBundleGenerator extends Generator {
     if (_.isEmpty(this.options.parent)) {
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
+      this.composeWith(path.join(dirname, '..', 'app'), options);
     }
   }
 
@@ -119,7 +118,7 @@ class AEMBundleGenerator extends Generator {
       files.push(...this._listTemplates('examples'));
     }
 
-    return this._latestApi(this.props.parent.aemVersion).then((aemMetadata) => {
+    return this._latestRelease(this._apiCoordinates(this.props.parent.aemVersion)).then((aemMetadata) => {
       this.props.aem = aemMetadata;
       this.props.packagePath = this.props.package.replaceAll('.', path.sep);
       this._writing(files);
@@ -127,7 +126,7 @@ class AEMBundleGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMBundleGenerator.prototype, ModuleMixins, UtilMixins, (objectValue, srcValue) => {
+_.extendWith(AEMBundleGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 

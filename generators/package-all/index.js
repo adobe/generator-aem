@@ -30,7 +30,7 @@ import { AppsPackageModuleType } from '../package-apps/index.js';
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const AllPackageModuleType = 'package:all';
+const AllPackageModuleType = 'package-all';
 
 /* eslint-disable prettier/prettier */
 const packagedModules = new Set([
@@ -74,7 +74,7 @@ class AEMAllPackageGenerator extends Generator {
 
       // Need to have parent update module list.
       const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app', 'pom'), options);
+      this.composeWith(path.join(dirname, '..', 'app'), options);
     }
   }
 

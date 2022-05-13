@@ -21,14 +21,14 @@ import { fixturePath } from '../../fixtures/helpers.js';
 import ModuleMixins from '../../../lib/module-mixins.js';
 
 test('finds files', (t) => {
-  t.plan(5);
+  t.plan(3);
   const generator = {
     relativePath: 'output',
     templatePath: fixturePath,
     destinationPath: fixturePath,
   };
 
-  const filenames = ['.gitignore', 'aem-cloud-testing-clients.metadata.xml', 'cq-testing-clients-65.metadata.xml', 'sdk-api-metadata.xml', 'uber-jar-metadata.xml'];
+  const filenames = ['.gitignore', 'sdk-api-metadata.xml', 'uber-jar-metadata.xml'];
 
   const files = ModuleMixins._listTemplates.call(generator, 'files');
 

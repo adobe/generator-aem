@@ -44,8 +44,9 @@
           <filters>
             <!-- /apps root -->
             <filter><root>/apps</root></filter>
-            <filter><root>/apps/<%= appId %></root></filter>
-
+            <%_ appIds.forEach((id) => { _%>
+            <filter><root>/apps/<%= id %></root></filter>
+            <%_ }); _%>
             <!-- Common overlay roots -->
             <filter><root>/apps/sling</root></filter>
             <filter><root>/apps/cq</root></filter>
@@ -57,8 +58,9 @@
             <filter><root>/apps/settings</root></filter>
 
             <!-- DAM folder root, will be created via repoinit -->
-            <filter><root>/content/dam/<%= appId %></root></filter>
-
+            <%_ appIds.forEach((id) => { _%>
+            <filter><root>/content/dam/<%= id %></root></filter>
+            <%_ }); _%>
           </filters>
         </configuration>
       </plugin>

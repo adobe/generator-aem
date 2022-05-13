@@ -27,11 +27,11 @@ import test from 'ava';
 import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
-import { generatorPath, fixturePath } from '../fixtures/helpers.js';
+import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
 import TestGenerator from '../fixtures/generators/simple/index.js';
 
 import { AEMAppNoWrite } from '../fixtures/wrappers/index.js';
-import AEMGenerator from '../../generators/app/index.js';
+import AEMParentPomGenerator from '../../generators/app/pom/index.js';
 
 const nodeVersion = versions.node;
 const npmVersion = execFileSync('npm', ['--version'])
@@ -51,7 +51,7 @@ const promptDefaults = Object.freeze({
   npmVersion,
 });
 
-test('@adobe/aem - initialize - no options', async (t) => {
+test('initialize - no options', async (t) => {
   t.plan(1);
 
   await helpers
@@ -63,7 +63,7 @@ test('@adobe/aem - initialize - no options', async (t) => {
     });
 });
 
-test('@adobe/aem - initialize - defaults', async (t) => {
+test('initialize - defaults', async (t) => {
   t.plan(1);
 
   await helpers
@@ -84,7 +84,7 @@ test('@adobe/aem - initialize - defaults', async (t) => {
     });
 });
 
-test('@adobe/aem - initialize - invalid java/aem version', async (t) => {
+test('initialize - invalid java/aem version', async (t) => {
   t.plan(1);
 
   await helpers
@@ -105,7 +105,7 @@ test('@adobe/aem - initialize - invalid java/aem version', async (t) => {
     });
 });
 
-test('@adobe/aem - initialize from pom', async (t) => {
+test('initialize from pom', async (t) => {
   t.plan(1);
 
   await helpers
@@ -131,7 +131,7 @@ test('@adobe/aem - initialize from pom', async (t) => {
     });
 });
 
-test('@adobe/aem - initialize from pom - generateInto', async (t) => {
+test('initialize from pom - generateInto', async (t) => {
   t.plan(1);
   const subdir = 'subdir';
 
@@ -160,7 +160,7 @@ test('@adobe/aem - initialize from pom - generateInto', async (t) => {
     });
 });
 
-test('@adobe/aem - initialize from .yo-rc.json', async (t) => {
+test('initialize from .yo-rc.json', async (t) => {
   t.plan(1);
 
   await helpers
@@ -189,7 +189,7 @@ test('@adobe/aem - initialize from .yo-rc.json', async (t) => {
     });
 });
 
-test('@adobe/aem - initialize merge', async (t) => {
+test('initialize merge', async (t) => {
   t.plan(1);
 
   await helpers
@@ -219,12 +219,12 @@ test('@adobe/aem - initialize merge', async (t) => {
     });
 });
 
-test('@adobe/aem - compose with module - does not exist', async (t) => {
+test('compose with module - does not exist', async (t) => {
   t.plan(1);
   await t.throwsAsync(helpers.create(AEMAppNoWrite).withOptions({ defaults: true, modules: 'test:simple' }).withPrompts(promptDefaults).run());
 });
 
-test('@adobe/aem - compose with module - base options', async (t) => {
+test('compose with module - base options', async (t) => {
   t.plan(1);
 
   let temporaryDir;
@@ -258,7 +258,7 @@ test('@adobe/aem - compose with module - base options', async (t) => {
     });
 });
 
-test('@adobe/aem - compose with module - shared options', async (t) => {
+test('compose with module - shared options', async (t) => {
   t.plan(1);
 
   let temporaryDir;
@@ -300,7 +300,7 @@ test('@adobe/aem - compose with module - shared options', async (t) => {
     });
 });
 
-test('@adobe/aem - prompting', async (t) => {
+test('prompting', async (t) => {
   t.plan(1);
 
   await helpers
@@ -313,7 +313,7 @@ test('@adobe/aem - prompting', async (t) => {
     });
 });
 
-test('@adobe/aem - configuring', async (t) => {
+test('configuring', async (t) => {
   t.plan(1);
   let temporaryDir;
 
@@ -334,7 +334,7 @@ test('@adobe/aem - configuring', async (t) => {
     });
 });
 
-test('@adobe/aem - configuring - generateInto', async (t) => {
+test('configuring - generateInto', async (t) => {
   t.plan(1);
   let temporaryDir;
 
@@ -356,7 +356,7 @@ test('@adobe/aem - configuring - generateInto', async (t) => {
     });
 });
 
-test('@adobe/aem - configuring - fails on existing different pom', async (t) => {
+test('configuring - fails on existing different pom', async (t) => {
   t.plan(1);
 
   await t.throwsAsync(
@@ -371,7 +371,7 @@ test('@adobe/aem - configuring - fails on existing different pom', async (t) => 
   );
 });
 
-test('@adobe/aem - configuring - cwd is same as appId', async (t) => {
+test('configuring - cwd is same as appId', async (t) => {
   t.plan(1);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'), 'appId');
@@ -393,16 +393,9 @@ test('@adobe/aem - configuring - cwd is same as appId', async (t) => {
     });
 });
 
-test.serial('@adobe/aem - writing/installing - options - cloud', async () => {
-  const aemData = {
-    groupId: 'com.adobe.aem',
-    artifactId: 'aem-sdk-api',
-    version: '2022.3.6698.20220318T233218Z-220400',
-    path: 'com/adobe/aem/aem-sdk-api',
-  };
-
-  const stub = sinon.stub().resolves(aemData);
-  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+test.serial('writing/installing - options - cloud', async () => {
+  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))
@@ -437,16 +430,9 @@ test.serial('@adobe/aem - writing/installing - options - cloud', async () => {
     });
 });
 
-test.serial('@adobe/aem - writing/installing - prompts - v6.5', async () => {
-  const aemData = {
-    groupId: 'com.adobe.aem',
-    artifactId: 'uber-jar',
-    version: '6.5.12',
-    path: 'com/adobe/aem/uber-jar',
-  };
-
-  const stub = sinon.stub().resolves(aemData);
-  sinon.replace(AEMGenerator.prototype, '_latestApi', stub);
+test.serial('writing/installing - prompts - v6.5', async () => {
+  const stub = sinon.stub().resolves(aem65ApiMetadata);
+  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))

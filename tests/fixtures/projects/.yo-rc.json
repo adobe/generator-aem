@@ -21,7 +21,7 @@
       "artifactId": "test.core"
     },
     "ui.frontend": {
-      "moduleType": "frontend:general",
+      "moduleType": "frontend-general",
       "defaults": true,
       "examples": true,
       "name": "Test Project - UI Frontend",
@@ -29,7 +29,7 @@
       "artifactId": "test.ui.frontend"
     },
     "ui.apps.structure": {
-      "moduleType": "package:structure",
+      "moduleType": "package-structure",
       "defaults": true,
       "examples": true,
       "name": "Test Project - Repository Structure Package",
@@ -37,7 +37,7 @@
       "artifactId": "test.ui.apps.structure"
     },
     "ui.apps": {
-      "moduleType": "package:apps",
+      "moduleType": "package-apps",
       "defaults": true,
       "examples": true,
       "name": "Test Project - UI Apps Package",
@@ -45,7 +45,7 @@
       "artifactId": "test.ui.apps"
     },
     "ui.config": {
-      "moduleType": "package:config",
+      "moduleType": "package-config",
       "defaults": true,
       "examples": true,
       "name": "Test Project - UI Config Package",
@@ -53,7 +53,7 @@
       "artifactId": "test.ui.config"
     },
     "all": {
-      "moduleType": "package:all",
+      "moduleType": "package-all",
       "defaults": true,
       "examples": true,
       "name": "Test Project - All Package",
@@ -61,13 +61,12 @@
       "artifactId": "test.all"
     },
     "it.tests": {
-      "moduleType": "tests:it",
+      "moduleType": "tests-it",
       "defaults": true,
       "examples": true,
       "name": "Test Project - Integration Tests",
       "appId": "test",
       "artifactId": "test.it.tests"
     }
-
   }
 }
