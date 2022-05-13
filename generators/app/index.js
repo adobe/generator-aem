@@ -68,13 +68,6 @@ const ModuleOptions = Object.freeze({
       artifactId: `${parentProps.artifactId}.ui.config`,
     };
   },
-  '@adobe/aem:tests-it'(parentProps) {
-    return {
-      generateInto: 'it.tests',
-      name: `${parentProps.name} - Integration Tests`,
-      artifactId: `${parentProps.artifactId}.it.tests`,
-    };
-  },
   '@adobe/aem:package-all'(parentProps) {
     return {
       generateInto: 'all',
@@ -82,7 +75,24 @@ const ModuleOptions = Object.freeze({
       artifactId: `${parentProps.artifactId}.all`,
     };
   },
+  '@adobe/aem:tests-it'(parentProps) {
+    return {
+      generateInto: 'it.tests',
+      name: `${parentProps.name} - Integration Tests`,
+      artifactId: `${parentProps.artifactId}.it.tests`,
+    };
+  },
 });
+
+const ModuleOrder = Object.freeze([
+  '@adobe/aem:bundle',
+  '@adobe/aem:frontend-general',
+  '@adobe/aem:package-structure',
+  '@adobe/aem:package-apps',
+  '@adobe/aem:package-config',
+  '@adobe/aem:package-all',
+  '@adobe/aem:tests-it',
+]);
 
 const npmVersion = execFileSync('npm', ['--version'])
   .toString()
@@ -318,15 +328,13 @@ class AEMGenerator extends Generator {
   default() {
     const modules = this.options.modules;
     const meta = this.env.getGeneratorsMeta();
+
+    const compose = new Map();
     for (const idx in modules) {
       if (Object.prototype.hasOwnProperty.call(modules, idx)) {
-        const moduleOptions = {};
-        moduleOptions.parent = this.props;
-
         let name;
         if (meta[`@adobe/aem:${modules[idx]}`]) {
           name = `@adobe/aem:${modules[idx]}`;
-          _.defaults(moduleOptions, ModuleOptions[name](this.props), _.pick(this.props, _.keys(ModuleMixins._options)));
         } else if (meta[modules[idx]]) {
           name = modules[idx];
         } else {
@@ -338,14 +346,37 @@ class AEMGenerator extends Generator {
           );
         }
 
-        this.composeWith(name, moduleOptions);
+        const optionList = compose.get(name) || [];
+        optionList.push({});
+        compose.set(name, optionList);
       }
     }
 
     _.each(this.config.getAll(), (value, key) => {
       if (value.moduleType && this.env.rootGenerator().relativePath !== key) {
-        this.composeWith(`@adobe/aem:${value.moduleType}`, { generateInto: key, parent: this.props });
+        let name;
+        if (meta[`@adobe/aem:${value.moduleType}`]) {
+          name = `@adobe/aem:${value.moduleType}`;
+        } else if (meta[value.moduleType]) {
+          name = value.moduleType;
+        }
+
+        const optionList = compose.get(name) || [];
+        optionList.push({ generateInto: key });
+        compose.set(name, optionList);
       }
+    });
+
+    _.each(ModuleOrder, (value, idx) => {
+      const moduleName = ModuleOrder[idx];
+      _.each(compose.get(moduleName) || [], (options) => {
+        if (ModuleOptions[moduleName]) {
+          _.defaults(options, ModuleOptions[moduleName](this.props));
+        }
+
+        _.defaults(options, { parent: this.props }, _.pick(this.props, _.keys(ModuleMixins._options)));
+        this.composeWith(moduleName, options);
+      });
     });
 
     this.composeWith(path.join(dirname, 'pom'), { showBuildOutput: this.options.showBuildOutput, ...this.props });
