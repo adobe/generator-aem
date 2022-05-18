@@ -40,7 +40,6 @@ test.serial('via @adobe/generator-aem - v6.5 - no modules', async (t) => {
   const stub = sinon.stub().resolves(aem65ApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([[AEMAllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')]])
@@ -54,14 +53,11 @@ test.serial('via @adobe/generator-aem - v6.5 - no modules', async (t) => {
       modules: 'package-all',
       showBuildOutput: false,
     })
-    .inTmpDir((dir) => {
-      temporaryDir = dir;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'all');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>all<\/module>/);
 
@@ -95,7 +91,6 @@ test.serial('via @adobe/generator-aem - v6.5 - bundle', async (t) => {
   const stub = sinon.stub().resolves(aem65ApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([
@@ -112,14 +107,11 @@ test.serial('via @adobe/generator-aem - v6.5 - bundle', async (t) => {
       modules: 'bundle,package-all',
       showBuildOutput: false,
     })
-    .inTmpDir((dir) => {
-      temporaryDir = dir;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'all');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>all<\/module>/);
 
@@ -153,7 +145,6 @@ test.serial('via @adobe/generator-aem - cloud - packages', async (t) => {
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([
@@ -172,14 +163,11 @@ test.serial('via @adobe/generator-aem - cloud - packages', async (t) => {
       modules: 'package-apps,package-config,package-structure,package-all',
       showBuildOutput: false,
     })
-    .inTmpDir((dir) => {
-      temporaryDir = dir;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'all');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>all<\/module>/);
 

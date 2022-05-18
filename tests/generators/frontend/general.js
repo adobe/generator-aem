@@ -36,7 +36,6 @@ test.serial('via @adobe/generator-aem', async (t) => {
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([[AEMGeneralFEGenerator, '@adobe/aem:frontend-general', generatorPath('frontend-general', 'index.js')]])
@@ -50,14 +49,11 @@ test.serial('via @adobe/generator-aem', async (t) => {
       modules: 'frontend-general',
       showBuildOutput: false,
     })
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'ui.frontend');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui\.frontend<\/module>/);
 

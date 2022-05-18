@@ -227,7 +227,6 @@ test('compose with module - does not exist', async (t) => {
 test('compose with module - base options', async (t) => {
   t.plan(1);
 
-  let temporaryDir;
   await helpers
     .create(AEMAppNoWrite)
     .withGenerators([[TestGenerator, 'test:simple']])
@@ -236,11 +235,8 @@ test('compose with module - base options', async (t) => {
       modules: 'test:simple',
     })
     .withPrompts(promptDefaults)
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
-    .then(() => {
+    .then((result) => {
       const expected = {
         added: 'Added',
         moduleType: 'test:simple',
@@ -253,7 +249,7 @@ test('compose with module - base options', async (t) => {
         },
       };
       _.defaults(expected.parent, promptDefaults);
-      const actual = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'prompted', 'simple', 'props.json')));
+      const actual = JSON.parse(fs.readFileSync(result.generator.destinationPath('simple', 'props.json')));
       t.deepEqual(actual, expected, 'File created');
     });
 });
@@ -261,7 +257,6 @@ test('compose with module - base options', async (t) => {
 test('compose with module - shared options', async (t) => {
   t.plan(1);
 
-  let temporaryDir;
   await helpers
     .create(AEMAppNoWrite)
     .withGenerators([[TestGenerator, 'test:simple']])
@@ -273,11 +268,8 @@ test('compose with module - shared options', async (t) => {
       modules: 'test:simple',
     })
     .withPrompts(promptDefaults)
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
-    .then(() => {
+    .then((result) => {
       const expected = {
         added: 'Added',
         moduleType: 'test:simple',
@@ -295,7 +287,7 @@ test('compose with module - shared options', async (t) => {
         },
       };
       _.defaults(expected.parent, promptDefaults);
-      const actual = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'appId', 'simple', 'props.json')));
+      const actual = JSON.parse(fs.readFileSync(result.generator.destinationPath('simple', 'props.json')));
       t.deepEqual(actual, expected, 'File created');
     });
 });
@@ -315,43 +307,34 @@ test('prompting', async (t) => {
 
 test('configuring', async (t) => {
   t.plan(1);
-  let temporaryDir;
 
   await helpers
     .create(AEMAppNoWrite)
     .withPrompts(promptDefaults)
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
-    .then(() => {
+    .then((result) => {
       const expected = {
         '@adobe/generator-aem': promptDefaults,
       };
 
-      const yoData = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'prompted', '.yo-rc.json')));
+      const yoData = JSON.parse(fs.readFileSync(result.generator.destinationPath('.yo-rc.json')));
       t.deepEqual(yoData, expected, 'Yeoman Data saved.');
     });
 });
 
 test('configuring - generateInto', async (t) => {
   t.plan(1);
-  let temporaryDir;
-
   await helpers
     .create(AEMAppNoWrite)
     .withOptions({ generateInto: 'subdir' })
     .withPrompts(promptDefaults)
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
-    .then(() => {
+    .then((result) => {
       const expected = {
         '@adobe/generator-aem': promptDefaults,
       };
 
-      const yoData = JSON.parse(fs.readFileSync(path.join(temporaryDir, 'subdir', '.yo-rc.json')));
+      const yoData = JSON.parse(fs.readFileSync(result.generator.destinationPath('.yo-rc.json')));
       t.deepEqual(yoData, expected, 'Yeoman Data saved.');
     });
 });

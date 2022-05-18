@@ -37,7 +37,6 @@ test.serial('via @adobe/generator-aem - v6.5', async (t) => {
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
   sinon.replace(AEMBundleGenerator.prototype, '_latestRelease', stub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([[AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')]])
@@ -51,14 +50,11 @@ test.serial('via @adobe/generator-aem - v6.5', async (t) => {
       modules: 'bundle',
       showBuildOutput: false,
     })
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'core');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>core<\/module>/);
 

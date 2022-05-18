@@ -68,6 +68,13 @@ const ModuleOptions = Object.freeze({
       artifactId: `${parentProps.artifactId}.ui.config`,
     };
   },
+  '@adobe/aem:package-content'(parentProps) {
+    return {
+      generateInto: 'ui.content',
+      name: `${parentProps.name} - UI Content Package`,
+      artifactId: `${parentProps.artifactId}.ui.content`,
+    };
+  },
   '@adobe/aem:package-all'(parentProps) {
     return {
       generateInto: 'all',
@@ -97,6 +104,7 @@ const ModuleOrder = Object.freeze([
   '@adobe/aem:package-structure',
   '@adobe/aem:package-apps',
   '@adobe/aem:package-config',
+  '@adobe/aem:package-content',
   '@adobe/aem:package-all',
   '@adobe/aem:tests-it',
   '@adobe/aem:dispatcher',

@@ -38,7 +38,6 @@ test.serial('via @adobe/generator-aem', async (t) => {
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([[AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')]])
@@ -52,14 +51,11 @@ test.serial('via @adobe/generator-aem', async (t) => {
       modules: 'package-structure',
       showBuildOutput: false,
     })
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'ui.apps.structure');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui\.apps.structure<\/module>/);
 

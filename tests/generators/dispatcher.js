@@ -36,7 +36,6 @@ test.serial('via @adobe/generator-aem - v6.5 - no content', async (t) => {
   const stub = sinon.stub().resolves(aem65ApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([[AEMDispatcherGenerator, '@adobe/aem:dispatcher', generatorPath('dispatcher', 'index.js')]])
@@ -50,14 +49,11 @@ test.serial('via @adobe/generator-aem - v6.5 - no content', async (t) => {
       modules: 'dispatcher',
       showBuildOutput: false,
     })
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'dispatcher');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>dispatcher<\/module>/);
 
@@ -99,7 +95,6 @@ test.serial('via @adobe/generator-aem - cloud - no content', async (t) => {
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([[AEMDispatcherGenerator, '@adobe/aem:dispatcher', generatorPath('dispatcher', 'index.js')]])
@@ -113,14 +108,11 @@ test.serial('via @adobe/generator-aem - cloud - no content', async (t) => {
       modules: 'dispatcher',
       showBuildOutput: false,
     })
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'dispatcher');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>dispatcher<\/module>/);
 

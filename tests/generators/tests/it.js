@@ -54,7 +54,6 @@ test.serial('via @adobe/generator-aem - v6.5', async (t) => {
   const pomStub = sinon.stub().resolves(aem65ApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', pomStub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
@@ -68,14 +67,11 @@ test.serial('via @adobe/generator-aem - v6.5', async (t) => {
       modules: 'tests-it',
       showBuildOutput: false,
     })
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'it.tests');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>it\.tests<\/module>/);
 
@@ -121,7 +117,6 @@ test.serial('via @adobe/generator-aem - cloud', async (t) => {
   const pomStub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', pomStub);
 
-  let temporaryDir;
   await helpers
     .create(generatorPath('app'))
     .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
@@ -143,14 +138,11 @@ test.serial('via @adobe/generator-aem - cloud', async (t) => {
       artifactId: 'test',
       publish: false,
     })
-    .inTmpDir((temporary) => {
-      temporaryDir = temporary;
-    })
     .run()
     .then((result) => {
       sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
+      const outputRoot = result.generator.destinationPath();
       const moduleDir = path.join(outputRoot, 'it.tests');
       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>it\.tests<\/module>/);
 
