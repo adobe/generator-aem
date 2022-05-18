@@ -67,6 +67,13 @@
       "name": "Test Project - Integration Tests",
       "appId": "test",
       "artifactId": "test.it.tests"
-    }
-  }
+    },
+    "dispatcher": {
+      "moduleType": "dispatcher",
+      "defaults": true,
+      "examples": true,
+      "name": "Test Project - Dispatcher",
+      "appId": "test",
+      "artifactId": "test.dispatcher"
+    }  }
 }

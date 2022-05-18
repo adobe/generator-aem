@@ -82,6 +82,13 @@ const ModuleOptions = Object.freeze({
       artifactId: `${parentProps.artifactId}.it.tests`,
     };
   },
+  '@adobe/aem:dispatcher'(parentProps) {
+    return {
+      generateInto: 'dispatcher',
+      name: `${parentProps.name} - Dispatcher`,
+      artifactId: `${parentProps.artifactId}.dispatcher`,
+    };
+  },
 });
 
 const ModuleOrder = Object.freeze([
@@ -92,6 +99,7 @@ const ModuleOrder = Object.freeze([
   '@adobe/aem:package-config',
   '@adobe/aem:package-all',
   '@adobe/aem:tests-it',
+  '@adobe/aem:dispatcher',
 ]);
 
 const npmVersion = execFileSync('npm', ['--version'])

@@ -36,6 +36,7 @@ import AEMAppsPackageGenerator from '../../../generators/package-apps/index.js';
 test.serial('via @adobe/generator-aem - v6.5 - no modules', async (t) => {
   t.plan(5);
 
+  sinon.restore();
   const stub = sinon.stub().resolves(aem65ApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
@@ -49,7 +50,7 @@ test.serial('via @adobe/generator-aem - v6.5 - no modules', async (t) => {
       appId: 'test',
       name: 'Test Project',
       groupId: 'com.adobe.test',
-      aemVersion: 6.5,
+      aemVersion: '6.5',
       modules: 'package-all',
       showBuildOutput: false,
     })
@@ -90,6 +91,7 @@ test.serial('via @adobe/generator-aem - v6.5 - no modules', async (t) => {
 test.serial('via @adobe/generator-aem - v6.5 - bundle', async (t) => {
   t.plan(5);
 
+  sinon.restore();
   const stub = sinon.stub().resolves(aem65ApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
@@ -147,6 +149,7 @@ test.serial('via @adobe/generator-aem - v6.5 - bundle', async (t) => {
 test.serial('via @adobe/generator-aem - cloud - packages', async (t) => {
   t.plan(5);
 
+  sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
@@ -206,6 +209,7 @@ test.serial('via @adobe/generator-aem - cloud - packages', async (t) => {
 
 test.serial('add module to existing project', async (t) => {
   t.plan(5);
+  sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 

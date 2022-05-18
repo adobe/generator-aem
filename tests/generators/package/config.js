@@ -34,6 +34,7 @@ import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
 test.serial('via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
+  sinon.restore();
   const stub = sinon.stub().resolves(aem65ApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
@@ -98,6 +99,7 @@ test.serial('via @adobe/generator-aem - v6.5', async (t) => {
 test.serial('via @adobe/generator-aem - cloud', async (t) => {
   t.plan(5);
 
+  sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
@@ -161,6 +163,7 @@ test.serial('via @adobe/generator-aem - cloud', async (t) => {
 test.serial('add module to existing project', async (t) => {
   t.plan(5);
 
+  sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 

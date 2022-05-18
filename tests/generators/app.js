@@ -394,6 +394,7 @@ test('configuring - cwd is same as appId', async (t) => {
 });
 
 test.serial('writing/installing - options - cloud', async () => {
+  sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 
@@ -431,6 +432,7 @@ test.serial('writing/installing - options - cloud', async () => {
 });
 
 test.serial('writing/installing - prompts - v6.5', async () => {
+  sinon.restore();
   const stub = sinon.stub().resolves(aem65ApiMetadata);
   sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
 

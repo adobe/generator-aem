@@ -109,5 +109,4 @@ _.extendWith(AEMAllPackageGenerator.prototype, ModuleMixins, (objectValue, srcVa
 });
 
 export { AEMAllPackageGenerator, AllPackageModuleType };
-
 export default AEMAllPackageGenerator;
