@@ -83,7 +83,7 @@ class AEMAllPackageGenerator extends Generator {
   writing() {
     const files = [];
 
-    files.push(...this._listTemplates('shared'));
+    files.push(...this._listTemplates());
 
     const config = this.config.getAll();
     const dependencies = [];
