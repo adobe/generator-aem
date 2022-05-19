@@ -37,14 +37,14 @@ class AEMBundleGenerator extends Generator {
 
     this.moduleType = BundleModuleType;
 
-    _.defaults(this._options, {
+    _.defaults(this._moduleOptions, {
       package: {
         type: String,
         desc: 'Java Source Package (e.g. "com.mysite").',
       },
     });
 
-    _.forOwn(this._options, (v, k) => {
+    _.forOwn(this._moduleOptions, (v, k) => {
       this.option(k, v);
     });
   }

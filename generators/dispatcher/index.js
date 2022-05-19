@@ -44,7 +44,7 @@ class AEMDispatcherGenerator extends Generator {
     super(args, options, features);
 
     this.moduleType = DispatcherModuleType;
-    _.forOwn(this._options, (v, k) => {
+    _.forOwn(this._moduleOptions, (v, k) => {
       this.option(k, v);
     });
   }

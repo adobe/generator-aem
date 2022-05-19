@@ -26,6 +26,7 @@ import { BundleModuleType } from '../bundle/index.js';
 import { StructurePackageModuleType } from '../package-structure/index.js';
 import { ConfigPackageModuleType } from '../package-config/index.js';
 import { AppsPackageModuleType } from '../package-apps/index.js';
+import { ContentPackageModuleType } from '../package-content/index.js';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -38,6 +39,7 @@ const packagedModules = new Set([
   StructurePackageModuleType,
   ConfigPackageModuleType,
   AppsPackageModuleType,
+  ContentPackageModuleType,
 ]);
 /* eslint-enable prettier/prettier */
 
@@ -46,7 +48,7 @@ class AEMAllPackageGenerator extends Generator {
     super(args, options, features);
     this.moduleType = AllPackageModuleType;
 
-    _.forOwn(this._options, (v, k) => {
+    _.forOwn(this._moduleOptions, (v, k) => {
       this.option(k, v);
     });
   }

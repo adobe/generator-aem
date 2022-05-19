@@ -39,7 +39,7 @@ class AEMAppsPackageGenerator extends Generator {
 
     this.moduleType = AppsPackageModuleType;
 
-    _.defaults(this._options, {
+    _.defaults(this._moduleOptions, {
       bundleRef: {
         type: String,
         desc: 'Module name of optional Java bundle dependency, in this multi-module project.',
@@ -55,7 +55,7 @@ class AEMAppsPackageGenerator extends Generator {
       },
     });
 
-    _.forOwn(this._options, (v, k) => {
+    _.forOwn(this._moduleOptions, (v, k) => {
       this.option(k, v);
     });
   }

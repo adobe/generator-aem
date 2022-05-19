@@ -50,7 +50,7 @@ class AEMIntegrationTestsGenerator extends Generator {
 
     this.moduleType = IntegrationTestsModuleType;
 
-    _.defaults(this._options, {
+    _.defaults(this._moduleOptions, {
       package: {
         type: String,
         desc: 'Java Source Package (e.g. "com.mysite").',
@@ -60,7 +60,7 @@ class AEMIntegrationTestsGenerator extends Generator {
       },
     });
 
-    _.forOwn(this._options, (v, k) => {
+    _.forOwn(this._moduleOptions, (v, k) => {
       this.option(k, v);
     });
   }

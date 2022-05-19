@@ -57,8 +57,8 @@ const ModuleOptions = Object.freeze({
       generateInto: 'ui.apps',
       name: `${parentProps.name} - UI Apps Package`,
       artifactId: `${parentProps.artifactId}.ui.apps`,
-      bundleRef: `core`,
-      frontendRef: `ui.frontend`,
+      bundleRef: 'core',
+      frontendRef: 'ui.frontend',
     };
   },
   '@adobe/aem:package-config'(parentProps) {
@@ -73,6 +73,8 @@ const ModuleOptions = Object.freeze({
       generateInto: 'ui.content',
       name: `${parentProps.name} - UI Content Package`,
       artifactId: `${parentProps.artifactId}.ui.content`,
+      appsRef: 'ui.apps',
+      configRef: 'ui.config',
     };
   },
   '@adobe/aem:package-all'(parentProps) {
@@ -118,7 +120,7 @@ class AEMGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
-    _.defaults(this._options, {
+    _.defaults(this._moduleOptions, {
       groupId: {
         type: String,
         desc: 'Base Maven Group ID (e.g. "com.mysite").',
@@ -157,7 +159,7 @@ class AEMGenerator extends Generator {
       },
     });
 
-    _.forOwn(this._options, (v, k) => {
+    _.forOwn(this._moduleOptions, (v, k) => {
       this.option(k, v);
     });
   }
@@ -390,7 +392,7 @@ class AEMGenerator extends Generator {
           _.defaults(options, ModuleOptions[moduleName](this.props));
         }
 
-        _.defaults(options, { parent: this.props }, _.pick(this.props, _.keys(ModuleMixins._options)));
+        _.defaults(options, { parent: this.props }, _.pick(this.props, _.keys(ModuleMixins._moduleOptions)));
         this.composeWith(moduleName, options);
       });
     });

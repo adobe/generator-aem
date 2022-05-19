@@ -37,7 +37,7 @@ class AEMConfigPackageGenerator extends Generator {
 
     this.moduleType = ConfigPackageModuleType;
 
-    _.forOwn(this._options, (v, k) => {
+    _.forOwn(this._moduleOptions, (v, k) => {
       this.option(k, v);
     });
   }
