@@ -31,7 +31,7 @@ const dirname = path.dirname(filename);
 
 const ConfigPackageModuleType = 'package-config';
 
-class AEMConfigPackageGenerator extends Generator {
+class ConfigPackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
@@ -99,10 +99,10 @@ class AEMConfigPackageGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMConfigPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+_.extendWith(ConfigPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMConfigPackageGenerator, ConfigPackageModuleType };
+export { ConfigPackageGenerator, ConfigPackageModuleType };
 
-export default AEMConfigPackageGenerator;
+export default ConfigPackageGenerator;

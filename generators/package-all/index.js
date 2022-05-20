@@ -43,7 +43,7 @@ const packagedModules = new Set([
 ]);
 /* eslint-enable prettier/prettier */
 
-class AEMAllPackageGenerator extends Generator {
+class AllPackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
     this.moduleType = AllPackageModuleType;
@@ -106,9 +106,9 @@ class AEMAllPackageGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMAllPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+_.extendWith(AllPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMAllPackageGenerator, AllPackageModuleType };
-export default AEMAllPackageGenerator;
+export { AllPackageGenerator, AllPackageModuleType };
+export default AllPackageGenerator;

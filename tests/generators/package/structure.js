@@ -26,21 +26,21 @@ import helpers from 'yeoman-test';
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath, cloudSdkApiMetadata } from '../../fixtures/helpers.js';
 
-import AEMStructurePackageGenerator from '../../../generators/package-structure/index.js';
-import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
-import AEMConfigPackageGenerator from '../../../generators/package-config/index.js';
-import AEMAppsPackageGenerator from '../../../generators/package-apps/index.js';
+import StructurePackageGenerator from '../../../generators/package-structure/index.js';
+import ParentPomGenerator from '../../../generators/app/pom/index.js';
+import ConfigPackageGenerator from '../../../generators/package-config/index.js';
+import AppsPackageGenerator from '../../../generators/package-apps/index.js';
 
 test.serial('via @adobe/generator-aem', async (t) => {
   t.plan(5);
 
   sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')]])
+    .withGenerators([[StructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -84,15 +84,15 @@ test.serial('add module to existing project', async (t) => {
 
   sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');
   await helpers
     .create(generatorPath('package-structure'))
     .withGenerators([
-      [AEMConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
-      [AEMAppsPackageGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
+      [ConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
+      [AppsPackageGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
     ])
     .withOptions({
       defaults: true,

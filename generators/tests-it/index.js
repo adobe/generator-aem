@@ -44,7 +44,7 @@ const testClientCoordinates = (version) => {
   };
 };
 
-class AEMIntegrationTestsGenerator extends Generator {
+class IntegrationTestsGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
@@ -165,10 +165,10 @@ class AEMIntegrationTestsGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMIntegrationTestsGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+_.extendWith(IntegrationTestsGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMIntegrationTestsGenerator, IntegrationTestsModuleType };
+export { IntegrationTestsGenerator, IntegrationTestsModuleType };
 
-export default AEMIntegrationTestsGenerator;
+export default IntegrationTestsGenerator;

@@ -42,7 +42,7 @@ const tplFiles = [
 ];
 /* eslint-enable prettier/prettier */
 
-class AEMGeneralFEGenerator extends Generator {
+class GeneralFEGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
     this.moduleType = GeneralFEModuleType;
@@ -107,10 +107,10 @@ class AEMGeneralFEGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMGeneralFEGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+_.extendWith(GeneralFEGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMGeneralFEGenerator, GeneralFEModuleType };
+export { GeneralFEGenerator, GeneralFEModuleType };
 
-export default AEMGeneralFEGenerator;
+export default GeneralFEGenerator;

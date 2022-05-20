@@ -33,7 +33,7 @@ const dirname = path.dirname(filename);
 const AppsPackageModuleType = 'package-apps';
 const uniqueProperties = ['bundleRef', 'frontendRef'];
 
-class AEMAppsPackageGenerator extends Generator {
+class AppsPackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
@@ -153,10 +153,10 @@ class AEMAppsPackageGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMAppsPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+_.extendWith(AppsPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMAppsPackageGenerator, AppsPackageModuleType };
+export { AppsPackageGenerator, AppsPackageModuleType };
 
-export default AEMAppsPackageGenerator;
+export default AppsPackageGenerator;

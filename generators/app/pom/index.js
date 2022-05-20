@@ -23,7 +23,7 @@ import Generator from 'yeoman-generator';
 
 import ModuleMixins from '../../../lib/module-mixins.js';
 
-class AEMParentPomGenerator extends Generator {
+class ParentPomGenerator extends Generator {
   constructor(args, options, features) {
     features = features || {};
     features.customInstallTask = true;
@@ -90,9 +90,9 @@ class AEMParentPomGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMParentPomGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+_.extendWith(ParentPomGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMParentPomGenerator };
-export default AEMParentPomGenerator;
+export { ParentPomGenerator };
+export default ParentPomGenerator;

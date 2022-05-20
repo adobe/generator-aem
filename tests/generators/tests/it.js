@@ -30,8 +30,8 @@ import helpers from 'yeoman-test';
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
 
-import AEMIntegrationTestsGenerator from '../../../generators/tests-it/index.js';
-import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
+import IntegrationTestsGenerator from '../../../generators/tests-it/index.js';
+import ParentPomGenerator from '../../../generators/app/pom/index.js';
 
 const nodeVersion = versions.node;
 const npmVersion = execFileSync('npm', ['--version'])
@@ -47,16 +47,17 @@ test.serial('via @adobe/generator-aem - v6.5', async (t) => {
     artifactId: 'cq-testing-clients-65',
     version: '1.1.1',
   });
+  sinon.restore();
 
   itStub.withArgs(_.omit(aem65ApiMetadata, ['version'])).resolves(aem65ApiMetadata);
-  sinon.replace(AEMIntegrationTestsGenerator.prototype, '_latestRelease', itStub);
+  sinon.replace(IntegrationTestsGenerator.prototype, '_latestRelease', itStub);
 
   const pomStub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', pomStub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', pomStub);
 
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
+    .withGenerators([[IntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -111,19 +112,21 @@ test.serial('via @adobe/generator-aem - cloud', async (t) => {
     version: '1.1.0',
   });
 
+  sinon.restore();
   itStub.withArgs(_.omit(cloudSdkApiMetadata, ['version'])).resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMIntegrationTestsGenerator.prototype, '_latestRelease', itStub);
+  sinon.replace(IntegrationTestsGenerator.prototype, '_latestRelease', itStub);
 
   const pomStub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', pomStub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', pomStub);
 
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMIntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
+    .withGenerators([[IntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
     .withOptions({
       defaults: false,
       examples: true,
       appId: 'test',
+      artifactId: 'test',
       name: 'Test Project',
       groupId: 'com.adobe.test',
       aemVersion: 'cloud',
@@ -135,7 +138,9 @@ test.serial('via @adobe/generator-aem - cloud', async (t) => {
     })
     .withPrompts({
       groupId: 'com.adobe.test',
-      artifactId: 'test',
+      artifactId: 'test.it.module',
+      appId: 'test',
+      name: 'Integration Tests for Project',
       publish: false,
     })
     .run()
@@ -158,8 +163,8 @@ test.serial('via @adobe/generator-aem - cloud', async (t) => {
       t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'test.it.tests', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Test Project - Integration Tests', 'Name set.');
+      t.is(pomData.project.artifactId, 'test.it.module', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Integration Tests for Project', 'Name set.');
 
       result.assertFileContent(pom, /<artifactId>aem-cloud-testing-clients<\/artifactId>/);
 
@@ -168,7 +173,7 @@ test.serial('via @adobe/generator-aem - cloud', async (t) => {
       result.assertFile(path.join(testsRoot, 'GetPageIT.java'));
       result.assertFile(path.join(testsRoot, 'HtmlUnitClient.java'));
       result.assertNoFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.it.tests-${properties.version}-jar-with-dependencies.jar`));
+      result.assertFile(path.join(moduleDir, 'target', `test.it.module-${properties.version}-jar-with-dependencies.jar`));
     });
 });
 
@@ -181,12 +186,13 @@ test.serial('add module to existing project', async (t) => {
     artifactId: 'aem-cloud-testing-clients',
     version: '1.1.0',
   });
+  sinon.restore();
 
   itStub.withArgs(_.omit(cloudSdkApiMetadata, ['version'])).resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMIntegrationTestsGenerator.prototype, '_latestRelease', itStub);
+  sinon.replace(IntegrationTestsGenerator.prototype, '_latestRelease', itStub);
 
   const pomStub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', pomStub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', pomStub);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');

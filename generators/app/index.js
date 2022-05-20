@@ -31,73 +31,109 @@ const dirname = path.dirname(filename);
 
 const ModuleOptions = Object.freeze({
   '@adobe/aem:bundle'(parentProps) {
+
     return {
       generateInto: 'core',
-      package: parentProps.groupId,
-      name: `${parentProps.name} - Core Bundle`,
-      artifactId: `${parentProps.artifactId}.core`,
+      ...(parentProps.defaults ? {
+        appId: parentProps.appId,
+        package: parentProps.groupId,
+        name: `${parentProps.name} - Core Bundle`,
+        artifactId: `${parentProps.artifactId}.core`,
+      } : {}),
     };
+
   },
   '@adobe/aem:frontend-general'(parentProps) {
     return {
       generateInto: 'ui.frontend',
-      name: `${parentProps.name} - UI Frontend`,
-      artifactId: `${parentProps.artifactId}.ui.frontend`,
+      ...(parentProps.defaults ? {
+        appId: parentProps.appId,
+        name: `${parentProps.name} - UI Frontend`,
+        artifactId: `${parentProps.artifactId}.ui.frontend`,
+      } : {}),
     };
   },
   '@adobe/aem:package-structure'(parentProps) {
     return {
       generateInto: 'ui.apps.structure',
-      name: `${parentProps.name} - Repository Structure Package`,
-      artifactId: `${parentProps.artifactId}.ui.apps.structure`,
+      ...(parentProps.defaults ? {
+        appId: parentProps.appId,
+        name: `${parentProps.name} - Repository Structure Package`,
+        artifactId: `${parentProps.artifactId}.ui.apps.structure`,
+      } : {}),
     };
   },
   '@adobe/aem:package-apps'(parentProps) {
     return {
       generateInto: 'ui.apps',
-      name: `${parentProps.name} - UI Apps Package`,
-      artifactId: `${parentProps.artifactId}.ui.apps`,
-      bundleRef: 'core',
-      frontendRef: 'ui.frontend',
+      ...(parentProps.defaults ? {
+        appId: parentProps.appId,
+        name: `${parentProps.name} - UI Apps Package`,
+        artifactId: `${parentProps.artifactId}.ui.apps`,
+        bundleRef: 'core',
+        frontendRef: 'ui.frontend',
+      } : {}),
     };
   },
   '@adobe/aem:package-config'(parentProps) {
     return {
       generateInto: 'ui.config',
-      name: `${parentProps.name} - UI Config Package`,
-      artifactId: `${parentProps.artifactId}.ui.config`,
+      ...(parentProps.defaults ? {
+        appId: parentProps.appId,
+        name: `${parentProps.name} - UI Config Package`,
+        artifactId: `${parentProps.artifactId}.ui.config`,
+      } : {}),
     };
   },
   '@adobe/aem:package-content'(parentProps) {
     return {
       generateInto: 'ui.content',
-      name: `${parentProps.name} - UI Content Package`,
-      artifactId: `${parentProps.artifactId}.ui.content`,
-      appsRef: 'ui.apps',
-      configRef: 'ui.config',
+      ...(parentProps.defaults ? {
+        appId: parentProps.appId,
+        name: `${parentProps.name} - UI Content Package`,
+        artifactId: `${parentProps.artifactId}.ui.content`,
+        appsRef: 'ui.apps',
+        configRef: 'ui.config',
+      } : {}),
     };
   },
   '@adobe/aem:package-all'(parentProps) {
     return {
       generateInto: 'all',
-      name: `${parentProps.name} - All`,
-      artifactId: `${parentProps.artifactId}.all`,
+      ...(parentProps.defaults ? {
+        appId: parentProps.appId,
+        name: `${parentProps.name} - All`,
+        artifactId: `${parentProps.artifactId}.all`,
+      } : {}),
     };
   },
   '@adobe/aem:tests-it'(parentProps) {
     return {
       generateInto: 'it.tests',
-      name: `${parentProps.name} - Integration Tests`,
-      artifactId: `${parentProps.artifactId}.it.tests`,
+      ...(parentProps.defaults ? {
+        appId: parentProps.appId,
+        name: `${parentProps.name} - Integration Tests`,
+        artifactId: `${parentProps.artifactId}.it.tests`,
+      } : {}),
     };
   },
   '@adobe/aem:dispatcher'(parentProps) {
     return {
       generateInto: 'dispatcher',
-      name: `${parentProps.name} - Dispatcher`,
-      artifactId: `${parentProps.artifactId}.dispatcher`,
+      ...(parentProps.defaults ? {
+        appId: parentProps.appId,
+        name: `${parentProps.name} - Dispatcher`,
+        artifactId: `${parentProps.artifactId}.dispatcher`,
+      } : {}),
     };
   },
+  '@adobe/aem:cc'() {
+    return {
+      bundle: 'core',
+      apps: 'ui.apps',
+      version: 'latest',
+    };
+  }
 });
 
 const ModuleOrder = Object.freeze([
@@ -110,6 +146,7 @@ const ModuleOrder = Object.freeze([
   '@adobe/aem:package-all',
   '@adobe/aem:tests-it',
   '@adobe/aem:dispatcher',
+  '@adobe/aem:mixin-cc',
 ]);
 
 const npmVersion = execFileSync('npm', ['--version'])
@@ -329,9 +366,9 @@ class AEMGenerator extends Generator {
       if (!_.isEmpty(pomData) && pomData.groupId !== this.props.groupId && pomData.artifactId !== this.props.artifactId) {
         throw new Error(
           chalk.red('Refusing to update existing project with different group/artifact identifiers.') +
-            '\n\n' +
-            'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
-            'This is not a supported feature. Please manually update or use the defaults flag.'
+          '\n\n' +
+          'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
+          'This is not a supported feature. Please manually update or use the defaults flag.'
         );
       }
 
@@ -392,7 +429,7 @@ class AEMGenerator extends Generator {
           _.defaults(options, ModuleOptions[moduleName](this.props));
         }
 
-        _.defaults(options, { parent: this.props }, _.pick(this.props, _.keys(ModuleMixins._moduleOptions)));
+        _.defaults(options, { parent: this.props, defaults: this.props.defaults, examples: this.props.examples });
         this.composeWith(moduleName, options);
       });
     });

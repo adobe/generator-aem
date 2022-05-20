@@ -31,7 +31,7 @@ const uniqueProperties = ['package'];
 
 const BundleModuleType = 'bundle';
 
-class AEMBundleGenerator extends Generator {
+class BundleGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
@@ -126,9 +126,9 @@ class AEMBundleGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMBundleGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+_.extendWith(BundleGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMBundleGenerator, BundleModuleType };
-export default AEMBundleGenerator;
+export { BundleGenerator, BundleModuleType };
+export default BundleGenerator;

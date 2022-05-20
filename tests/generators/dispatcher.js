@@ -26,19 +26,19 @@ import helpers from 'yeoman-test';
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
 
-import AEMDispatcherGenerator from '../../generators/dispatcher/index.js';
-import AEMParentPomGenerator from '../../generators/app/pom/index.js';
+import DispatcherGenerator from '../../generators/dispatcher/index.js';
+import ParentPomGenerator from '../../generators/app/pom/index.js';
 
 test.serial('via @adobe/generator-aem - v6.5 - no content', async (t) => {
   t.plan(11);
 
   sinon.restore();
   const stub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMDispatcherGenerator, '@adobe/aem:dispatcher', generatorPath('dispatcher', 'index.js')]])
+    .withGenerators([[DispatcherGenerator, '@adobe/aem:dispatcher', generatorPath('dispatcher', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -93,11 +93,11 @@ test.serial('via @adobe/generator-aem - cloud - no content', async (t) => {
 
   sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMDispatcherGenerator, '@adobe/aem:dispatcher', generatorPath('dispatcher', 'index.js')]])
+    .withGenerators([[DispatcherGenerator, '@adobe/aem:dispatcher', generatorPath('dispatcher', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -149,7 +149,7 @@ test.serial('add module to existing project', async (t) => {
 
   sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');

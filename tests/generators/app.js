@@ -31,7 +31,7 @@ import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } fro
 import TestGenerator from '../fixtures/generators/simple/index.js';
 
 import { AEMAppNoWrite } from '../fixtures/wrappers/index.js';
-import AEMParentPomGenerator from '../../generators/app/pom/index.js';
+import ParentPomGenerator from '../../generators/app/pom/index.js';
 
 const nodeVersion = versions.node;
 const npmVersion = execFileSync('npm', ['--version'])
@@ -379,7 +379,7 @@ test('configuring - cwd is same as appId', async (t) => {
 test.serial('writing/installing - options - cloud', async () => {
   sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))
@@ -417,7 +417,7 @@ test.serial('writing/installing - options - cloud', async () => {
 test.serial('writing/installing - prompts - v6.5', async () => {
   sinon.restore();
   const stub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))

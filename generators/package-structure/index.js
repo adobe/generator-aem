@@ -28,7 +28,7 @@ const dirname = path.dirname(filename);
 
 const StructurePackageModuleType = 'package-structure';
 
-class AEMStructurePackageGenerator extends Generator {
+class StructurePackageGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
     this.moduleType = StructurePackageModuleType;
@@ -83,10 +83,10 @@ class AEMStructurePackageGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMStructurePackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+_.extendWith(StructurePackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMStructurePackageGenerator, StructurePackageModuleType };
+export { StructurePackageGenerator, StructurePackageModuleType };
 
-export default AEMStructurePackageGenerator;
+export default StructurePackageGenerator;

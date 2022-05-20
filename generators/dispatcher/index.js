@@ -39,7 +39,7 @@ const docLink = (aemVersion) => {
   return 'https://helpx.adobe.com/experience-manager/kb/ams-dispatcher-manual/immutable-files.html';
 };
 
-class AEMDispatcherGenerator extends Generator {
+class DispatcherGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
@@ -151,9 +151,9 @@ class AEMDispatcherGenerator extends Generator {
   }
 }
 
-_.extendWith(AEMDispatcherGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
+_.extendWith(DispatcherGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMDispatcherGenerator, DispatcherModuleType };
-export default AEMDispatcherGenerator;
+export { DispatcherGenerator, DispatcherModuleType };
+export default DispatcherGenerator;

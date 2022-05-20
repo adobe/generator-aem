@@ -26,24 +26,24 @@ import helpers from 'yeoman-test';
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
 
-import AEMBundleGenerator from '../../../generators/bundle/index.js';
-import AEMStructurePackageGenerator from '../../../generators/package-structure/index.js';
-import AEMConfigPackageGenerator from '../../../generators/package-config/index.js';
-import AEMParentPomGenerator from '../../../generators/app/pom/index.js';
+import BundleGenerator from '../../../generators/bundle/index.js';
+import StructurePackageGenerator from '../../../generators/package-structure/index.js';
+import ConfigPackageGenerator from '../../../generators/package-config/index.js';
+import ParentPomGenerator from '../../../generators/app/pom/index.js';
 
 test.serial('via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
   sinon.restore();
   const stub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))
     .withGenerators([
-      [AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')],
-      [AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
-      [AEMConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
+      [BundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')],
+      [StructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
+      [ConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -97,13 +97,13 @@ test.serial('via @adobe/generator-aem - cloud', async (t) => {
 
   sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))
     .withGenerators([
-      [AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
-      [AEMConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
+      [StructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
+      [ConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
     ])
     .withOptions({
       defaults: true,
@@ -157,7 +157,7 @@ test.serial('add module to existing project', async (t) => {
 
   sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');
@@ -165,8 +165,8 @@ test.serial('add module to existing project', async (t) => {
   await helpers
     .create(generatorPath('package-config'))
     .withGenerators([
-      [AEMConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
-      [AEMStructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
+      [ConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
+      [StructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
     ])
     .withOptions({
       defaults: true,

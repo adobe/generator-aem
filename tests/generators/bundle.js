@@ -26,20 +26,20 @@ import helpers from 'yeoman-test';
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
 
-import AEMBundleGenerator from '../../generators/bundle/index.js';
-import AEMParentPomGenerator from '../../generators/app/pom/index.js';
+import BundleGenerator from '../../generators/bundle/index.js';
+import ParentPomGenerator from '../../generators/app/pom/index.js';
 
 test.serial('via @adobe/generator-aem - v6.5', async (t) => {
   t.plan(5);
 
   sinon.restore();
   const stub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
-  sinon.replace(AEMBundleGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(BundleGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(generatorPath('app'))
-    .withGenerators([[AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')]])
+    .withGenerators([[BundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: true,
@@ -99,15 +99,15 @@ test.serial('second bundle - cloud', async (t) => {
 
   sinon.restore();
   const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMParentPomGenerator.prototype, '_latestRelease', stub);
-  sinon.replace(AEMBundleGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
+  sinon.replace(BundleGenerator.prototype, '_latestRelease', stub);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'test');
 
   await helpers
     .create(generatorPath('bundle'))
-    .withGenerators([[AEMBundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')]])
+    .withGenerators([[BundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: false,
