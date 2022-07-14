@@ -336,6 +336,7 @@
         <scope>provided</scope>
       </dependency>
 
+      <!-- Testing -->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>

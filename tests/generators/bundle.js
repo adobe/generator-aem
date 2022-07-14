@@ -107,7 +107,6 @@ test.serial('second bundle - cloud', async (t) => {
 
   await helpers
     .create(generatorPath('bundle'))
-    .withGenerators([[BundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')]])
     .withOptions({
       defaults: true,
       examples: false,
