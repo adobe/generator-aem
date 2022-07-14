@@ -31,100 +31,116 @@ const dirname = path.dirname(filename);
 
 const ModuleOptions = Object.freeze({
   '@adobe/aem:bundle'(parentProps) {
-
     return {
       generateInto: 'core',
-      ...(parentProps.defaults ? {
-        appId: parentProps.appId,
-        package: parentProps.groupId,
-        name: `${parentProps.name} - Core Bundle`,
-        artifactId: `${parentProps.artifactId}.core`,
-      } : {}),
+      ...(parentProps.defaults
+        ? {
+            appId: parentProps.appId,
+            package: parentProps.groupId,
+            name: `${parentProps.name} - Core Bundle`,
+            artifactId: `${parentProps.artifactId}.core`,
+          }
+        : {}),
     };
-
   },
   '@adobe/aem:frontend-general'(parentProps) {
     return {
       generateInto: 'ui.frontend',
-      ...(parentProps.defaults ? {
-        appId: parentProps.appId,
-        name: `${parentProps.name} - UI Frontend`,
-        artifactId: `${parentProps.artifactId}.ui.frontend`,
-      } : {}),
+      ...(parentProps.defaults
+        ? {
+            appId: parentProps.appId,
+            name: `${parentProps.name} - UI Frontend`,
+            artifactId: `${parentProps.artifactId}.ui.frontend`,
+          }
+        : {}),
     };
   },
   '@adobe/aem:package-structure'(parentProps) {
     return {
       generateInto: 'ui.apps.structure',
-      ...(parentProps.defaults ? {
-        appId: parentProps.appId,
-        name: `${parentProps.name} - Repository Structure Package`,
-        artifactId: `${parentProps.artifactId}.ui.apps.structure`,
-      } : {}),
+      ...(parentProps.defaults
+        ? {
+            appId: parentProps.appId,
+            name: `${parentProps.name} - Repository Structure Package`,
+            artifactId: `${parentProps.artifactId}.ui.apps.structure`,
+          }
+        : {}),
     };
   },
   '@adobe/aem:package-apps'(parentProps) {
     return {
       generateInto: 'ui.apps',
-      ...(parentProps.defaults ? {
-        appId: parentProps.appId,
-        name: `${parentProps.name} - UI Apps Package`,
-        artifactId: `${parentProps.artifactId}.ui.apps`,
-        bundleRef: 'core',
-        frontendRef: 'ui.frontend',
-      } : {}),
+      ...(parentProps.defaults
+        ? {
+            appId: parentProps.appId,
+            name: `${parentProps.name} - UI Apps Package`,
+            artifactId: `${parentProps.artifactId}.ui.apps`,
+            bundleRef: 'core',
+            frontendRef: 'ui.frontend',
+          }
+        : {}),
     };
   },
   '@adobe/aem:package-config'(parentProps) {
     return {
       generateInto: 'ui.config',
-      ...(parentProps.defaults ? {
-        appId: parentProps.appId,
-        name: `${parentProps.name} - UI Config Package`,
-        artifactId: `${parentProps.artifactId}.ui.config`,
-      } : {}),
+      ...(parentProps.defaults
+        ? {
+            appId: parentProps.appId,
+            name: `${parentProps.name} - UI Config Package`,
+            artifactId: `${parentProps.artifactId}.ui.config`,
+          }
+        : {}),
     };
   },
   '@adobe/aem:package-content'(parentProps) {
     return {
       generateInto: 'ui.content',
-      ...(parentProps.defaults ? {
-        appId: parentProps.appId,
-        name: `${parentProps.name} - UI Content Package`,
-        artifactId: `${parentProps.artifactId}.ui.content`,
-        appsRef: 'ui.apps',
-        configRef: 'ui.config',
-      } : {}),
+      ...(parentProps.defaults
+        ? {
+            appId: parentProps.appId,
+            name: `${parentProps.name} - UI Content Package`,
+            artifactId: `${parentProps.artifactId}.ui.content`,
+            appsRef: 'ui.apps',
+            configRef: 'ui.config',
+          }
+        : {}),
     };
   },
   '@adobe/aem:package-all'(parentProps) {
     return {
       generateInto: 'all',
-      ...(parentProps.defaults ? {
-        appId: parentProps.appId,
-        name: `${parentProps.name} - All`,
-        artifactId: `${parentProps.artifactId}.all`,
-      } : {}),
+      ...(parentProps.defaults
+        ? {
+            appId: parentProps.appId,
+            name: `${parentProps.name} - All`,
+            artifactId: `${parentProps.artifactId}.all`,
+          }
+        : {}),
     };
   },
   '@adobe/aem:tests-it'(parentProps) {
     return {
       generateInto: 'it.tests',
-      ...(parentProps.defaults ? {
-        appId: parentProps.appId,
-        name: `${parentProps.name} - Integration Tests`,
-        artifactId: `${parentProps.artifactId}.it.tests`,
-      } : {}),
+      ...(parentProps.defaults
+        ? {
+            appId: parentProps.appId,
+            name: `${parentProps.name} - Integration Tests`,
+            artifactId: `${parentProps.artifactId}.it.tests`,
+          }
+        : {}),
     };
   },
   '@adobe/aem:dispatcher'(parentProps) {
     return {
       generateInto: 'dispatcher',
-      ...(parentProps.defaults ? {
-        appId: parentProps.appId,
-        name: `${parentProps.name} - Dispatcher`,
-        artifactId: `${parentProps.artifactId}.dispatcher`,
-      } : {}),
+      ...(parentProps.defaults
+        ? {
+            appId: parentProps.appId,
+            name: `${parentProps.name} - Dispatcher`,
+            artifactId: `${parentProps.artifactId}.dispatcher`,
+          }
+        : {}),
     };
   },
   '@adobe/aem:cc'() {
@@ -133,7 +149,7 @@ const ModuleOptions = Object.freeze({
       apps: 'ui.apps',
       version: 'latest',
     };
-  }
+  },
 });
 
 const ModuleOrder = Object.freeze([
@@ -303,16 +319,16 @@ class AEMGenerator extends Generator {
         name: 'aemVersion',
         message: 'AEM Release',
         type: 'list',
-        choices: ['6.5', 'cloud'],
-        default: 1,
+        choices: ['cloud', '6.5'],
+        default: 0,
         when: !this.options.defaults && !this.props.aemVersion,
       },
       {
         name: 'javaVersion',
         message: 'Java Version',
         type: 'list',
-        choices: ['8', '11'],
-        default: 1,
+        choices: ['11', '8'],
+        default: 0,
         when: (answers) => {
           return new Promise((resolve) => {
             if (this.options.defaults || this.props.javaVersion) {
@@ -366,9 +382,9 @@ class AEMGenerator extends Generator {
       if (!_.isEmpty(pomData) && pomData.groupId !== this.props.groupId && pomData.artifactId !== this.props.artifactId) {
         throw new Error(
           chalk.red('Refusing to update existing project with different group/artifact identifiers.') +
-          '\n\n' +
-          'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
-          'This is not a supported feature. Please manually update or use the defaults flag.'
+            '\n\n' +
+            'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
+            'This is not a supported feature. Please manually update or use the defaults flag.'
         );
       }
 
