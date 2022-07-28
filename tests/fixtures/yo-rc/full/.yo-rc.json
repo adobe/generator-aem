@@ -10,34 +10,16 @@
     "aemVersion": "localyo",
     "nodeVersion": "localyo",
     "npmVersion": "localyo",
-    "core": {
-      "examples": true,
-      "name": "Local Yo",
-      "appId": "localyo",
-      "package": "com.test.localyo",
-      "artifactId": "localyo",
-      "moduleType": "bundle"
-    },
-    "ui.apps": {
-      "examples": true,
-      "name": "Local Yo",
-      "appId": "localyo",
-      "artifactId": "localyo",
-      "moduleType": "package-apps"
-    },
-    "wrapper": {
-      "examples": true,
-      "name": "Local Yo",
-      "appId": "localyo",
-      "artifactId": "localyo",
-      "moduleType": "wrapper"
-    },
-    "test": {
-      "examples": true,
-      "name": "Local Yo",
-      "appId": "localyo",
-      "artifactId": "localyo",
-      "moduleType": "test:simple"
+    "modules": {
+      "bundle": [
+        "core"
+      ],
+      "package-structure": [
+        "ui.apps.structure"
+      ],
+      "package-apps": [
+        "ui.apps"
+      ]
     }
   }
 }

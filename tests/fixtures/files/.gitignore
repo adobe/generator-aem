@@ -1,0 +1,4 @@
+# These values are from original file not included in generator template.
+# This is a custom entry
+*.pydevproject
+*.hprof

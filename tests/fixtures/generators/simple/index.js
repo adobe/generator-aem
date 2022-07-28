@@ -23,24 +23,20 @@ class Simple extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
-    this.moduleType = 'test:simple';
     _.forOwn(this._options, (v, k) => {
       this.option(k, v);
     });
   }
 
   initializing() {
+    this.destinationRoot(this.destinationPath('simple'));
     this.props = {};
     this.props.added = 'Added';
     this._initializing();
   }
 
   writing() {
-    const dest = this.destinationPath('simple', 'props.json');
-    if (this.props.generateInto) {
-      this.destinationPath(this.props.generateInto, 'props.json');
-    }
-
+    const dest = this.destinationPath( 'props.json');
     this.fs.write(dest, JSON.stringify(this.props));
   }
 }

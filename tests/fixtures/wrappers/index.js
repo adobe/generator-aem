@@ -17,38 +17,62 @@
 import AEMGenerator from '../../../generators/app/index.js';
 import { generatorPath } from '../helpers.js';
 
-export class AEMAppNoWrite extends AEMGenerator {
+export class AEMAppInit extends AEMGenerator {
   constructor(args, options, features) {
     options.resolved = generatorPath('app', 'index.js');
     super(args, options, features);
   }
-
   initializing() {
     super.initializing();
   }
+}
 
-  prompting() {
-    return super.prompting();
+export class AEMAppConfig extends AEMGenerator {
+  constructor(args, options, features) {
+    options.resolved = generatorPath('app', 'index.js');
+    super(args, options, features);
+    this.props = options.props;
   }
 
   configuring() {
     super.configuring();
   }
+}
+
+export class AEMAppDefault extends AEMGenerator {
+  constructor(args, options, features) {
+    options.resolved = generatorPath('app', 'index.js');
+    super(args, options, features);
+    this.props = options.props;
+  }
+
+  configuring() {
+    this.config.set(this.props);
+  }
 
   default() {
-    const modules = this.options.modules;
-    for (const idx in modules) {
-      if (Object.prototype.hasOwnProperty.call(modules, idx)) {
-        const moduleOptions = {};
-        moduleOptions.parent = this.props;
-        this.composeWith(modules[idx], moduleOptions);
-      }
-    }
+    super.default();
   }
 }
 
+export class AEMAppWriting extends AEMGenerator {
+  constructor(args, options, features) {
+    options.resolved = generatorPath('app', 'index.js');
+    super(args, options, features);
+    this.props = options.props;
+  }
+
+  writing() {
+    super.writing();
+  }
+}
+
+
+
 const wrappers = {
-  AEMAppNoWrite,
+  AEMAppInit,
+  AEMAppConfig,
+  AEMAppDefault,
 };
 
 export default wrappers;
