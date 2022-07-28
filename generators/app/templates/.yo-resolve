@@ -1,0 +1,4 @@
+.gitignore force
+.yo-resolve force
+pom.xml force
+README.md skip

@@ -25,8 +25,6 @@ import ModuleMixins from '../../../lib/module-mixins.js';
 
 class ParentPomGenerator extends Generator {
   constructor(args, options, features) {
-    features = features || {};
-    features.customInstallTask = true;
     super(args, options, features);
   }
 
@@ -35,21 +33,7 @@ class ParentPomGenerator extends Generator {
   }
 
   writing() {
-    const files = [];
-    files.push(
-      {
-        src: this.templatePath('README.md'),
-        dest: this.destinationPath('README.md'),
-      },
-      {
-        src: this.templatePath('.gitignore'),
-        dest: this.destinationPath('.gitignore'),
-      },
-      {
-        src: this.templatePath('pom.xml'),
-        dest: this.destinationPath('pom.xml'),
-      }
-    );
+
 
     return this._latestRelease(this._apiCoordinates(this.props.aemVersion)).then((aemMetadata) => {
       const config = this.config.getAll();
@@ -77,15 +61,6 @@ class ParentPomGenerator extends Generator {
       }
 
       this._writing(files);
-    });
-  }
-
-  conflicts() {}
-
-  install() {
-    const options = this.options.showBuildOutput ? { stdio: 'inherit' } : { stdio: 'ignore' };
-    return this.spawnCommand('mvn', ['clean', 'verify'], options).catch((error) => {
-      throw new Error(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
     });
   }
 }
