@@ -16,22 +16,26 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { versions } from 'node:process';
 import { execFileSync } from 'node:child_process';
 
 import _ from 'lodash';
-import tempDirectory from 'temp-dir';
 
 import test from 'ava';
 import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
+import got from 'got';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
 import TestGenerator from '../fixtures/generators/simple/index.js';
 
-import { AEMAppInit, AEMAppConfig, AEMAppDefault, AEMAppWriting } from '../fixtures/wrappers/index.js';
+import { Init, Config, Default, WriteInstall } from '../fixtures/generators/wrappers.js';
 import AEMGenerator from '../../generators/app/index.js';
+
+const AEMAppInit = Init(AEMGenerator, generatorPath('app', 'index.js'));
+const AEMAppConfig = Config(AEMGenerator, generatorPath('app', 'index.js'));
+const AEMAppDefault = Default(AEMGenerator, generatorPath('app', 'index.js'));
+const AEMAppWriteInstall = WriteInstall(AEMGenerator, generatorPath('app', 'index.js'));
 
 const nodeVersion = versions.node;
 const npmVersion = execFileSync('npm', ['--version'])
@@ -39,25 +43,27 @@ const npmVersion = execFileSync('npm', ['--version'])
   .replaceAll(/\r\n|\n|\r/gm, '');
 
 test('initialize - no options', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   await helpers
     .create(AEMAppInit)
     .run()
     .then((result) => {
       t.deepEqual(result.generator.props, {}, 'Properties set');
+      t.deepEqual(result.generator.modules, {}, 'Modules set');
+      t.deepEqual(result.generator.mixins, {}, 'Mixins set');
     });
 });
 
 test('initialize - defaults', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   await helpers
     .create(AEMAppInit)
     .withOptions({ defaults: true })
     .run()
     .then((result) => {
-      const expected = {
+      const props = {
         defaults: true,
         examples: false,
         version: '1.0.0-SNAPSHOT',
@@ -65,32 +71,39 @@ test('initialize - defaults', async (t) => {
         javaVersion: '11',
         nodeVersion,
         npmVersion,
-        modules: {
-          bundle: ['core'],
-          'frontend-general': ['ui.frontend'],
-          'package-structure': ['ui.apps.structure'],
-          'package-apps': ['ui.apps'],
-          'package-config': ['ui.config'],
-          'package-all': ['all'],
-          'tests-it': ['it.tests'],
-          dispatcher: ['dispatcher'],
-          unknown: [],
-        },
-        mixins: ['cc'],
       };
-      t.deepEqual(result.generator.props, expected, 'Properties set');
+
+      const modules = {
+        bundle: new Set(['core']),
+        'frontend-general': new Set(['ui.frontend']),
+        'package-structure': new Set(['ui.apps.structure']),
+        'package-apps': new Set(['ui.apps']),
+        'package-config': new Set(['ui.config']),
+        'package-all': new Set(['all']),
+        'tests-it': new Set(['it.tests']),
+        dispatcher: new Set(['dispatcher']),
+        unknown: new Set(),
+      };
+
+      const mixins = {
+        cc: new Set(['.', 'core', 'ui.apps', 'all']),
+      };
+      t.deepEqual(result.generator.props, props, 'Properties set');
+      t.deepEqual(result.generator.modules, modules, 'Modules set');
+      t.deepEqual(result.generator.mixins, mixins, 'Mixins set');
+
     });
 });
 
 test('initialize - invalid java/aem version', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   await helpers
     .create(AEMAppInit)
     .withOptions({ defaults: true, javaVersion: '1.7', aemVersion: '6.4' })
     .run()
     .then((result) => {
-      const expected = {
+      const props = {
         defaults: true,
         examples: false,
         version: '1.0.0-SNAPSHOT',
@@ -98,32 +111,38 @@ test('initialize - invalid java/aem version', async (t) => {
         javaVersion: '11',
         nodeVersion,
         npmVersion,
-        modules: {
-          bundle: ['core'],
-          'frontend-general': ['ui.frontend'],
-          'package-structure': ['ui.apps.structure'],
-          'package-apps': ['ui.apps'],
-          'package-config': ['ui.config'],
-          'package-all': ['all'],
-          'tests-it': ['it.tests'],
-          dispatcher: ['dispatcher'],
-          unknown: [],
-        },
-        mixins: ['cc']
       };
-      t.deepEqual(result.generator.props, expected, 'Properties set');
+
+      const modules = {
+        bundle: new Set(['core']),
+        'frontend-general': new Set(['ui.frontend']),
+        'package-structure': new Set(['ui.apps.structure']),
+        'package-apps': new Set(['ui.apps']),
+        'package-config': new Set(['ui.config']),
+        'package-all': new Set(['all']),
+        'tests-it': new Set(['it.tests']),
+        dispatcher: new Set(['dispatcher']),
+        unknown: new Set(),
+      };
+
+      const mixins = {
+        cc: new Set(['.', 'core', 'ui.apps', 'all']),
+      };
+      t.deepEqual(result.generator.props, props, 'Properties set');
+      t.deepEqual(result.generator.modules, modules, 'Modules set');
+      t.deepEqual(result.generator.mixins, mixins, 'Mixins set');
     });
 });
 
 test('initialize - defaults with module subset', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   await helpers
     .create(AEMAppInit)
     .withOptions({ defaults: true, modules: 'bundle,package-structure,package-apps,package-all' })
     .run()
     .then((result) => {
-      const expected = {
+      const props = {
         defaults: true,
         examples: false,
         version: '1.0.0-SNAPSHOT',
@@ -131,20 +150,26 @@ test('initialize - defaults with module subset', async (t) => {
         javaVersion: '11',
         nodeVersion,
         npmVersion,
-        modules: {
-          bundle: ['core'],
-          'package-structure': ['ui.apps.structure'],
-          'package-apps': ['ui.apps'],
-          'package-all': ['all'],
-        },
-        mixins: ['cc']
       };
-      t.deepEqual(result.generator.props, expected, 'Properties set');
+
+      const modules = {
+        bundle: new Set(['core']),
+        'package-structure': new Set(['ui.apps.structure']),
+        'package-apps': new Set(['ui.apps']),
+        'package-all': new Set(['all']),
+      };
+
+      const mixins = {
+        cc: new Set(['.', 'core', 'ui.apps', 'all']),
+      };
+      t.deepEqual(result.generator.props, props, 'Properties set');
+      t.deepEqual(result.generator.modules, modules, 'Modules set');
+      t.deepEqual(result.generator.mixins, mixins, 'Mixins set');
     });
 });
 
 test('initialize from pom - no modules', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   await helpers
     .create(AEMAppInit)
@@ -164,11 +189,13 @@ test('initialize from pom - no modules', async (t) => {
         npmVersion: 'pom',
       };
       t.deepEqual(result.generator.props, expected, 'Properties set');
+      t.deepEqual(result.generator.modules, {}, 'Modules set');
+      t.deepEqual(result.generator.mixins, {}, 'Mixins set');
     });
 });
 
 test('initialize from pom - no modules - generateInto', async (t) => {
-  t.plan(1);
+  t.plan(3);
   const subdir = 'subdir';
 
   await helpers
@@ -191,11 +218,13 @@ test('initialize from pom - no modules - generateInto', async (t) => {
         npmVersion: 'pom',
       };
       t.deepEqual(result.generator.props, expected, 'Properties set');
+      t.deepEqual(result.generator.modules, {}, 'Modules set');
+      t.deepEqual(result.generator.mixins, {}, 'Mixins set');
     });
 });
 
 test('initialize from pom - with modules', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   await helpers
     .create(AEMAppInit)
@@ -204,7 +233,7 @@ test('initialize from pom - with modules', async (t) => {
     })
     .run()
     .then((result) => {
-      const expected = {
+      const props = {
         name: 'Pom Name',
         groupId: 'com.test.pom.groupid',
         artifactId: 'pom.artifactid',
@@ -213,19 +242,27 @@ test('initialize from pom - with modules', async (t) => {
         aemVersion: 'pom',
         nodeVersion: 'pom',
         npmVersion: 'pom',
-        modules: {
-          bundle: ['core'],
-          'package-structure': ['ui.apps.structure'],
-          'package-apps': ['ui.apps'],
-          unknown: ['unknown']
-        },
       };
-      t.deepEqual(result.generator.props, expected, 'Properties set');
+      const modules = {
+        bundle: new Set(['core']),
+        'package-structure': new Set(['ui.apps.structure']),
+        'package-apps': new Set(['ui.apps']),
+        unknown: new Set(['unknown']),
+      };
+
+      const mixins = {
+        cc: new Set(['core', 'ui.apps']),
+      };
+
+      t.deepEqual(result.generator.props, props, 'Properties set');
+      t.deepEqual(result.generator.modules, modules, 'Modules set');
+      t.deepEqual(result.generator.mixins, mixins, 'Mixins set');
+
     });
 });
 
 test('initialize from .yo-rc.json', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   await helpers
     .create(AEMAppInit)
@@ -245,18 +282,15 @@ test('initialize from .yo-rc.json', async (t) => {
         aemVersion: 'localyo',
         nodeVersion: 'localyo',
         npmVersion: 'localyo',
-        modules: {
-          bundle: ['core'],
-          'package-structure': ['ui.apps.structure'],
-          'package-apps': ['ui.apps'],
-        }
       };
       t.deepEqual(result.generator.props, expected, 'Properties set');
+      t.deepEqual(result.generator.modules, {}, 'Modules set');
+      t.deepEqual(result.generator.mixins, {}, 'Mixins set');
     });
 });
 
 test('initialize from .yo-rc.json - generateInto', async (t) => {
-  t.plan(1);
+  t.plan(3);
   const subdir = 'subdir';
 
   await helpers
@@ -279,18 +313,15 @@ test('initialize from .yo-rc.json - generateInto', async (t) => {
         aemVersion: 'localyo',
         nodeVersion: 'localyo',
         npmVersion: 'localyo',
-        modules: {
-          bundle: ['core'],
-          'package-structure': ['ui.apps.structure'],
-          'package-apps': ['ui.apps'],
-        }
       };
       t.deepEqual(result.generator.props, expected, 'Properties set');
+      t.deepEqual(result.generator.modules, {}, 'Modules set');
+      t.deepEqual(result.generator.mixins, {}, 'Mixins set');
     });
 });
 
 test('initialize merge', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   await helpers
     .create(AEMAppInit)
@@ -301,7 +332,7 @@ test('initialize merge', async (t) => {
     })
     .run()
     .then((result) => {
-      const expected = {
+      const props = {
         defaults: true,
         examples: false,
         name: 'Local Yo',
@@ -313,13 +344,26 @@ test('initialize merge', async (t) => {
         aemVersion: 'localyo',
         nodeVersion,
         npmVersion,
-        modules: {
-          bundle: ['core'],
-          'package-apps': ['ui.apps'],
-        },
-        mixins: ['cc'],
       };
-      t.deepEqual(result.generator.props, expected, 'Properties set');
+
+      const modules ={
+        bundle: new Set(['core']),
+        'frontend-general': new Set(['ui.frontend']),
+        'package-structure': new Set(['ui.apps.structure']),
+        'package-apps': new Set(['ui.apps']),
+        'package-config': new Set(['ui.config']),
+        'package-all': new Set(['all']),
+        'tests-it': new Set(['it.tests']),
+        dispatcher: new Set(['dispatcher']),
+        unknown: new Set(),
+      };
+
+      const mixins = {
+        cc: new Set(['.', 'core', 'ui.apps', 'all']),
+      };
+      t.deepEqual(result.generator.props, props, 'Properties set');
+      t.deepEqual(result.generator.modules, modules, 'Modules set');
+      t.deepEqual(result.generator.mixins, mixins, 'Mixins set');
     });
 });
 
@@ -379,7 +423,6 @@ test('prompting - options passed', async (t) => {
     npmVersion: 'options',
   };
 
-
   class Mock extends AEMGenerator {
     constructor(args, options, features) {
       options.resolved = generatorPath('app', 'index.js');
@@ -404,7 +447,7 @@ test('prompting - options passed', async (t) => {
 });
 
 test('prompting - asked', async (t) => {
-  t.plan(1);
+  t.plan(3);
 
   const prompts = {
     examples: true,
@@ -437,6 +480,8 @@ test('prompting - asked', async (t) => {
 
     prompting() {
       this.props = {};
+      this.modules = {};
+      this.mixins = {};
       super.prompting();
     }
   }
@@ -446,44 +491,45 @@ test('prompting - asked', async (t) => {
     .withPrompts(prompts)
     .run()
     .then((result) => {
-      const expected = _.omit(prompts,
-        [
-          'moduleSelection',
-          'bundle',
-          'frontend',
-          'package-structure',
-          'package-apps',
-          'package-config',
-          'package-all',
-          'tests-it',
-          'dispatcher',
-          'frontend-general',
-        ]
-      );
-      expected.modules = {
-        bundle: ['prompted'],
-        'frontend-general': ['prompted'],
-        'package-structure': ['prompted'],
-        'package-apps': ['prompted'],
-        'package-config': ['prompted'],
-        'package-all': ['prompted'],
-        'tests-it': ['prompted'],
-        dispatcher: ['dispatcher'],
+      const props = _.omit(prompts, ['moduleSelection', 'bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-all', 'tests-it', 'dispatcher', 'frontend-general', 'mixins']);
+      const modules = {
+        bundle: new Set(['prompted']),
+        'frontend-general': new Set(['prompted']),
+        'package-structure': new Set(['prompted']),
+        'package-apps': new Set(['prompted']),
+        'package-config': new Set(['prompted']),
+        'package-all': new Set(['prompted']),
+        'tests-it': new Set(['prompted']),
+        dispatcher: new Set(['dispatcher']),
       };
-      t.deepEqual(result.generator.props, expected, 'Properties set');
+
+      const mixins = {
+        cc: new Set(),
+      };
+      t.deepEqual(result.generator.props, props, 'Properties set');
+      t.deepEqual(result.generator.modules, modules, 'Modules set');
+      t.deepEqual(result.generator.mixins, mixins, 'Mixins set');
     });
 });
 
 test('configuring', async (t) => {
   t.plan(1);
+  sinon.restore();
+  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
+  sinon.replace(AEMGenerator.prototype, '_latestRelease', stub);
 
   await helpers
     .create(AEMAppConfig)
     .withOptions({ props: { config: 'config' } })
     .run()
     .then((result) => {
+      sinon.restore();
+
       const expected = {
-        '@adobe/generator-aem': { config: 'config' },
+        '@adobe/generator-aem': {
+          config: 'config',
+          aem: cloudSdkApiMetadata,
+        },
       };
 
       const yoData = JSON.parse(fs.readFileSync(result.generator.destinationPath('.yo-rc.json')));
@@ -493,14 +539,22 @@ test('configuring', async (t) => {
 
 test('configuring - generateInto', async (t) => {
   t.plan(1);
+  sinon.restore();
+  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
+  sinon.replace(AEMGenerator.prototype, '_latestRelease', stub);
+
   await helpers
     .create(AEMAppConfig)
     .withOptions({ generateInto: 'subdir', props: { config: 'config' } })
     .withPrompts()
     .run()
     .then((result) => {
+      sinon.restore();
       const expected = {
-        '@adobe/generator-aem': { config: 'config' },
+        '@adobe/generator-aem': {
+          config: 'config',
+          aem: cloudSdkApiMetadata,
+        },
       };
 
       const yoData = JSON.parse(fs.readFileSync(result.generator.destinationPath('.yo-rc.json')));
@@ -510,6 +564,9 @@ test('configuring - generateInto', async (t) => {
 
 test('configuring - fails on existing different pom', async (t) => {
   t.plan(1);
+  sinon.restore();
+  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
+  sinon.replace(AEMGenerator.prototype, '_latestRelease', stub);
 
   await t.throwsAsync(
     helpers
@@ -519,20 +576,24 @@ test('configuring - fails on existing different pom', async (t) => {
         fs.copyFileSync(fixturePath('pom', 'full', 'pom.xml'), path.join(temporary, 'pom.xml'));
       })
       .run()
+      .then(() => {
+        sinon.restore();
+      })
   );
 });
 
 test('compose with module - does not exist', async (t) => {
   t.plan(1);
-  await t.throwsAsync(
-    helpers
-      .create(AEMAppDefault)
-      .withOptions({ defaults: true, modules: 'test:simple' })
-      .run()
-  );
+  const options = {
+    defaults: true,
+    moduleStruct: {
+      'test:simple': new Set(['simple']),
+    }
+  }
+  await t.throwsAsync(helpers.create(AEMAppDefault).withOptions(options).run());
 });
 
-test('compose with module', async (t) => {
+test.serial('compose with module', async (t) => {
   t.plan(1);
 
   await helpers
@@ -541,37 +602,29 @@ test('compose with module', async (t) => {
     .withOptions({
       showBuildOutput: false,
       props: {
-        modules: {
-          'test:simple': ['simple'],
-        },
         parent: 'parent',
+      },
+      moduleStruct: {
+        'test:simple': new Set(['simple']),
       }
     })
     .run()
     .then((result) => {
       const expected = {
         added: 'Added',
-        parent: {
-          modules: {
-            'test:simple': ['simple'],
-          },
-          parent: 'parent',
-        },
       };
       const actual = JSON.parse(fs.readFileSync(result.generator.destinationPath('simple', 'props.json')));
       t.deepEqual(actual, expected, 'File created');
     });
 });
 
-test.serial('writing - cloud', async (t) => {
+test.serial('writing/installing - cloud', async (t) => {
   t.plan(4);
-  sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMGenerator.prototype, '_latestRelease', stub);
 
   await helpers
-    .create(AEMAppWriting)
-    .withOptions({props: {
+    .create(AEMAppWriteInstall)
+    .withOptions({
+      props: {
         groupId: 'com.adobe.test.main',
         artifactId: 'main',
         version: '1.0.0-SNAPSHOT',
@@ -581,17 +634,18 @@ test.serial('writing - cloud', async (t) => {
         javaVersion: '11',
         nodeVersion,
         npmVersion,
-        showBuildOutput: false,
-      }})
+        aem: cloudSdkApiMetadata,
+      },
+      showBuildOutput: false,
+    })
     .inTmpDir((temporary) => {
       fs.copyFileSync(fixturePath('files', '.gitignore'), path.join(temporary, '.gitignore'));
     })
     .run()
     .then((result) => {
-      sinon.restore();
       const gitignore = path.join('.gitignore');
       result.assertFile(gitignore);
-      let content = fs.readFileSync(gitignore, { encoding: 'utf8' }).split('\n');
+      const content = fs.readFileSync(gitignore, { encoding: 'utf8' }).split('\n');
       t.is(content.length, 110, 'Correct number of lines.');
       t.is(content[2], '# This is a custom entry', 'Custom entry found');
       t.is(content[3], '*.hprof', 'Order correct');
@@ -628,12 +682,9 @@ test.serial('writing - cloud', async (t) => {
 
 test.serial('writing/installing - v6.5', async (t) => {
   t.plan(1);
-  sinon.restore();
-  const stub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(AEMGenerator.prototype, '_latestRelease', stub);
 
   await helpers
-    .create(AEMAppWriting)
+    .create(AEMAppWriteInstall)
     .withOptions({
       props: {
         groupId: 'com.adobe.test.main',
@@ -645,12 +696,12 @@ test.serial('writing/installing - v6.5', async (t) => {
         javaVersion: '8',
         nodeVersion,
         npmVersion,
-        showBuildOutput: false,
-      }
+        aem: aem65ApiMetadata,
+      },
+      showBuildOutput: false,
     })
     .run()
     .then((result) => {
-      sinon.restore();
       result.assertFile(path.join('README.md'));
       result.assertFile(path.join('.gitignore'));
       const pom = path.join('pom.xml');
@@ -671,18 +722,14 @@ test.serial('writing/installing - v6.5', async (t) => {
 
       const spawnResult = result.generator.spawnCommandSync('mvn', ['clean', 'verify'], { stdio: 'ignore' });
       t.is(spawnResult.exitCode, 0, 'Build successful.');
-
     });
 });
 
 test.serial('writing/installing - cloud - merge/upgrade', async (t) => {
   t.plan(1);
-  sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMGenerator.prototype, '_latestRelease', stub);
 
   await helpers
-    .create(AEMAppWriting)
+    .create(AEMAppWriteInstall)
     .withOptions({
       props: {
         groupId: 'com.adobe.test.main',
@@ -694,15 +741,15 @@ test.serial('writing/installing - cloud - merge/upgrade', async (t) => {
         javaVersion: '11',
         nodeVersion,
         npmVersion,
-        showBuildOutput: false,
-      }
+        aem: cloudSdkApiMetadata,
+      },
+      showBuildOutput: false,
     })
     .inTmpDir((temporary) => {
       fs.copyFileSync(fixturePath('pom', 'v6.5', 'pom.xml'), path.join(temporary, 'pom.xml'));
     })
     .run()
     .then((result) => {
-      sinon.restore();
       result.assertFile('.gitignore');
       result.assertFile('README.md');
       result.assertFile('.yo-resolve');
@@ -731,4 +778,86 @@ test.serial('writing/installing - cloud - merge/upgrade', async (t) => {
       const spawnResult = result.generator.spawnCommandSync('mvn', ['clean', 'verify'], { stdio: 'ignore' });
       t.is(spawnResult.exitCode, 0, 'Build successful.');
     });
+});
+
+test.serial('_latestRelease - AEM 6.5 - Previous', async (t) => {
+  t.plan(5);
+
+  const metadata = fs.readFileSync(fixturePath('files', 'uber-jar-metadata.xml'));
+  const fake = sinon.fake.resolves(metadata);
+  sinon.replace(got, 'get', fake);
+
+  await AEMGenerator.prototype._latestRelease({ groupId: 'com.adobe.aem', artifactId: 'uber-jar' }, true).then((data) => {
+    sinon.restore();
+    t.is(data.groupId, 'com.adobe.aem', 'Group Id');
+    t.is(data.artifactId, 'uber-jar', 'Artifact Id');
+    t.is(data.version, '6.5.12', 'Version');
+    t.truthy(data.versions, 'Historical versions available');
+    t.is(fake.firstArg, 'https://repo1.maven.org/maven2/com/adobe/aem/uber-jar/maven-metadata.xml');
+  });
+});
+
+test.serial('_latestRelease - AEMaaCS - No Previous', async (t) => {
+  t.plan(5);
+
+  const metadata = fs.readFileSync(fixturePath('files', 'sdk-api-metadata.xml'));
+  const fake = sinon.fake.resolves(metadata);
+  sinon.replace(got, 'get', fake);
+
+  await AEMGenerator.prototype._latestRelease({ groupId: 'com.adobe.aem', artifactId: 'aem-sdk-api' }).then((data) => {
+    sinon.restore();
+    t.is(data.groupId, 'com.adobe.aem', 'Group Id');
+    t.is(data.artifactId, 'aem-sdk-api', 'Artifact Id');
+    t.is(data.version, '2022.3.6698.20220318T233218Z-220400', 'Version');
+    t.falsy(data.versions, 'Historical versions not available');
+    t.is(fake.firstArg, 'https://repo1.maven.org/maven2/com/adobe/aem/aem-sdk-api/maven-metadata.xml');
+  });
+});
+
+test.serial('_latestRelease - No Coordinates', async (t) => {
+  t.plan(2);
+  const error = await t.throwsAsync(AEMGenerator.prototype._latestRelease);
+  t.regex(error.message, /No Coordinates provided\./, 'Error thrown.');
+});
+
+test.serial('_latestRelease - No Group Id', async (t) => {
+  t.plan(2);
+  const error = await t.throwsAsync(() => {
+    return AEMGenerator.prototype._latestRelease({ artifactId: 'test' });
+  });
+  t.regex(error.message, /No Coordinates provided\./, 'Error thrown.');
+});
+
+test.serial('_latestRelease - No Artifact Id', async (t) => {
+  t.plan(2);
+  const error = await t.throwsAsync(() => {
+    return AEMGenerator.prototype._latestRelease({ groupId: 'test' });
+  });
+  t.regex(error.message, /No Coordinates provided\./, 'Error thrown.');
+});
+
+test.serial('_latestRelease - Invalid XML', async (t) => {
+  t.plan(1);
+  sinon.restore();
+  const fake = sinon.fake.resolves('Not Parseable XML');
+  sinon.replace(got, 'get', fake);
+
+  await t.throwsAsync(() => {
+    return AEMGenerator.prototype._latestRelease({ groupId: 'test' }).then(() => {
+      sinon.restore();
+    });
+  });
+});
+
+test.serial('_latestRelease - Got Fails', async (t) => {
+  t.plan(1);
+  sinon.restore();
+  const fake = sinon.fake.throws(new Error('500 error'));
+  sinon.replace(got, 'get', fake);
+
+  await t.throwsAsync(() => {
+    return AEMGenerator.prototype._latestRelease({ groupId: 'test' }).then(() => {
+      sinon.restore();
+    });
+  });
 });

@@ -1,3 +1,19 @@
+/*
+ Copyright 2022 Adobe Inc.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 import fs from 'node:fs';
 
 import _ from 'lodash';
@@ -10,101 +26,65 @@ import { fixturePath } from '../fixtures/helpers.js';
 
 const pomStruct = [
   {
-    properties: [
-      { 'java.version': [{ '#text': '11' }] },
-      { 'aem.version': [{ '#text': '6.5.12' }] },
-      { 'some.property': [{ '#text': 'value' }] }
-    ]
+    properties: [{ 'java.version': [{ '#text': '11' }] }, { 'aem.version': [{ '#text': '6.5.12' }] }, { 'some.property': [{ '#text': 'value' }] }],
   },
   {
     plugins: [
       {
-        plugin: [
-          { artifactId: [{ '#text': 'filevault-package-maven-plugin' }] },
-          { version: [{ '#text': '3.2.1' }] },
-          { extensions: [{ '#text': 'true' }] }
-        ]
+        plugin: [{ artifactId: [{ '#text': 'filevault-package-maven-plugin' }] }, { version: [{ '#text': '3.2.1' }] }, { extensions: [{ '#text': 'true' }] }],
       },
       {
-        plugin: [
-          { groupId: [{ '#text': 'org.apache.maven.plugins' }] },
-          { artifactId: [{ '#text': 'maven-release-plugin' }] },
-        ]
+        plugin: [{ groupId: [{ '#text': 'org.apache.maven.plugins' }] }, { artifactId: [{ '#text': 'maven-release-plugin' }] }],
       },
       {
-        plugin: [
-          { groupId: [{ '#text': 'com.test' }] },
-          { artifactId: [{ '#text': 'plugin' }] },
-        ]
-      }
-
-    ]
+        plugin: [{ groupId: [{ '#text': 'com.test' }] }, { artifactId: [{ '#text': 'plugin' }] }],
+      },
+    ],
   },
   {
     dependencies: [
       {
-        dependency: [
-          { groupId: [{ '#text': 'com.adobe.aem' }] },
-          { artifactId: [{ '#text': 'uber-jar' }] },
-          { version: [{ '#text': '1.2.3' }] }
-        ]
+        dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'uber-jar' }] }, { version: [{ '#text': '1.2.3' }] }],
       },
       {
-        dependency: [
-          { groupId: [{ '#text': 'com.adobe.aem' }] },
-          { artifactId: [{ '#text': 'aem-sdk-api' }] },
-          { version: [{ '#text': '3.2.1' }] }
-        ]
+        dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'aem-sdk-api' }] }, { version: [{ '#text': '3.2.1' }] }],
       },
       {
-        dependency: [
-          { groupId: [{ '#text': 'com.test' }] },
-          { artifactId: [{ '#text': 'otherdep' }] },
-          { version: [{ '#text': '1.99' }] }
-        ]
-      }
-    ]
+        dependency: [{ groupId: [{ '#text': 'com.test' }] }, { artifactId: [{ '#text': 'otherdep' }] }, { version: [{ '#text': '1.99' }] }],
+      },
+    ],
   },
   {
     profiles: [
       {
-        profile: [
-          { id: [{ '#text': 'autoInstallPackage' }] },
-          { activation: [{ '#text': 'this is ignored' }] }
-        ]
+        profile: [{ id: [{ '#text': 'autoInstallPackage' }] }, { activation: [{ '#text': 'this is ignored' }] }],
       },
       {
-        profile: [
-          { id: [{ '#text': 'autoInstallPackagePublish' }] },
-          { activation: [{ '#text': 'this is ignored' }] }
-        ]
+        profile: [{ id: [{ '#text': 'autoInstallPackagePublish' }] }, { activation: [{ '#text': 'this is ignored' }] }],
       },
       {
-        profile: [
-          { id: [{ '#text': 'custom-profile' }] },
-          { activation: [{ '#text': 'this is ignored' }] }
-        ]
-      }
-    ]
-  }
+        profile: [{ id: [{ '#text': 'custom-profile' }] }, { activation: [{ '#text': 'this is ignored' }] }],
+      },
+    ],
+  },
 ];
 
 test('readPom - exists', (t) => {
   t.plan(1);
 
   const generator = {
-    destinationPath: function(pom) {
+    destinationPath(pom) {
       return fixturePath('pom', 'full', pom);
     },
 
     fs: {
-      exists: function(path) {
+      exists(path) {
         return fs.existsSync(path);
       },
-      read: function(path) {
+      read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
-    }
+      },
+    },
   };
 
   t.truthy(PomUtils.readPom(generator)[2].project, 'Read Pom.');
@@ -114,15 +94,15 @@ test('readPom - does not exist', (t) => {
   t.plan(1);
 
   const generator = {
-    destinationPath: function(pom) {
+    destinationPath(pom) {
       return fixturePath('files', pom);
     },
 
     fs: {
-      exists: function(path) {
+      exists(path) {
         return fs.existsSync(path);
-      }
-    }
+      },
+    },
   };
 
   t.deepEqual(PomUtils.readPom(generator), {}, 'Pom not found.');
@@ -165,13 +145,11 @@ test('fixXml', (t) => {
 
   t.regex(xml, /groupId>\n\s+com.adobe.aem\n\s+<\/groupId/, 'Built XML has space.');
   t.regex(PomUtils.fixXml(xml), /groupId>com.adobe.aem<\/groupId/, 'Fixed XML has no space.');
-
 });
 
 test('propertyPredicate - first', (t) => {
   t.plan(1);
   t.truthy(PomUtils.propertyPredicate(pomStruct[0].properties, { 'java.version': [{ '#text': '8' }] }), 'Property found');
-
 });
 
 test('propertyPredicate - middle', (t) => {
@@ -197,8 +175,8 @@ test('pluginPredicate - first', (t) => {
       { groupId: [{ '#text': 'org.apache.jackrabbit' }] },
       { artifactId: [{ '#text': 'filevault-package-maven-plugin' }] },
       { version: [{ '#text': '1.2.3' }] },
-      { extensions: [{ '#text': 'true' }] }
-    ]
+      { extensions: [{ '#text': 'true' }] },
+    ],
   };
   t.truthy(PomUtils.pluginPredicate(pomStruct[1].plugins, toFind), 'Plugin found');
 });
@@ -207,9 +185,7 @@ test('pluginPredicate - middle', (t) => {
   t.plan(1);
 
   const toFind = {
-    plugin: [
-      { artifactId: [{ '#text': 'maven-release-plugin' }] },
-    ]
+    plugin: [{ artifactId: [{ '#text': 'maven-release-plugin' }] }],
   };
   t.truthy(PomUtils.pluginPredicate(pomStruct[1].plugins, toFind), 'Plugin found');
 });
@@ -218,11 +194,7 @@ test('pluginPredicate - last', (t) => {
   t.plan(1);
 
   const toFind = {
-    plugin: [
-      { groupId: [{ '#text': 'com.test' }] },
-      { artifactId: [{ '#text': 'plugin' }] },
-      { version: [{ '#text': '99.99' }] }
-    ]
+    plugin: [{ groupId: [{ '#text': 'com.test' }] }, { artifactId: [{ '#text': 'plugin' }] }, { version: [{ '#text': '99.99' }] }],
   };
   t.truthy(PomUtils.pluginPredicate(pomStruct[1].plugins, toFind), 'Plugin found');
 });
@@ -231,11 +203,7 @@ test('pluginPredicate - not found', (t) => {
   t.plan(1);
 
   const toFind = {
-    plugin: [
-      { groupId: [{ '#text': 'com.test' }] },
-      { artifactId: [{ '#text': 'aotherplugin' }] },
-      { version: [{ '#text': '99.99' }] }
-    ]
+    plugin: [{ groupId: [{ '#text': 'com.test' }] }, { artifactId: [{ '#text': 'aotherplugin' }] }, { version: [{ '#text': '99.99' }] }],
   };
   t.falsy(PomUtils.pluginPredicate(pomStruct[1].plugins, toFind), 'Plugin not found');
 });
@@ -253,11 +221,7 @@ test('dependencyPredicate - first', (t) => {
   t.plan(1);
 
   const toFind = {
-    dependency: [
-      { groupId: [{ '#text': 'com.adobe.aem' }] },
-      { artifactId: [{ '#text': 'uber-jar' }] },
-      { version: [{ '#text': '1.0.0' }] }
-    ]
+    dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'uber-jar' }] }, { version: [{ '#text': '1.0.0' }] }],
   };
   t.truthy(PomUtils.dependencyPredicate(pomStruct[2].dependencies, toFind), 'Dependency found');
 });
@@ -266,10 +230,7 @@ test('dependencyPredicate - middle', (t) => {
   t.plan(1);
 
   const toFind = {
-    dependency: [
-      { groupId: [{ '#text': 'com.adobe.aem' }] },
-      { artifactId: [{ '#text': 'aem-sdk-api' }] },
-    ]
+    dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'aem-sdk-api' }] }],
   };
   t.truthy(PomUtils.dependencyPredicate(pomStruct[2].dependencies, toFind), 'Dependency found');
 });
@@ -278,11 +239,7 @@ test('dependencyPredicate - last', (t) => {
   t.plan(1);
 
   const toFind = {
-    dependency: [
-      { groupId: [{ '#text': 'com.test' }] },
-      { artifactId: [{ '#text': 'otherdep' }] },
-      { version: [{ '#text': '99.99' }] }
-    ]
+    dependency: [{ groupId: [{ '#text': 'com.test' }] }, { artifactId: [{ '#text': 'otherdep' }] }, { version: [{ '#text': '99.99' }] }],
   };
   t.truthy(PomUtils.dependencyPredicate(pomStruct[2].dependencies, toFind), 'Dependency found');
 });
@@ -291,11 +248,7 @@ test('dependencyPredicate - not found', (t) => {
   t.plan(1);
 
   const toFind = {
-    dependency: [
-      { groupId: [{ '#text': 'com.test' }] },
-      { artifactId: [{ '#text': 'anotherdep' }] },
-      { version: [{ '#text': '99.99' }] }
-    ]
+    dependency: [{ groupId: [{ '#text': 'com.test' }] }, { artifactId: [{ '#text': 'anotherdep' }] }, { version: [{ '#text': '99.99' }] }],
   };
   t.falsy(PomUtils.dependencyPredicate(pomStruct[2].dependencies, toFind), 'Dependency not found');
 });
@@ -313,9 +266,7 @@ test('profilePredicate - first', (t) => {
   t.plan(1);
 
   const toFind = {
-    profile: [
-      { id: [{ '#text': 'autoInstallPackage' }] },
-    ]
+    profile: [{ id: [{ '#text': 'autoInstallPackage' }] }],
   };
   t.truthy(PomUtils.profilePredicate(pomStruct[3].profiles, toFind), 'Profile found');
 });
@@ -324,10 +275,7 @@ test('profilePredicate - middle', (t) => {
   t.plan(1);
 
   const toFind = {
-    profile: [
-      { id: [{ '#text': 'autoInstallPackagePublish' }] },
-      { activation: [{ '#text': 'some rule' }] },
-    ]
+    profile: [{ id: [{ '#text': 'autoInstallPackagePublish' }] }, { activation: [{ '#text': 'some rule' }] }],
   };
   t.truthy(PomUtils.profilePredicate(pomStruct[3].profiles, toFind), 'Profile found');
 });
@@ -336,10 +284,7 @@ test('profilePredicate - last', (t) => {
   t.plan(1);
 
   const toFind = {
-    profile: [
-      { id: [{ '#text': 'custom-profile' }] },
-      { build: [{ '#text': 'some stuff' }] }
-    ]
+    profile: [{ id: [{ '#text': 'custom-profile' }] }, { build: [{ '#text': 'some stuff' }] }],
   };
   t.truthy(PomUtils.profilePredicate(pomStruct[3].profiles, toFind), 'Profile found');
 });
@@ -348,9 +293,7 @@ test('profilePredicate - not found', (t) => {
   t.plan(1);
 
   const toFind = {
-    profile: [
-      { id: [{ '#text': 'adobe-public' }] },
-    ]
+    profile: [{ id: [{ '#text': 'adobe-public' }] }],
   };
   t.falsy(PomUtils.profilePredicate(pomStruct[3].profiles, toFind), 'Profile not found');
 });
@@ -367,11 +310,7 @@ test('profilePredicate - not a dependency', (t) => {
 test('mergePomSections - first', (t) => {
   t.plan(3);
   const target = _.cloneDeep(pomStruct[0].properties);
-  const additional = [
-    { 'java.version': [{ '#text': '11' }] },
-    { 'project.reporting.outputEncoding': [{ '#text': 'UTF-8' }] },
-    { 'project.build.sourceEncoding': [{ '#text': 'UTF-8' }] },
-  ];
+  const additional = [{ 'java.version': [{ '#text': '11' }] }, { 'project.reporting.outputEncoding': [{ '#text': 'UTF-8' }] }, { 'project.build.sourceEncoding': [{ '#text': 'UTF-8' }] }];
   PomUtils.mergePomSection(target, additional, (target, item) => _.find(target, (t) => _.isEqual(t, item)));
   t.is(target.length, 5, 'Items added');
   t.is(target[3]['project.reporting.outputEncoding'][0]['#text'], 'UTF-8', 'Item added to correct spot.');
@@ -381,11 +320,7 @@ test('mergePomSections - first', (t) => {
 test('mergePomSections - middle', (t) => {
   t.plan(3);
   const target = _.cloneDeep(pomStruct[0].properties);
-  const additional = [
-    { 'project.reporting.outputEncoding': [{ '#text': 'UTF-8' }] },
-    { 'aem.version': [{ '#text': '6.5.12' }] },
-    { 'project.build.sourceEncoding': [{ '#text': 'UTF-8' }] },
-  ];
+  const additional = [{ 'project.reporting.outputEncoding': [{ '#text': 'UTF-8' }] }, { 'aem.version': [{ '#text': '6.5.12' }] }, { 'project.build.sourceEncoding': [{ '#text': 'UTF-8' }] }];
   PomUtils.mergePomSection(target, additional, (target, item) => _.find(target, (t) => _.isEqual(t, item)));
   t.is(target.length, 5, 'Items added');
   t.is(target[3]['project.reporting.outputEncoding'][0]['#text'], 'UTF-8', 'Item added to correct spot.');
@@ -395,25 +330,17 @@ test('mergePomSections - middle', (t) => {
 test('mergePomSections - last', (t) => {
   t.plan(3);
   const target = _.cloneDeep(pomStruct[0].properties);
-  const additional = [
-    { 'project.reporting.outputEncoding': [{ '#text': 'UTF-8' }] },
-    { 'project.build.sourceEncoding': [{ '#text': 'UTF-8' }] },
-    { 'some.property': [{ '#text': 'value' }] }
-  ];
+  const additional = [{ 'project.reporting.outputEncoding': [{ '#text': 'UTF-8' }] }, { 'project.build.sourceEncoding': [{ '#text': 'UTF-8' }] }, { 'some.property': [{ '#text': 'value' }] }];
   PomUtils.mergePomSection(target, additional, (target, item) => _.find(target, (t) => _.isEqual(t, item)));
   t.is(target.length, 5, 'Items added');
   t.is(target[3]['project.reporting.outputEncoding'][0]['#text'], 'UTF-8', 'Item added to correct spot.');
   t.is(target[4]['project.build.sourceEncoding'][0]['#text'], 'UTF-8', 'Item added to correct spot.');
 });
 
-
 test('mergePomSections - not found', (t) => {
   t.plan(3);
   const target = _.cloneDeep(pomStruct[0].properties);
-  const additional = [
-    { 'project.reporting.outputEncoding': [{ '#text': 'UTF-8' }] },
-    { 'project.build.sourceEncoding': [{ '#text': 'UTF-8' }] },
-  ];
+  const additional = [{ 'project.reporting.outputEncoding': [{ '#text': 'UTF-8' }] }, { 'project.build.sourceEncoding': [{ '#text': 'UTF-8' }] }];
   PomUtils.mergePomSection(target, additional, (target, item) => _.find(target, (t) => _.isEqual(t, item)));
   t.is(target.length, 5, 'Items not added');
   t.is(target[3]['project.reporting.outputEncoding'][0]['#text'], 'UTF-8', 'Item added to correct spot.');

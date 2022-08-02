@@ -36,7 +36,7 @@ class Simple extends Generator {
   }
 
   writing() {
-    const dest = this.destinationPath( 'props.json');
+    const dest = this.destinationPath('props.json');
     this.fs.write(dest, JSON.stringify(this.props));
   }
 }

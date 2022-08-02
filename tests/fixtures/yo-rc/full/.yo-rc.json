@@ -9,17 +9,6 @@
     "javaVersion": "8",
     "aemVersion": "localyo",
     "nodeVersion": "localyo",
-    "npmVersion": "localyo",
-    "modules": {
-      "bundle": [
-        "core"
-      ],
-      "package-structure": [
-        "ui.apps.structure"
-      ],
-      "package-apps": [
-        "ui.apps"
-      ]
-    }
+    "npmVersion": "localyo"
   }
 }

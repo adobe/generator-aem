@@ -14,6 +14,7 @@
  limitations under the License.
 */
 
+import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
@@ -22,196 +23,252 @@ import tempDirectory from 'temp-dir';
 
 import test from 'ava';
 import ModuleMixins from '../../../lib/module-mixins.js';
+import { fixturePath } from '../../fixtures/helpers.js';
 
-const parent = Object.freeze({
-  groupId: 'parent',
-  artifactId: 'parent',
-  version: 'parent',
-  aemVersion: 'parent',
-});
+class Mock {
+  constructor(configData, ...fixturePaths) {
+    this.config = new Config();
+
+    _.each(configData, (v, k) => {
+      this.config.set(k, v);
+    });
+
+    this.fs = {
+      exists(path) {
+        return fs.existsSync(path);
+      },
+      readJSON(path) {
+        return JSON.parse(fs.readFileSync(path));
+      },
+      read(path) {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      }
+    };
+    this.destinationPath = (...partials) => {
+      return fixturePath(...fixturePaths, ...partials);
+    };
+
+    this.destinationRoot = () => {
+    };
+  }
+}
 
 class Config {
   constructor() {
     this.map = new Map();
   }
 
-  get = function (key) {
+  get = function(key) {
     return this.map.get(key);
   };
 
-  set = function (key, value) {
+  set = function(key, value) {
     return this.map.set(key, value);
   };
 
-  getAll = function () {
+  getAll = function() {
     return Object.fromEntries(this.map);
   };
 }
 
-test('requires moduleType', (t) => {
+test('yo-rc.json exists - is parent - no generateInto provided - errors', (t) => {
   t.plan(2);
 
-  const generator = {};
+  const generator = new Mock({}, 'yo-rc', 'tree');
+  generator.options = {};
   const error = t.throws(() => {
     ModuleMixins._initializing.call(generator);
   });
-  t.regex(error.message, /`this\.moduleType` must be specified to use Module shared functions\./, 'Error message correct.');
+  t.regex(error.message, /Running Sub-Generator requires a destination path, when running from project root./, 'Error message correct.');
 });
 
-test('requires parent', (t) => {
+test('no parent option data - no parent yo-rc - errors', (t) => {
   t.plan(2);
-
-  const generator = {
-    moduleType: 'test',
-    options: {},
-    config: new Config(),
-  };
-
-  const error = t.throws(() => {
-    ModuleMixins._initializing.call(generator);
-  });
-  t.regex(error.message, /Object Generator cannot be use outside existing project context\./, 'Error message correct.');
-});
-
-test('requires destination', (t) => {
-  t.plan(2);
-
-  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-
-  const generator = {
-    moduleType: 'test',
-    options: {
-      parent,
-    },
-    config: new Config(),
-    destinationRoot() {
-      return temporaryDir;
-    },
-    contextRoot: temporaryDir,
-  };
+  const generator = new Mock({}, 'yo-rc', 'empty', 'empty');
+  generator.options = {};
 
   const error = t.throws(() => {
     ModuleMixins._initializing.call(generator);
   });
-  t.regex(error.message, /Generator must either specify a destination folder via/, 'Error message correct.');
+  t.regex(error.message, /You are trying to use the .+ Generator without the context of a parent project/, 'Error message correct.');
 });
 
-test('moduleType must match config', (t) => {
-  t.plan(2);
+test('loaded from options', (t) => {
+  t.plan(3);
 
-  const generator = {
-    moduleType: 'test',
-    options: {
-      generateInto: 'nottest',
-    },
-    config: new Config(),
-  };
-
-  generator.config.set('nottest', { moduleType: 'nottest' });
-
-  const error = t.throws(() => {
-    ModuleMixins._initializing.call(generator);
-  });
-  t.regex(error.message, /Refusing to create Object module in a non Object module directory\./, 'Error message correct.');
-});
-
-test('destinationRoot != contextRoot', (t) => {
-  t.plan(2);
-
-  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-
-  class AEMTestGenerator {
-    moduleType = 'test';
-
-    options = {
-      parent,
-    };
-
-    config = new Config();
-
-    contextRoot = path.join(temporaryDir, 'test');
-    destinationRoot = function () {
-      return temporaryDir;
-    };
-
-    _loadProps = function () {
-      return {};
-    };
-  }
-
-  const configValues = {
-    name: 'name',
-    boolean: false,
-    number: 1.233,
-  };
-
-  const expected = {
-    moduleType: 'test',
-    parent,
-    ...configValues,
-  };
-
-  const generator = new AEMTestGenerator();
-  generator.config.set('test', configValues);
-
-  _.each(parent, (v, k) => {
-    generator.config.set(k, v);
-  });
-
-  ModuleMixins._initializing.call(generator);
-  t.is(generator.moduleName, 'Test', 'Sets module name');
-  t.deepEqual(generator.props, expected, 'Properties set');
-});
-
-test('generateInto', (t) => {
-  t.plan(2);
-
-  class A3MTestGenrator {
+  class A3MTestGenrator extends Mock {
     // Misspelled intentionally.
-    moduleType = 'test';
-
     options = {
-      generateInto: 'test',
+      appId: 'test',
+      artifactId: 'module',
+      generateInto: 'empty',
       parent: {
         groupId: 'com.adobe.test',
+        artifactId: 'parent',
+        version: 'parent-version',
       },
-    };
-
-    config = new Config();
-
-    _loadProps = function () {
-      return {
-        artifactId: 'artifactId',
-      };
     };
   }
 
-  const configValues = {
-    name: 'name',
-    boolean: false,
-    number: 1.233,
+  const expectedProps = {
+    appId: 'test',
+    artifactId: 'module',
   };
 
-  const expected = {
-    moduleType: 'test',
-    artifactId: 'artifactId',
-    parent: {
-      groupId: 'com.adobe.test',
-      artifactId: 'parent',
-      version: 'parent',
-      aemVersion: 'parent',
-    },
-    ...configValues,
+  const expectedParent = {
+    groupId: 'com.adobe.test',
+    artifactId: 'parent',
+    version: 'parent-version',
   };
 
-  const generator = new A3MTestGenrator();
-  generator.config.set('test', configValues);
-
-  _.each(parent, (v, k) => {
-    generator.config.set(k, v);
-  });
-
+  const generator = new A3MTestGenrator({}, 'yo-rc', 'empty', 'empty');
   ModuleMixins._initializing.call(generator);
   t.is(generator.moduleName, 'A3MTestGenrator', 'Sets module name');
-  t.deepEqual(generator.props, expected, 'Properties set');
+  t.deepEqual(generator.props, expectedProps, 'Properties set');
+  t.deepEqual(generator.parentProps, expectedParent, 'Parent set');
+});
+
+test('loaded from yo-rc', (t) => {
+  t.plan(2);
+
+  const expectedProps = {
+    appId: 'test',
+    artifactId: 'module',
+  };
+
+  const generator = new Mock(expectedProps, 'yo-rc', 'tree', 'existing');
+  generator.options = {
+    generateInto: 'empty',
+  };
+
+  const expectedParent = {
+    examples: true,
+    name: 'Local Yo',
+    appId: 'localyo',
+    groupId: 'com.test.localyo',
+    artifactId: 'localyo',
+    version: '1.0-LOCALYO',
+    javaVersion: '8',
+    aemVersion: 'localyo',
+    nodeVersion: 'localyo',
+    npmVersion: 'localyo',
+  };
+
+  ModuleMixins._initializing.call(generator);
+  t.deepEqual(generator.props, expectedProps, 'Properties set');
+  t.deepEqual(generator.parentProps, expectedParent, 'Parent set');
+});
+
+test('loaded from pom', (t) => {
+  t.plan(2);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+
+  const generator = {
+    options: {
+      generateInto: 'test',
+    },
+    config: new Config(),
+    fs: {
+      exists(path) {
+        return fs.existsSync(path);
+      },
+      readJSON(path) {
+        return JSON.parse(fs.readFileSync(path));
+      },
+      read(path) {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      }
+    },
+    destinationPath(...partials) {
+      return path.join(temporaryDir, 'test', ...partials);
+    },
+    destinationRoot() {
+    },
+  };
+
+  fs.mkdirSync(path.join(temporaryDir));
+  fs.copyFileSync(fixturePath('yo-rc', 'full', '.yo-rc.json'), path.join(temporaryDir, '.yo-rc.json'));
+  fs.mkdirSync(path.join(temporaryDir, 'test'));
+  fs.copyFileSync(fixturePath('pom', 'partial', 'pom.xml'), path.join(temporaryDir, 'test', 'pom.xml'));
+
+  const expectedProps = {
+    artifactId: 'pom.artifactid',
+  };
+
+  const expectedParent = {
+    examples: true,
+    name: 'Local Yo',
+    appId: 'localyo',
+    groupId: 'com.test.localyo',
+    artifactId: 'localyo',
+    version: '1.0-LOCALYO',
+    javaVersion: '8',
+    aemVersion: 'localyo',
+    nodeVersion: 'localyo',
+    npmVersion: 'localyo',
+  };
+
+  ModuleMixins._initializing.call(generator);
+  t.deepEqual(generator.props, expectedProps, 'Properties set');
+  t.deepEqual(generator.parentProps, expectedParent, 'Parent set');
+});
+
+test('merged', (t) => {
+  t.plan(2);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+
+  const generator = {
+    options: {
+      generateInto: 'test',
+    },
+    config: new Config(),
+    fs: {
+      exists(path) {
+        return fs.existsSync(path);
+      },
+      readJSON(path) {
+        return JSON.parse(fs.readFileSync(path));
+      },
+      read(path) {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      }
+    },
+    destinationPath(...partials) {
+      return path.join(temporaryDir, 'test', ...partials);
+    },
+    destinationRoot() {
+    },
+  };
+
+  generator.config.set('name', 'Local Yo');
+
+  fs.mkdirSync(path.join(temporaryDir));
+  fs.copyFileSync(fixturePath('yo-rc', 'full', '.yo-rc.json'), path.join(temporaryDir, '.yo-rc.json'));
+  fs.mkdirSync(path.join(temporaryDir, 'test'));
+  fs.copyFileSync(fixturePath('yo-rc', 'tree', 'existing', '.yo-rc.json'), path.join(temporaryDir, 'test', '.yo-rc.json'));
+  fs.copyFileSync(fixturePath('pom', 'partial', 'pom.xml'), path.join(temporaryDir, 'test', 'pom.xml'));
+
+  const expectedProps = {
+    artifactId: 'pom.artifactid',
+    name: 'Local Yo',
+  };
+
+  const expectedParent = {
+    examples: true,
+    name: 'Local Yo',
+    appId: 'localyo',
+    groupId: 'com.test.localyo',
+    artifactId: 'localyo',
+    version: '1.0-LOCALYO',
+    javaVersion: '8',
+    aemVersion: 'localyo',
+    nodeVersion: 'localyo',
+    npmVersion: 'localyo',
+  };
+
+  ModuleMixins._initializing.call(generator);
+  t.deepEqual(generator.props, expectedProps, 'Properties set');
+  t.deepEqual(generator.parentProps, expectedParent, 'Parent set');
 });

@@ -1,4 +1,6 @@
 {
   "@adobe/generator-aem:bundle": {
+  },
+  "@adobe/generator-aem:mixin-cc": {
   }
 }

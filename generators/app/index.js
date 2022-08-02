@@ -15,10 +15,8 @@
 */
 
 import fs from 'node:fs';
-import path from 'node:path';
 import { versions } from 'node:process';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 
 import _ from 'lodash';
 import ejs from 'ejs';
@@ -28,13 +26,10 @@ import Generator from 'yeoman-generator';
 import inquirer from 'inquirer';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
-import ModuleMixins, { ParentProperties, SharedOptions } from '../../lib/module-mixins.js';
+import got from 'got';
+import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
 
-import dispatcher from '../dispatcher/index.js';
-
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
 
 const fileOptions = { encoding: 'utf8' };
 
@@ -170,26 +165,30 @@ const npmVersion = execFileSync('npm', ['--version'])
   .toString()
   .replaceAll(/\r\n|\n|\r/gm, '');
 
-const configDefaults = {
+const propsDefault = Object.freeze({
   examples: false,
   version: '1.0.0-SNAPSHOT',
   javaVersion: '11',
   aemVersion: 'cloud',
   nodeVersion: versions.node,
   npmVersion,
-  modules: {
-    bundle: ['core'],
-    'frontend-general': ['ui.frontend'],
-    'package-structure': ['ui.apps.structure'],
-    'package-apps': ['ui.apps'],
-    'package-config': ['ui.config'],
-    'package-all': ['all'],
-    'tests-it': ['it.tests'],
-    dispatcher: ['dispatcher'],
-    unknown: [],
-  },
-  mixins: ['cc'],
-};
+});
+
+const modulesDefault = Object.freeze({
+  bundle: new Set(['core']),
+  'frontend-general': new Set(['ui.frontend']),
+  'package-structure': new Set(['ui.apps.structure']),
+  'package-apps': new Set(['ui.apps']),
+  'package-config': new Set(['ui.config']),
+  'package-all': new Set(['all']),
+  'tests-it': new Set(['it.tests']),
+  dispatcher: new Set(['dispatcher']),
+  unknown: new Set(),
+});
+
+const mixinsDefault = Object.freeze({
+  cc: new Set(['.', 'core', 'ui.apps', 'all']),
+});
 
 class AEMGenerator extends Generator {
   constructor(args, options, features) {
@@ -230,7 +229,7 @@ class AEMGenerator extends Generator {
 
       modules: {
         type(arg) {
-          return arg.split(',');
+          return arg ? arg.split(',') : [];
         },
         desc: 'List of modules to generate.',
       },
@@ -254,16 +253,11 @@ class AEMGenerator extends Generator {
     // Populate Root unique properties
     const unique = ['groupId', 'version', 'javaVersion', 'aemVersion', 'nodeVersion', 'npmVersion'];
     this.props = {};
+    this.modules = {};
+    this.mixins = {};
 
     _.defaults(this.props, _.pick(this.options, unique));
     _.defaults(this.props, _.pick(this.options, SharedOptions));
-
-    if (this.options.modules) {
-      this.props.modules = {};
-      _.each(this.options.modules, (module) => {
-        this.props.modules[module] = [];
-      });
-    }
 
     if (this.props.javaVersion && this.props.javaVersion.toString() !== '8' && this.props.javaVersion.toString() !== '11') {
       delete this.props.javaVersion;
@@ -272,74 +266,54 @@ class AEMGenerator extends Generator {
     if (this.props.aemVersion && this.props.aemVersion.toString() !== '6.5' && this.props.aemVersion.toString() !== 'cloud') {
       delete this.props.aemVersion;
     }
+
     const config = this.config.getAll();
     _.defaults(this.props, _.pick(config, unique));
     _.defaults(this.props, _.pick(config, SharedOptions));
-    if (config.modules) {
-      this.props.modules = this.props.modules || {};
-      this.props.modules = _.defaults(this.props.modules, config.modules);
-    }
 
     const pomProject = PomUtils.findPomNodeArray(PomUtils.readPom(this), 'project');
     const pomProperties = PomUtils.findPomNodeArray(pomProject, 'properties');
     this._initPomProperties(pomProperties);
 
-    _.each(SharedOptions, (option) => {
+    _.each(['groupId', 'artifactId', 'version', 'name'], (option) => {
       const opt = PomUtils.findPomNodeArray(pomProject, option);
       if (opt) {
         this.props[option] = this.props[option] || opt[0]['#text'];
       }
     });
 
-    _.each(ParentProperties, (option) => {
-      const opt = PomUtils.findPomNodeArray(pomProject, option);
-      if (opt) {
-        this.props[option] = this.props[option] || opt[0]['#text'];
-      }
-    });
-
-    const modules = PomUtils.findPomNodeArray(pomProject, 'modules');
-
-    if (modules) {
-      this.props.modules = this.props.modules || {};
-
-      _.each(modules, (module) => {
-        const name = module['module'][0]['#text'];
-        if (this.fs.exists(this.destinationPath(name, '.yo-rc.json'))) {
-          const yoData = this.fs.readJSON(this.destinationPath(name, '.yo-rc.json'));
-          const generator = _.keys(yoData)[0];
-          const type = generator.replaceAll('@adobe/generator-aem:', '');
-          if (!this.props.modules[type]) {
-            this.props.modules[type] = [];
-            this.props.modules[type].push(name);
-          } else if (this.props.modules[type].indexOf(name) === -1) {
-            this.props.modules[type].push(name);
-          }
-        } else {
-          this.props.modules.unknown = this.props.modules.unknown || [];
-          this.props.modules.unknown.push(name);
-        }
-      });
-    }
+    // Load modules & mixins from Yo configs
+    this._initModules(PomUtils.findPomNodeArray(pomProject, 'modules'));
 
     // Fall back to defaults
     if (this.options.defaults) {
       if (this.props.appId) {
         _.defaults(this.props, { artifactId: this.props.appId });
       }
+      _.defaults(this.props, propsDefault);
+
+
       if (this.options.modules) {
-        this.props.modules = this.props.modules || {};
         _.each(this.options.modules, (module) => {
-          const defaultName = configDefaults.modules[module][0];
-          if (!this.props.modules[module]) {
-            this.props.modules[module] = [];
-            this.props.modules[module].push(defaultName);
-          } else if (this.props.modules[module].indexOf(defaultName) === -1) {
-            this.props.modules[module].push(defaultName);
+          const defaultName = modulesDefault[module].values().next().value;
+          if (!this.modules[module]) {
+            this.modules[module] = new Set();
+          }
+          this.modules[module].add(defaultName);
+        });
+      } else {
+        this.modules = _.cloneDeep(modulesDefault);
+      }
+
+      if (this.options.mixins) {
+        _.each(this.options.mixins, (mixin) => {
+          if (!this.mixins[mixin]) {
+            this.mixins[mixin] = mixinsDefault[mixin];
           }
         });
+      } else {
+        this.mixins = _.cloneDeep(mixinsDefault);
       }
-      _.defaults(this.props, configDefaults);
     }
   }
 
@@ -350,10 +324,11 @@ class AEMGenerator extends Generator {
         message: 'What is the Maven Group Id? (e.g. "com.mysite").',
         when: !this.props.groupId,
         /* c8 ignore start */
-        validate: (groupId) => {
+        validate(groupId) {
           return new Promise((resolve) => {
             if (!groupId || groupId.length === 0) {
               resolve('GroupId must be provided.');
+              return;
             }
 
             resolve(true);
@@ -385,10 +360,12 @@ class AEMGenerator extends Generator {
           return new Promise((resolve) => {
             if (this.options.defaults || this.props.javaVersion) {
               resolve(false);
+              return;
             }
 
             if (this.props.aemVersion === 'cloud' || answers.aemVersion === 'cloud') {
               resolve(false);
+              return;
             }
 
             resolve(true);
@@ -419,19 +396,10 @@ class AEMGenerator extends Generator {
         ],
         default: () => {
           return new Promise((resolve) => {
-            if (this.props.modules) {
-              resolve(Object.getOwnPropertyNames(this.props.modules));
+            if (this.modules) {
+              resolve(Object.getOwnPropertyNames(this.modules));
             } else {
-              resolve([
-                'bundle',
-                'frontend',
-                'package-structure',
-                'package-apps',
-                'package-config',
-                'package-all',
-                'test-it',
-                'dispatcher',
-              ]);
+              resolve(['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-all', 'test-it', 'dispatcher']);
             }
           });
         },
@@ -439,10 +407,12 @@ class AEMGenerator extends Generator {
           return new Promise((resolve) => {
             if (this.options.defaults || this.options.modules) {
               resolve(false);
+              return;
             }
+
             resolve(true);
           });
-        }
+        },
       },
       {
         name: 'frontend',
@@ -450,18 +420,18 @@ class AEMGenerator extends Generator {
         type: 'list',
         pageSize: 20,
         loop: false,
-        choices: [
-          { name: 'General', value: 'frontend-general' },
-        ],
+        choices: [{ name: 'General', value: 'frontend-general' }],
         default: ['frontend-general'],
-        when: (answers) => {
+        when(answers) {
           return new Promise((resolve) => {
             if (!answers.moduleSelection) {
               resolve(false);
+              return;
             }
+
             resolve(answers.moduleSelection.includes('frontend'));
           });
-        }
+        },
       },
       {
         name: 'bundle',
@@ -476,7 +446,7 @@ class AEMGenerator extends Generator {
         name: 'frontend-general',
         message: 'What do you want to name the general Front End module?',
         default: 'ui.frontend',
-        when: (answers) => {
+        when(answers) {
           return new Promise((resolve) => {
             resolve(answers.frontend === 'frontend-general');
           });
@@ -534,20 +504,18 @@ class AEMGenerator extends Generator {
         type: 'checkbox',
         pageSize: 20,
         loop: false,
-        choices: [
-          { name: 'Core Components', value: 'cc' },
-        ],
-        default: [
-          'cc',
-        ],
+        choices: [{ name: 'Core Components', value: 'cc' }],
+        default: ['cc'],
         when: () => {
           return new Promise((resolve) => {
             if (this.options.defaults || this.options.mixins) {
               resolve(false);
+              return;
             }
+
             resolve(true);
           });
-        }
+        },
       },
       {
         name: 'nodeVersion',
@@ -556,10 +524,14 @@ class AEMGenerator extends Generator {
           return new Promise((resolve) => {
             if (this.options.defaults || this.props.nodeVersion) {
               resolve(false);
+              return;
             }
-            if (!answers.moduleSelection || answers.moduleSelection.indexOf('frontend') === -1) {
+
+            if (!answers.moduleSelection || !answers.moduleSelection.includes('frontend')) {
               resolve(false);
+              return;
             }
+
             resolve(true);
           });
         },
@@ -572,10 +544,14 @@ class AEMGenerator extends Generator {
           return new Promise((resolve) => {
             if (this.options.defaults || this.props.npmVersion) {
               resolve(false);
+              return;
             }
-            if (!answers.moduleSelection || answers.moduleSelection.indexOf('frontend') === -1) {
+
+            if (!answers.moduleSelection || !answers.moduleSelection.includes('frontend')) {
               resolve(false);
+              return;
             }
+
             resolve(true);
           });
         },
@@ -587,58 +563,54 @@ class AEMGenerator extends Generator {
       if (this.props.aemVersion === 'cloud') {
         this.props.javaVersion = '11';
       }
-      if (answers.moduleSelection) {
-        this.props.modules = this.props.modules || {};
 
+      if (answers.moduleSelection) {
         const idx = answers.moduleSelection.indexOf('frontend');
         if (idx >= 0) {
           answers.moduleSelection[idx] = answers.frontend;
         }
+
         delete this.props.frontend;
 
         _.each(answers.moduleSelection, (module) => {
           const name = answers[module];
-          this.props.modules[module] = this.props.modules[module] || [];
-          if (this.props.modules[module].indexOf(name) === -1) {
-            this.props.modules[module].push(name);
-          }
+          this.modules[module] = this.modules[module] || new Set();
+          this.modules[module].add(name);
           delete this.props[module];
         });
-        if (answers.moduleSelection.indexOf('dispatcher') !== -1) {
-          this.props.modules.dispatcher = ['dispatcher'];
+        if (answers.moduleSelection.includes('dispatcher')) {
+          this.modules.dispatcher = new Set(['dispatcher']);
         }
+
         delete this.props.moduleSelection;
+      }
+
+      if (answers.mixins) {
+        _.each(answers.mixins, (mixin) => {
+          this.mixins[mixin] = this.mixins[mixin] || new Set();
+        });
+        delete this.props.mixins;
       }
       return answers;
     });
   }
 
   configuring() {
+    this._validateGAV();
+    return this._latestRelease(this._apiCoordinates(this.props.aemVersion)).then((aemMetadata) => {
+      this.props.aem = aemMetadata;
 
-    const pomProject = PomUtils.findPomNodeArray(PomUtils.readPom(this), 'project');
-    if (pomProject) {
-      const groupId = PomUtils.findPomNodeArray(pomProject, 'groupId')[0]['#text'];
-      const artifactId = PomUtils.findPomNodeArray(pomProject, 'artifactId')[0]['#text'];
-      if ((groupId !== this.props.groupId) || (artifactId !== this.props.artifactId)) {
-        throw new Error(
-          chalk.red('Refusing to update existing project with different group/artifact identifiers.') +
-          '\n\n' +
-          'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
-          'This is not a supported feature. Please manually update or use the defaults flag.'
-        );
-      }
-    }
-
-    const current = this.config.getAll();
-    // Props will overwrite any current values.
-    _.merge(current, this.props);
-    this.config.set(current);
+      const current = this.config.getAll();
+      // Props will overwrite any current values.
+      _.merge(current, this.props);
+      this.config.set(current);
+    });
   }
 
   default() {
     const meta = this.env.getGeneratorsMeta();
 
-    _.forOwn(this.props.modules, (list, module) => {
+    _.forOwn(this.modules, (set, module) => {
       if (!meta[`@adobe/aem:${module}`] && !meta[module]) {
         throw new Error(
           /* eslint-disable prettier/prettier */
@@ -649,22 +621,21 @@ class AEMGenerator extends Generator {
       }
     });
 
-    const moduleList = _.keys(this.props.modules);
+    const moduleList = _.keys(this.modules);
     _.each(ModuleOrder, (moduleType) => {
       const relative = moduleType.replaceAll('@adobe/aem:', '');
-      if (!this.props.modules[relative]) {
+      if (!this.modules[relative]) {
         return;
       }
 
-      _.each(this.props.modules[relative], (module) => {
+      _.each(this.modules[relative], (module) => {
         const options = { parent: this.props, defaults: this.props.defaults, examples: this.props.examples };
         if (this.fs.exists(this.destinationPath(module, '.yo-rc.json'))) {
           options.generateInto = module;
-        } else {
-          if (ModuleOptions[moduleType]) {
-            _.defaults(options, ModuleOptions[module](this.props));
-          }
+        } else if (ModuleOptions[moduleType]) {
+          _.defaults(options, ModuleOptions[module](this.props));
         }
+
         this.composeWith(moduleType, options);
       });
       delete moduleList[moduleList.indexOf(moduleType)];
@@ -675,30 +646,23 @@ class AEMGenerator extends Generator {
       const options = { parent: this.props };
       this.composeWith(moduleType, options);
     });
-
-    // this.composeWith(path.join(dirname, 'pom'), { showBuildOutput: this.options.showBuildOutput });
   }
 
   writing() {
+    const files = [
+      {
+        src: this.templatePath('README.md'),
+        dest: this.destinationPath('README.md'),
+      },
+      {
+        src: this.templatePath('.yo-resolve'),
+        dest: this.destinationPath('.yo-resolve'),
+      },
+    ];
 
-    return this._latestRelease(this._apiCoordinates(this.props.aemVersion)).then((aemMetadata) => {
-      this.props.aem = aemMetadata;
-
-      const files = [
-        {
-          src: this.templatePath('README.md'),
-          dest: this.destinationPath('README.md'),
-        },
-        {
-          src: this.templatePath('.yo-resolve'),
-          dest: this.destinationPath('.yo-resolve'),
-        },
-      ];
-
-      this._writeGitignore();
-      this._writing(files);
-      this._writePom();
-    });
+    this._writeGitignore();
+    this._writing(files);
+    this._writePom();
   }
 
   install() {
@@ -713,10 +677,10 @@ class AEMGenerator extends Generator {
   }
 
   _initPomProperties = (propertiesNode) => {
-
     if (!propertiesNode) {
       return;
     }
+
     let prop = PomUtils.findPomNodeArray(propertiesNode, 'aem.version');
     if (prop) {
       this.props.aemVersion = this.props.aemVersion || `${prop[0]['#text']}`;
@@ -738,11 +702,41 @@ class AEMGenerator extends Generator {
     }
   };
 
+  _initModules(pomModules) {
+    _.each(pomModules, (module) => {
+      const name = module.module[0]['#text'];
+      if (this.fs.exists(this.destinationPath(name, '.yo-rc.json'))) {
+        const yoData = this.fs.readJSON(this.destinationPath(name, '.yo-rc.json'));
+        _.each(_.keys(yoData), (generator) => {
+          const type = generator.replaceAll('@adobe/generator-aem:', '');
+
+          if (type.startsWith('mixin-')) {
+            const mixin = type.replaceAll('mixin-', '');
+            if (!this.mixins[mixin]) {
+              this.mixins[mixin] = new Set();
+            }
+            this.mixins[mixin].add(name);
+          } else {
+            if (!this.modules[type]) {
+              this.modules[type] = new Set();
+            }
+            this.modules[type].add(name);
+          }
+        });
+      } else {
+        this.modules.unknown = this.modules.unknown || new Set();
+        this.modules.unknown.add(name);
+      }
+    });
+}
+
   _moduleNameWhen = (module, answers) => {
     return new Promise((resolve) => {
-      if (this.options.defaults || !answers.moduleSelection || answers.moduleSelection.indexOf(module) === -1) {
+      if (this.options.defaults || !answers.moduleSelection || !answers.moduleSelection.includes(module)) {
         resolve(false);
+        return;
       }
+
       resolve(true);
     });
   };
@@ -766,6 +760,7 @@ class AEMGenerator extends Generator {
     if (this.fs.exists(file)) {
       orig = this.fs.read(file).split('\n');
     }
+
     const keep = _.without(orig, ..._.without(base, ''));
     base.shift();
     base.unshift('# These values are from original file not included in generator template.', '', ...keep);
@@ -789,44 +784,24 @@ class AEMGenerator extends Generator {
       const existingPom = PomUtils.findPomNodeArray(parser.parse(this.fs.read(pomFile)), 'project');
 
       // Merge the different sections
-      PomUtils.mergePomSection(
-        PomUtils.findPomNodeArray(genProject, 'properties'),
-        PomUtils.findPomNodeArray(existingPom, 'properties'),
-        PomUtils.propertyPredicate
-      );
+      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'properties'), PomUtils.findPomNodeArray(existingPom, 'properties'), PomUtils.propertyPredicate);
 
-      PomUtils.mergePomSection(
-        PomUtils.findPomNodeArray(genProject, 'build', 'plugins'),
-        PomUtils.findPomNodeArray(existingPom, 'build', 'plugins'),
-        PomUtils.pluginPredicate
-      );
+      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'build', 'plugins'), PomUtils.findPomNodeArray(existingPom, 'build', 'plugins'), PomUtils.pluginPredicate);
       PomUtils.mergePomSection(
         PomUtils.findPomNodeArray(genProject, 'build', 'pluginManagement', 'plugins'),
         PomUtils.findPomNodeArray(existingPom, 'build', 'pluginManagement', 'plugins'),
         PomUtils.pluginPredicate
       );
 
-      PomUtils.mergePomSection(
-        PomUtils.findPomNodeArray(genProject, 'profiles'),
-        PomUtils.findPomNodeArray(existingPom, 'profiles'),
-        PomUtils.profilePredicate,
-      );
+      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'profiles'), PomUtils.findPomNodeArray(existingPom, 'profiles'), PomUtils.profilePredicate);
 
-      PomUtils.mergePomSection(
-        genDependencies,
-        PomUtils.findPomNodeArray(existingPom, 'dependencyManagement', 'dependencies'),
-        PomUtils.dependencyPredicate,
-      );
+      PomUtils.mergePomSection(genDependencies, PomUtils.findPomNodeArray(existingPom, 'dependencyManagement', 'dependencies'), PomUtils.dependencyPredicate);
     }
-
 
     const addlDeps = parser.parse(fs.readFileSync(this.templatePath('partials', 'v6.5', 'dependencies.xml'), { encoding: 'utf8' }))[0].dependencies;
     if (this.props.aemVersion === 'cloud') {
       addlDeps.push({
-        dependency: [
-          { groupId: [{ '#text': 'com.adobe.aem' }] },
-          { artifactId: [{ '#text': 'uber-jar' }] }
-        ]
+        dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'uber-jar' }] }],
       });
       this._removeDependencies(genDependencies, addlDeps);
     } else {
@@ -834,7 +809,6 @@ class AEMGenerator extends Generator {
     }
 
     this.fs.write(pomFile, PomUtils.fixXml(builder.build(parsedGenPom)));
-
   };
 
   _removeDependencies = (target, dependencies) => {
@@ -846,7 +820,7 @@ class AEMGenerator extends Generator {
   _addDependencies = (target, dependencies, after) => {
     let insertAt = target.length;
     if (after) {
-      //find index to insert at
+      // Find index to insert at
       insertAt = _.findIndex(target, (dep) => {
         const groupId = PomUtils.findPomNodeArray(dep.dependency, 'groupId');
         const artifactId = PomUtils.findPomNodeArray(dep.dependency, 'artifactId');
@@ -858,10 +832,63 @@ class AEMGenerator extends Generator {
         insertAt += 1;
       }
     }
+
     target.splice(insertAt, 0, ...dependencies);
   };
-
 }
+
+// If i can figure out how to mock these without adding them here; I'd move them.
+AEMGenerator.prototype._latestRelease = (coordinates, previous = false) => {
+  return new Promise((resolve, reject) => {
+    if (!coordinates || !coordinates.groupId || !coordinates.artifactId) {
+      reject(new Error('No Coordinates provided.'));
+      return;
+    }
+
+    const path = `${coordinates.groupId.replaceAll('.', '/')}/${coordinates.artifactId}`;
+
+    try {
+      got.get(`https://repo1.maven.org/maven2/${path}/maven-metadata.xml`, { responseType: 'text', resolveBodyOnly: true }).then((body) => {
+        try {
+          const parser = new XMLParser({
+            ignoreAttributes: true,
+            ignoreDeclaration: true,
+          });
+          const data = parser.parse(body);
+          const metadata = {
+            ...coordinates,
+            version: data.metadata.versioning.latest,
+          };
+          if (previous) {
+            metadata.versions = data.metadata.versioning.versions;
+          }
+
+          resolve(metadata);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    } catch (error) {
+      reject(error.response ? new Error(error.response.body) : error);
+    }
+  });
+};
+
+AEMGenerator.prototype._apiCoordinates = (version) => {
+  if (version === 'cloud') {
+    return {
+      groupId: 'com.adobe.aem',
+      artifactId: 'aem-sdk-api',
+      path: 'com/adobe/aem/aem-sdk-api',
+    };
+  }
+
+  return {
+    groupId: 'com.adobe.aem',
+    artifactId: 'uber-jar',
+    path: 'com/adobe/aem/uber-jar',
+  };
+};
 
 _.extendWith(AEMGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);

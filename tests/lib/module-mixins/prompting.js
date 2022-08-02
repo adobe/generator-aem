@@ -24,6 +24,7 @@ test('examples - default not set', async (t) => {
 
   const generator = {
     options: {},
+    props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'examples' });
       t.false(prompt.default, 'Example default true');
@@ -41,8 +42,8 @@ test('examples - defaults set', async (t) => {
   t.plan(2);
 
   const generator = {
-    options: {},
-    props: { defaults: true },
+    options: { defaults: true },
+    props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'examples' });
       t.false(prompt.default, 'Example default true');
@@ -79,6 +80,7 @@ test('name - not specified', async (t) => {
 
   const generator = {
     options: {},
+    props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'name' });
       t.true(prompt.when, 'Name prompts');
@@ -115,6 +117,7 @@ test('appId - not specified', async (t) => {
 
   const generator = {
     options: {},
+    props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'appId' });
       t.true(prompt.when, 'appId prompts');
@@ -151,6 +154,7 @@ test('artifactId - not specified', async (t) => {
 
   const generator = {
     options: {},
+    props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'artifactId' });
       t.true(await prompt.when(), 'artifactId prompts');
@@ -187,8 +191,8 @@ test('artifactId - defaults set', async (t) => {
   t.plan(1);
 
   const generator = {
-    options: {},
-    props: { defaults: true },
+    options: { defaults: true },
+    props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'artifactId' });
       t.false(await prompt.when(), 'artifactId does not prompt');
@@ -205,6 +209,7 @@ test('artifactId - default - appId answered', async (t) => {
 
   const generator = {
     options: {},
+    props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'artifactId' });
       t.is(await prompt.default({ appId: 'answer' }), 'answer', 'Default uses AppId answer');
@@ -238,6 +243,7 @@ test('artifactId - default - module generate folder appended', async (t) => {
 
   const generator = {
     options: { generateInto: 'module' },
+    props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'artifactId' });
       t.is(await prompt.default({ appId: 'answer' }), 'answer.module', 'Answer & Generate Into default');
@@ -249,7 +255,7 @@ test('artifactId - default - module generate folder appended', async (t) => {
   await ModuleMixins._prompting.call(generator);
 
   generator.props = { appId: 'property' };
-  generator.prompt = async function (prompts) {
+  generator.prompt = async function(prompts) {
     const prompt = _.find(prompts, { name: 'artifactId' });
     t.is(await prompt.default({}), 'property.module', 'Property & Generate Into default');
     return new Promise((resolve) => {

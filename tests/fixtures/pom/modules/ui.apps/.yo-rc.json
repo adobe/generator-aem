@@ -1,4 +1,6 @@
 {
   "@adobe/generator-aem:package-apps": {
+  },
+  "@adobe/generator-aem:mixin-cc": {
   }
 }

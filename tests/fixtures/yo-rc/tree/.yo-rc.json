@@ -1,9 +1,14 @@
 {
   "@adobe/generator-aem": {
-    "simple": {
-      "name": "Local Yo",
-      "appId": "localyo",
-      "artifactId": "localyo"
-    }
+    "examples": true,
+    "name": "Local Yo",
+    "appId": "localyo",
+    "groupId": "com.test.localyo",
+    "artifactId": "localyo",
+    "version": "1.0-LOCALYO",
+    "javaVersion": "8",
+    "aemVersion": "localyo",
+    "nodeVersion": "localyo",
+    "npmVersion": "localyo"
   }
 }
