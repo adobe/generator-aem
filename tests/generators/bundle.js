@@ -19,44 +19,186 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import tempDirectory from 'temp-dir';
 
+import _ from 'lodash';
 import test from 'ava';
-import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
-import { XMLParser } from 'fast-xml-parser';
+import PomUtils from '../../lib/pom-utils.js';
+import BundleGenerator from '../../generators/bundle/index.js';
+import { Init, Prompt, Config, WriteInstall } from '../fixtures/generators/wrappers.js';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
 
-import BundleGenerator from '../../generators/bundle/index.js';
-import ParentPomGenerator from '../../generators/app/pom/index.js';
+const resolved = generatorPath('bundle', 'index.js');
+const BundleInit = Init(BundleGenerator, resolved);
+const BundlePrompt = Prompt(BundleGenerator, resolved);
+const BundleConfig = Config(BundleGenerator, resolved);
+const BundleWriteInstall = WriteInstall(BundleGenerator, resolved);
 
-test.serial('via @adobe/generator-aem - v6.5', async (t) => {
-  t.plan(5);
+test('initialize - no options', async (t) => {
+  await helpers
+    .create(BundleInit)
+    .run()
+    .then((result) => {
+      const expected = {
+        package: undefined,
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
 
-  sinon.restore();
-  const stub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-  sinon.replace(BundleGenerator.prototype, '_latestRelease', stub);
+test('initialize - package option', async (t) => {
+  t.plan(1);
 
   await helpers
-    .create(generatorPath('app'))
-    .withGenerators([[BundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')]])
+    .create(BundleInit)
+    .withOptions({ package: 'com.test.option' })
+    .run()
+    .then((result) => {
+      const expected = {
+        package: 'com.test.option',
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
+
+test('initialize - invalid package option', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(BundleInit)
+    .withOptions({ package: 'th3s.|s.N0t.Allow3d' })
+    .run()
+    .then((result) => {
+      const expected = {
+        package: undefined,
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
+
+test('initialize - package defaults to parent groupId', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(BundleInit)
+    .withOptions({ parentProps: { groupId: 'com.test.parent' } })
+    .run()
+    .then((result) => {
+      const expected = {
+        package: 'com.test.parent',
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
+
+test('prompting - package - default', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(BundlePrompt)
+    .withOptions({ props: { package: 'com.adobe.test' } })
+    .run()
+    .then((result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'package' });
+      t.is(prompt.default, 'com.adobe.test', 'Default set');
+    });
+});
+
+test('prompting - package - when - defaults & no options', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(BundlePrompt)
+    .withOptions({ defaults: true })
+    .run()
+    .then(async (result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'package' });
+      t.true(await prompt.when(), 'Prompts for package.');
+    });
+});
+
+test('prompting - package - when - defaults & option', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(BundlePrompt)
+    .withOptions({ defaults: true, package: 'com.adobe.option' })
+    .run()
+    .then(async (result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'package' });
+      t.false(await prompt.when(), 'Does not prompt for package.');
+    });
+});
+
+test('prompting - package - validate', async (t) => {
+  t.plan(4);
+
+  await helpers
+    .create(BundlePrompt)
+    .withOptions({ defaults: true })
+    .run()
+    .then(async (result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'package' });
+      t.is(await prompt.validate(), 'Package must be provided.', 'Error message correct.');
+      t.is(await prompt.validate(''), 'Package must be provided.', 'Error message correct.');
+      t.is(await prompt.validate('th3s.|s.N0t.Allow3d'), 'Package must only contain letters or periods (.).', 'Error message correct.');
+      t.true(await prompt.validate('com.adobe.test'), 'Valid package.');
+    });
+});
+
+test('configuring', async (t) => {
+  t.plan(1);
+
+  const expected = { config: 'to be saved' };
+  await helpers
+    .create(BundleConfig)
+    .withOptions({ props: expected })
+    .run()
+    .then((result) => {
+      const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
+      t.deepEqual(yorc, { '@adobe/generator-aem:bundle': expected }, 'Config saved.');
+    });
+});
+
+test('writing/installing - v6.5 - new', async (t) => {
+  t.plan(5);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'core');
+  await helpers
+    .create(BundleWriteInstall)
     .withOptions({
-      defaults: true,
-      examples: true,
-      appId: 'test',
-      name: 'Test Project',
-      groupId: 'com.adobe.test',
-      aemVersion: '6.5',
-      modules: 'bundle',
       showBuildOutput: false,
+      props: {
+        examples: true,
+        package: 'com.adobe.test',
+        artifactId: 'test.core',
+        name: 'Name',
+        appId: 'test',
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: aem65ApiMetadata,
+        aemVersion: '6.5',
+      }
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
     })
     .run()
     .then((result) => {
-      sinon.restore();
       const properties = result.generator.props;
       const outputRoot = result.generator.destinationPath();
-      const moduleDir = path.join(outputRoot, 'core');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>core<\/module>/);
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>core<\/module>/);
+
+      const moduleDir = path.join(outputRoot);
 
       const pom = path.join(moduleDir, 'pom.xml');
       result.assertFile(pom);
@@ -67,75 +209,65 @@ test.serial('via @adobe/generator-aem - v6.5', async (t) => {
       });
 
       const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
       t.is(pomData.project.artifactId, 'test.core', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Test Project - Core Bundle', 'Name set.');
+      t.is(pomData.project.name, 'Name', 'Name set.');
+
       result.assertFileContent(pom, /<artifactId>uber-jar<\/artifactId>/);
       result.assertFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
 
-      const classesRoot = path.join(moduleDir, 'src', 'main', 'java', 'com', 'adobe', 'test');
+      const classesRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test');
       result.assertFile(path.join(classesRoot, 'package-info.java'));
       result.assertFile(path.join(classesRoot, 'filters', 'LoggingFilter.java'));
       result.assertFile(path.join(classesRoot, 'listeners', 'SimpleResourceListener.java'));
       result.assertFile(path.join(classesRoot, 'schedulers', 'SimpleScheduledTask.java'));
       result.assertFile(path.join(classesRoot, 'servlets', 'SimpleServlet.java'));
 
-      const testsRoot = path.join(moduleDir, 'src', 'test', 'java', 'com', 'adobe', 'test');
+      const testsRoot = path.join('src', 'test', 'java', 'com', 'adobe', 'test');
       result.assertFile(path.join(testsRoot, 'filters', 'LoggingFilterTest.java'));
       result.assertFile(path.join(testsRoot, 'listeners', 'SimpleResourceListenerTest.java'));
       result.assertFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
       result.assertFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
-
-      result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.core.bnd`));
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.core-${properties.version}.jar`));
+      result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.bnd`));
+      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-1.0.0-SNAPSHOT.jar`));
     });
 });
 
-test.serial('second bundle - cloud', async (t) => {
+test('writing/installing - cloud - new', async (t) => {
   t.plan(5);
 
-  sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-  sinon.replace(BundleGenerator.prototype, '_latestRelease', stub);
-
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'test');
-
+  const fullPath = path.join(temporaryDir, 'core');
   await helpers
-    .create(generatorPath('bundle'))
+    .create(BundleWriteInstall)
     .withOptions({
-      defaults: true,
-      examples: false,
-      generateInto: 'bundle',
-      appId: 'bundle',
-      name: 'Second Bundle',
-      package: 'com.adobe.test.bundle',
       showBuildOutput: false,
+      props: {
+        package: 'com.adobe.test',
+        artifactId: 'test.core',
+        name: 'Name',
+        appId: 'test',
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: 'cloud',
+      }
     })
-    .inDir(fullPath, (temporary) => {
-      fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
-
-      // Delete additional things to reduce context
-      const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
-      delete data['@adobe/generator-aem'].all;
-      delete data['@adobe/generator-aem']['ui.apps'];
-      delete data['@adobe/generator-aem']['ui.apps.structure'];
-      delete data['@adobe/generator-aem']['ui.config'];
-      delete data['@adobe/generator-aem']['it.tests'];
-      delete data['@adobe/generator-aem']['ui.frontend'];
-      fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
     })
     .run()
     .then((result) => {
-      sinon.restore();
       const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
-      const moduleDir = path.join(outputRoot, 'bundle');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>bundle<\/module>/);
+      const outputRoot = result.generator.destinationPath();
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>core<\/module>/);
+
+      const moduleDir = path.join(outputRoot);
 
       const pom = path.join(moduleDir, 'pom.xml');
       result.assertFile(pom);
@@ -144,23 +276,25 @@ test.serial('second bundle - cloud', async (t) => {
         ignoreAttributes: true,
         ignoreDeclaration: true,
       });
+
       const pomData = parser.parse(pomString);
       t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'bundle', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Second Bundle', 'Name set.');
+      t.is(pomData.project.artifactId, 'test.core', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Name', 'Name set.');
+
       result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
       result.assertNoFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
 
-      const classesRoot = path.join(moduleDir, 'src', 'main', 'java', 'com', 'adobe', 'test', 'bundle');
+      const classesRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test');
       result.assertFile(path.join(classesRoot, 'package-info.java'));
       result.assertNoFile(path.join(classesRoot, 'filters', 'LoggingFilter.java'));
       result.assertNoFile(path.join(classesRoot, 'listeners', 'SimpleResourceListener.java'));
       result.assertNoFile(path.join(classesRoot, 'schedulers', 'SimpleScheduledTask.java'));
       result.assertNoFile(path.join(classesRoot, 'servlets', 'SimpleServlet.java'));
 
-      const testsRoot = path.join(moduleDir, 'src', 'test', 'java', 'com', 'adobe', 'test');
+      const testsRoot = path.join('src', 'test', 'java', 'com', 'adobe', 'test');
       result.assertNoFile(path.join(testsRoot, 'filters', 'LoggingFilterTest.java'));
       result.assertNoFile(path.join(testsRoot, 'listeners', 'SimpleResourceListenerTest.java'));
       result.assertNoFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
@@ -168,8 +302,89 @@ test.serial('second bundle - cloud', async (t) => {
 
       result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.bnd`));
 
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-${properties.parent.version}.jar`));
+      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-1.0.0-SNAPSHOT.jar`));
     });
 });
 
-// TODO: Tests to update existing bundle
+test('writing/installing - cloud - second', async (t) => {
+  t.plan(5);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'new');
+  await helpers
+    .create(BundleWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        examples: true,
+        package: 'com.adobe.test',
+        artifactId: 'test.new',
+        name: 'Name',
+        appId: 'new',
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: 'cloud',
+      }
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      fs.mkdirSync(path.join(temporaryDir, 'core'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'core', 'pom.xml'), path.join(temporaryDir, 'core', 'pom.xml'));
+      const parser = new XMLParser(PomUtils.xmlOptions);
+      const builder = new XMLBuilder(PomUtils.xmlOptions);
+
+      const pom = path.join(temporaryDir, 'pom.xml');
+      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
+      const proj = PomUtils.findPomNodeArray(pomData, 'project');
+      const modules = { modules: [{module: [{'#text': 'core'}]}]};
+      proj.splice(7, 0, modules);
+      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+    })
+    .run()
+    .then((result) => {
+      const properties = result.generator.props;
+      const outputRoot = result.generator.destinationPath();
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>new<\/module>/);
+
+      const moduleDir = path.join(outputRoot);
+
+      const pom = path.join(moduleDir, 'pom.xml');
+      result.assertFile(pom);
+      const pomString = fs.readFileSync(pom, 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'test.new', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Name', 'Name set.');
+
+      result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
+      result.assertNoFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
+
+      const classesRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test');
+      result.assertFile(path.join(classesRoot, 'package-info.java'));
+      result.assertFile(path.join(classesRoot, 'filters', 'LoggingFilter.java'));
+      result.assertFile(path.join(classesRoot, 'listeners', 'SimpleResourceListener.java'));
+      result.assertFile(path.join(classesRoot, 'schedulers', 'SimpleScheduledTask.java'));
+      result.assertFile(path.join(classesRoot, 'servlets', 'SimpleServlet.java'));
+
+      const testsRoot = path.join('src', 'test', 'java', 'com', 'adobe', 'test');
+      result.assertFile(path.join(testsRoot, 'filters', 'LoggingFilterTest.java'));
+      result.assertFile(path.join(testsRoot, 'listeners', 'SimpleResourceListenerTest.java'));
+      result.assertFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
+      result.assertFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
+
+      result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.bnd`));
+
+      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-1.0.0-SNAPSHOT.jar`));
+    });
+});

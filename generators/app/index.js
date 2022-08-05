@@ -31,8 +31,6 @@ import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
 
 
-const fileOptions = { encoding: 'utf8' };
-
 const ModuleOptions = Object.freeze({
   '@adobe/aem:bundle'(parentProps) {
     return {
@@ -192,9 +190,9 @@ const mixinsDefault = Object.freeze({
 
 class AEMGenerator extends Generator {
   constructor(args, options, features) {
-    super(args, options, features);
     features = features || {};
     features.customInstallTask = true;
+    super(args, options, features);
 
     _.defaults(this.moduleOptions, {
       groupId: {
@@ -666,10 +664,7 @@ class AEMGenerator extends Generator {
   }
 
   install() {
-    const options = this.options.showBuildOutput ? { stdio: 'inherit' } : { stdio: 'ignore' };
-    return this.spawnCommand('mvn', ['clean', 'verify'], options).catch((error) => {
-      throw new Error(chalk.red('Maven build failed with error: \n\n\t' + error.message + '\n\nPlease retry the build manually to determine the issue.'));
-    });
+    return this._install();
   }
 
   end() {
@@ -753,7 +748,7 @@ class AEMGenerator extends Generator {
   };
 
   _writeGitignore = () => {
-    const base = fs.readFileSync(this.templatePath('.gitignore'), fileOptions).split('\n');
+    const base = fs.readFileSync(this.templatePath('.gitignore'), PomUtils.fileOptions).split('\n');
 
     let orig = [];
     const file = this.destinationPath('.gitignore');
@@ -773,7 +768,7 @@ class AEMGenerator extends Generator {
     const builder = new XMLBuilder(PomUtils.xmlOptions);
 
     // Read the template and parse w/ properties.
-    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), fileOptions), tplProps);
+    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
     const parsedGenPom = parser.parse(genPom);
     const genProject = PomUtils.findPomNodeArray(parsedGenPom, 'project');
 
@@ -803,38 +798,14 @@ class AEMGenerator extends Generator {
       addlDeps.push({
         dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'uber-jar' }] }],
       });
-      this._removeDependencies(genDependencies, addlDeps);
+      PomUtils.removeDependencies(genDependencies, addlDeps);
     } else {
-      this._addDependencies(genDependencies, addlDeps, tplProps.aem);
+      PomUtils.addDependencies(genDependencies, addlDeps, tplProps.aem);
     }
 
     this.fs.write(pomFile, PomUtils.fixXml(builder.build(parsedGenPom)));
   };
 
-  _removeDependencies = (target, dependencies) => {
-    _.remove(target, (item) => {
-      return PomUtils.dependencyPredicate(dependencies, item);
-    });
-  };
-
-  _addDependencies = (target, dependencies, after) => {
-    let insertAt = target.length;
-    if (after) {
-      // Find index to insert at
-      insertAt = _.findIndex(target, (dep) => {
-        const groupId = PomUtils.findPomNodeArray(dep.dependency, 'groupId');
-        const artifactId = PomUtils.findPomNodeArray(dep.dependency, 'artifactId');
-        return groupId[0]['#text'] === after.groupId && artifactId[0]['#text'] === after.artifactId;
-      });
-      if (insertAt === -1) {
-        insertAt = target.length;
-      } else {
-        insertAt += 1;
-      }
-    }
-
-    target.splice(insertAt, 0, ...dependencies);
-  };
 }
 
 // If i can figure out how to mock these without adding them here; I'd move them.
@@ -894,5 +865,4 @@ _.extendWith(AEMGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AEMGenerator };
 export default AEMGenerator;

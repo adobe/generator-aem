@@ -29,13 +29,13 @@ import got from 'got';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
 import TestGenerator from '../fixtures/generators/simple/index.js';
 
-import { Init, Config, Default, WriteInstall } from '../fixtures/generators/wrappers.js';
+import { Init, Config, WriteInstall } from '../fixtures/generators/wrappers.js';
 import AEMGenerator from '../../generators/app/index.js';
 
-const AEMAppInit = Init(AEMGenerator, generatorPath('app', 'index.js'));
-const AEMAppConfig = Config(AEMGenerator, generatorPath('app', 'index.js'));
-const AEMAppDefault = Default(AEMGenerator, generatorPath('app', 'index.js'));
-const AEMAppWriteInstall = WriteInstall(AEMGenerator, generatorPath('app', 'index.js'));
+const resolved = generatorPath('app', 'index.js');
+const AEMAppInit = Init(AEMGenerator, resolved);
+const AEMAppConfig = Config(AEMGenerator, resolved);
+const AEMAppWriteInstall = WriteInstall(AEMGenerator, resolved);
 
 const nodeVersion = versions.node;
 const npmVersion = execFileSync('npm', ['--version'])
@@ -346,7 +346,7 @@ test('initialize merge', async (t) => {
         npmVersion,
       };
 
-      const modules ={
+      const modules = {
         bundle: new Set(['core']),
         'frontend-general': new Set(['ui.frontend']),
         'package-structure': new Set(['ui.apps.structure']),
@@ -378,7 +378,7 @@ test('prompting - defaults', async (t) => {
 
   class Mock extends AEMGenerator {
     constructor(args, options, features) {
-      options.resolved = generatorPath('app', 'index.js');
+      options.resolved = resolved;
       super(args, options, features);
       this.props = {};
     }
@@ -425,7 +425,7 @@ test('prompting - options passed', async (t) => {
 
   class Mock extends AEMGenerator {
     constructor(args, options, features) {
-      options.resolved = generatorPath('app', 'index.js');
+      options.resolved = resolved;
       super(args, options, features);
     }
 
@@ -474,7 +474,7 @@ test('prompting - asked', async (t) => {
 
   class Mock extends AEMGenerator {
     constructor(args, options, features) {
-      options.resolved = generatorPath('app', 'index.js');
+      options.resolved = resolved;
       super(args, options, features);
     }
 
@@ -582,32 +582,46 @@ test('configuring - fails on existing different pom', async (t) => {
   );
 });
 
-test('compose with module - does not exist', async (t) => {
+test('default - module generator does not exist', async (t) => {
   t.plan(1);
-  const options = {
-    defaults: true,
-    moduleStruct: {
-      'test:simple': new Set(['simple']),
+
+  class Mock extends AEMGenerator {
+    constructor(args, options, features) {
+      options.resolved = resolved;
+      super(args, options, features);
+    }
+
+    default() {
+      this.modules = { 'test:simple': new Set(['simple']) };
+      super.default();
     }
   }
-  await t.throwsAsync(helpers.create(AEMAppDefault).withOptions(options).run());
+
+  const options = {
+    defaults: true,
+  };
+  await t.throwsAsync(helpers.create(Mock).withOptions(options).run());
 });
 
-test.serial('compose with module', async (t) => {
+test.serial('default - module generator exists', async (t) => {
   t.plan(1);
 
+  class Mock extends AEMGenerator {
+    constructor(args, options, features) {
+      options.resolved = resolved;
+      super(args, options, features);
+    }
+
+    default() {
+      this.props = { parent: 'parent' };
+      this.modules = { 'test:simple': new Set(['simple']) };
+      super.default();
+    }
+  }
+
   await helpers
-    .create(AEMAppDefault)
+    .create(Mock)
     .withGenerators([[TestGenerator, 'test:simple']])
-    .withOptions({
-      showBuildOutput: false,
-      props: {
-        parent: 'parent',
-      },
-      moduleStruct: {
-        'test:simple': new Set(['simple']),
-      }
-    })
     .run()
     .then((result) => {
       const expected = {
@@ -861,3 +875,7 @@ test.serial('_latestRelease - Got Fails', async (t) => {
     });
   });
 });
+
+
+// TODO: Tests to update existing project
+// TODO: Test for full build of defaults

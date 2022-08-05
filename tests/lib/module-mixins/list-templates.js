@@ -23,7 +23,6 @@ import ModuleMixins from '../../../lib/module-mixins.js';
 test('finds files', (t) => {
   t.plan(4);
   const generator = {
-    relativePath: 'output',
     templatePath: fixturePath,
     destinationPath: fixturePath,
   };
@@ -34,6 +33,6 @@ test('finds files', (t) => {
 
   _.each(filenames, (name) => {
     const entry = _.find(files, { src: fixturePath('files', name) });
-    t.is(entry.dest, fixturePath('output', name));
+    t.is(entry.dest, fixturePath(name));
   });
 });

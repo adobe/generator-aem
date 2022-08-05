@@ -89,12 +89,9 @@
     </dependency>
 
     <dependency>
-      <groupId><%= aem.groupId %></groupId>
-      <artifactId><%= aem.artifactId %></artifactId>
+      <groupId><%= parent.aem.groupId %></groupId>
+      <artifactId><%= parent.aem.artifactId %></artifactId>
     </dependency>
-    <%_ if (parent.aemVersion !== 'cloud') { _%>
-    <%- include('../partials/v6.5/dependencies.partial') -%>
-    <%_ } _%>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>

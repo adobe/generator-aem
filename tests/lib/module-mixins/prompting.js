@@ -23,6 +23,7 @@ test('examples - default not set', async (t) => {
   t.plan(2);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: {},
     async prompt(prompts) {
@@ -42,6 +43,7 @@ test('examples - defaults set', async (t) => {
   t.plan(2);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: { defaults: true },
     props: {},
     async prompt(prompts) {
@@ -61,6 +63,7 @@ test('examples - examples set', async (t) => {
   t.plan(2);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: { examples: true },
     async prompt(prompts) {
@@ -79,6 +82,7 @@ test('name - not specified', async (t) => {
   t.plan(3);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: {},
     async prompt(prompts) {
@@ -98,6 +102,7 @@ test('name - specified', async (t) => {
   t.plan(2);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: { name: 'MySite' },
     async prompt(prompts) {
@@ -116,6 +121,7 @@ test('appId - not specified', async (t) => {
   t.plan(3);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: {},
     async prompt(prompts) {
@@ -135,6 +141,7 @@ test('appId - specified', async (t) => {
   t.plan(2);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: { appId: 'AppId' },
     async prompt(prompts) {
@@ -153,6 +160,7 @@ test('artifactId - not specified', async (t) => {
   t.plan(3);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: {},
     async prompt(prompts) {
@@ -172,6 +180,7 @@ test('artifactId - specified', async (t) => {
   t.plan(3);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: { artifactId: 'ArtifactId' },
     async prompt(prompts) {
@@ -191,6 +200,7 @@ test('artifactId - defaults set', async (t) => {
   t.plan(1);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: { defaults: true },
     props: {},
     async prompt(prompts) {
@@ -208,6 +218,7 @@ test('artifactId - default - appId answered', async (t) => {
   t.plan(1);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: {},
     async prompt(prompts) {
@@ -225,6 +236,7 @@ test('artifactId - default - property fallback', async (t) => {
   t.plan(1);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: {},
     props: { appId: 'property' },
     async prompt(prompts) {
@@ -242,6 +254,7 @@ test('artifactId - default - module generate folder appended', async (t) => {
   t.plan(2);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: { generateInto: 'module' },
     props: {},
     async prompt(prompts) {
@@ -271,6 +284,7 @@ test('processAnswers - defaults', async (t) => {
   const answers = { appId: 'defaults' };
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: { defaults: true },
     props: {},
     async prompt() {
@@ -286,6 +300,7 @@ test('processAnswers - defaults', async (t) => {
 test('processAnswers - defaults - appId from properties', async (t) => {
   t.plan(1);
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: { defaults: true },
     props: { appId: 'appId' },
     async prompt() {
@@ -302,6 +317,7 @@ test('processAnswers - defaults - generateInto', async (t) => {
   t.plan(1);
   const answers = { appId: 'defaults' };
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: { defaults: true, generateInto: 'generateInto' },
     props: {},
     async prompt() {
@@ -318,6 +334,7 @@ test('processAnswers - defaults - appId from properties && generateInto', async 
   t.plan(1);
 
   const generator = {
+    _modulePrompts: ModuleMixins._modulePrompts,
     options: { defaults: true, generateInto: 'generateInto' },
     props: { appId: 'appId' },
     async prompt() {

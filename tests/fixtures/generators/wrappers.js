@@ -22,9 +22,31 @@ export function Init(clazz, resolved) {
     }
 
     initializing() {
-      super.initializing();
+      this.props = this.props || this.options.props || {}
+      this.parentProps = this.options.parentProps || {};
+      return super.initializing();
+    }
+    _initializing() {
     }
   };
+}
+
+export function Prompt(clazz, resolved) {
+  return class extends clazz {
+    constructor(args, options, features) {
+      options.resolved = resolved;
+      super(args, options, features);
+      this.props = options.props || {};
+    }
+
+    prompting() {
+      return super.prompting();
+    }
+
+    _prompting(prompts) {
+      this.prompts = prompts;
+    }
+  }
 }
 
 export function Config(clazz, resolved) {
@@ -36,26 +58,22 @@ export function Config(clazz, resolved) {
     }
 
     configuring() {
-      super.configuring();
+      return super.configuring();
     }
   };
 }
 
 export function Default(clazz, resolved) {
-  return class AEMAppDefault extends clazz {
+  return class extends clazz {
     constructor(args, options, features) {
       options.resolved = resolved;
       super(args, options, features);
       this.props = options.props;
-      this.modules = options.moduleStruct;
-    }
-
-    configuring() {
-      this.config.set(this.props);
+      this.parentProps = options.parent;
     }
 
     default() {
-      super.default();
+      return super.default();
     }
   };
 }
@@ -64,23 +82,28 @@ export function WriteInstall(clazz, resolved) {
   return class extends clazz {
     constructor(args, options, features) {
       options.resolved = resolved;
+      features = features || {};
+      features.customInstallTask = true;
       super(args, options, features);
       this.props = options.props;
       this.modules = options.modules;
+      this.parentProps = options.parentProps;
+      this.runInstall = true;
     }
 
     writing() {
-      super.writing();
+      return super.writing();
     }
 
     install() {
-      super.install();
+      return super.install();
     }
   };
 }
 
 const wrappers = {
   Init,
+  Prompt,
   Config,
   Default,
   WriteInstall,

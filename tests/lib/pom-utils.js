@@ -23,6 +23,9 @@ import { XMLBuilder } from 'fast-xml-parser';
 
 import PomUtils from '../../lib/pom-utils.js';
 import { fixturePath } from '../fixtures/helpers.js';
+import path from 'node:path';
+import tempDirectory from 'temp-dir';
+import crypto from 'node:crypto';
 
 const pomStruct = [
   {
@@ -342,7 +345,77 @@ test('mergePomSections - not found', (t) => {
   const target = _.cloneDeep(pomStruct[0].properties);
   const additional = [{ 'project.reporting.outputEncoding': [{ '#text': 'UTF-8' }] }, { 'project.build.sourceEncoding': [{ '#text': 'UTF-8' }] }];
   PomUtils.mergePomSection(target, additional, (target, item) => _.find(target, (t) => _.isEqual(t, item)));
-  t.is(target.length, 5, 'Items not added');
+  t.is(target.length, 5, 'Items added');
   t.is(target[3]['project.reporting.outputEncoding'][0]['#text'], 'UTF-8', 'Item added to correct spot.');
   t.is(target[4]['project.build.sourceEncoding'][0]['#text'], 'UTF-8', 'Item added to correct spot.');
 });
+
+
+test('addModuleToParent - no modules', (t) => {
+  t.plan(1);
+
+  let toWrite;
+
+  const generator = {
+    destinationRoot() {
+      return fixturePath('pom', 'full', 'core');
+    },
+
+    fs: {
+      read(path) {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      },
+      write(path, content) {
+        toWrite = content;
+      }
+    },
+  };
+  PomUtils.addModuleToParent(generator);
+  t.regex(toWrite, /modules>\s+<module>core<\/module>\s+<\/modules>/)
+})
+
+test('addModuleToParent - modules - no match', (t) => {
+  t.plan(1);
+
+  let toWrite;
+
+  const generator = {
+    destinationRoot() {
+      return fixturePath('pom', 'modules', 'dne');
+    },
+
+    fs: {
+      read(path) {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      },
+      write(path, content) {
+        toWrite = content;
+      }
+    },
+  };
+  PomUtils.addModuleToParent(generator);
+  t.regex(toWrite, /<module>dne<\/module>\s+<\/modules>/)
+});
+
+test('addModuleToParent - modules - exists', (t) => {
+  t.plan(1);
+
+  let toWrite;
+
+  const generator = {
+    destinationRoot() {
+      return fixturePath('pom', 'modules', 'core');
+    },
+
+    fs: {
+      read(path) {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      },
+      write(path, content) {
+        toWrite = content;
+      }
+    },
+  };
+  PomUtils.addModuleToParent(generator);
+  t.regex(toWrite, /modules>\s+<module>core<\/module>\s+<module>/)
+})

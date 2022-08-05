@@ -20,225 +20,214 @@ import crypto from 'node:crypto';
 import tempDirectory from 'temp-dir';
 
 import test from 'ava';
-import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
-import { XMLParser } from 'fast-xml-parser';
-import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
-
+import PomUtils from '../../lib/pom-utils.js';
 import DispatcherGenerator from '../../generators/dispatcher/index.js';
-import ParentPomGenerator from '../../generators/app/pom/index.js';
+import { Prompt, Config, Default, WriteInstall } from '../fixtures/generators/wrappers.js';
+import { generatorPath, fixturePath, aem65ApiMetadata, cloudSdkApiMetadata } from '../fixtures/helpers.js';
 
-test.serial('via @adobe/generator-aem - v6.5 - no content', async (t) => {
-  t.plan(11);
+const resolved = generatorPath('dispatcher', 'index.js');
+const DispatcherPrompt = Prompt(DispatcherGenerator, resolved);
+const DispatcherConfig = Config(DispatcherGenerator, resolved);
+const DispatcherDefault = Default(DispatcherGenerator, resolved);
+const DispatcherWriteInstall = WriteInstall(DispatcherGenerator, resolved);
 
-  sinon.restore();
-  const stub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-
+test('prompting', async (t) => {
+  const expected = { name: 'Name Prompted', appId: 'AppId Prompted' };
   await helpers
-    .create(generatorPath('app'))
-    .withGenerators([[DispatcherGenerator, '@adobe/aem:dispatcher', generatorPath('dispatcher', 'index.js')]])
-    .withOptions({
-      defaults: true,
-      examples: true,
-      appId: 'test',
-      name: 'Test Project',
-      groupId: 'com.adobe.test',
-      aemVersion: '6.5',
-      modules: 'dispatcher',
-      showBuildOutput: false,
-    })
+    .create(DispatcherPrompt)
+    .withPrompts(expected)
     .run()
     .then((result) => {
-      sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
-      const moduleDir = path.join(outputRoot, 'dispatcher');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>dispatcher<\/module>/);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
-      const parser = new XMLParser({
-        ignoreAttributes: true,
-        ignoreDeclaration: true,
-      });
-      const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
-      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
-      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'test.dispatcher', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Test Project - Dispatcher', 'Name set.');
-
-      result.assertFileContent(pom, /src\/conf\/httpd\.conf/);
-      result.assertFile(path.join(moduleDir, 'assembly.xml'));
-      result.assertNoFile(path.join(moduleDir, 'src', 'opt-in', 'USE_SOURCES_DIRECTLY'));
-
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.d', 'enabled_vhosts', 'test_publish.vhost')).isSymbolicLink());
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.d', 'enabled_vhosts', 'aem_author.vhost')).isSymbolicLink());
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.d', 'enabled_vhosts', 'aem_flush.vhost')).isSymbolicLink());
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.d', 'enabled_vhosts', 'aem_health.vhost')).isSymbolicLink());
-
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.dispatcher.d', 'enabled_farms', '000_ams_author_farm.any')).isSymbolicLink());
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.dispatcher.d', 'enabled_farms', '999_ams_publish_farm.any')).isSymbolicLink());
-      result.assertFileContent(path.join(moduleDir, 'src', 'conf.d', 'variables', 'ams_default.vars'), /Define CONTENT_FOLDER_NAME test/);
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.dispatcher-${properties.version}.zip`));
+      t.plan(1);
+      t.deepEqual(result.generator.props, expected, 'Properties set.');
     });
 });
 
-test.serial('via @adobe/generator-aem - cloud - no content', async (t) => {
-  t.plan(7);
-
-  sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-
+test('configuring', async (t) => {
+  const expected = { config: 'to be saved' };
   await helpers
-    .create(generatorPath('app'))
-    .withGenerators([[DispatcherGenerator, '@adobe/aem:dispatcher', generatorPath('dispatcher', 'index.js')]])
-    .withOptions({
-      defaults: true,
-      examples: true,
-      appId: 'test',
-      name: 'Test Project',
-      groupId: 'com.adobe.test',
-      aemVersion: 'cloud',
-      modules: 'dispatcher',
-      showBuildOutput: false,
-    })
+    .create(DispatcherConfig)
+    .withOptions({ props: expected })
     .run()
     .then((result) => {
-      sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
-      const moduleDir = path.join(outputRoot, 'dispatcher');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>dispatcher<\/module>/);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
-      const parser = new XMLParser({
-        ignoreAttributes: true,
-        ignoreDeclaration: true,
-      });
-      const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
-      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
-      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'test.dispatcher', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Test Project - Dispatcher', 'Name set.');
-
-      result.assertNoFileContent(pom, /src\/conf\/httpd\.conf/);
-      result.assertFileContent(pom, /src\/conf\.d\/available_vhosts\/default\.vhost/);
-      result.assertFile(path.join(moduleDir, 'assembly.xml'));
-      result.assertFile(path.join(moduleDir, 'src', 'opt-in', 'USE_SOURCES_DIRECTLY'));
-
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.d', 'enabled_vhosts', 'default.vhost')).isSymbolicLink());
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.dispatcher.d', 'enabled_farms', 'default.farm')).isSymbolicLink());
-
-      result.assertFileContent(path.join(moduleDir, 'src', 'conf.d', 'variables', 'custom.vars'), /Define CONTENT_FOLDER_NAME test/);
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.dispatcher-${properties.version}.zip`));
+      t.plan(1);
+      const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
+      t.deepEqual(yorc, { '@adobe/generator-aem:dispatcher': expected }, 'Config saved.');
     });
 });
 
-test.serial('add module to existing project', async (t) => {
-  t.plan(7);
-
-  sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-
+test('default - no existing module', async () => {
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'test');
+  const fullPath = path.join(temporaryDir, 'dispatcher');
+
   await helpers
-    .create(generatorPath('dispatcher'))
-    .withOptions({
-      defaults: true,
-      examples: true,
-      appId: 'other',
-      artifactId: 'dispatcher.other',
-      generateInto: 'dispatcher.other',
-      name: 'Other Dispatcher',
-      groupId: 'com.adobe.test',
-      aemVersion: 'cloud',
-      modules: 'dispatcher',
-      showBuildOutput: false,
+    .create(DispatcherDefault)
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      fs.writeFileSync(path.join(fullPath, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:dispatcher': {} }));
     })
-    .inDir(fullPath, (temporary) => {
-      fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
-      fs.rmSync(path.join(temporary, 'dispatcher'), { recursive: true });
-      const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
-      delete data['@adobe/generator-aem'].all;
-      delete data['@adobe/generator-aem'].core;
-      delete data['@adobe/generator-aem']['ui.apps'];
-      delete data['@adobe/generator-aem']['ui.apps.structure'];
-      delete data['@adobe/generator-aem']['ui.config'];
-      delete data['@adobe/generator-aem']['it.tests'];
-      delete data['@adobe/generator-aem']['ui.frontend'];
-      delete data['@adobe/generator-aem'].dispatcher;
-      fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
-    })
-    .run()
-    .then((result) => {
-      sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
-      const moduleDir = path.join(outputRoot, 'dispatcher.other');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>dispatcher\.other<\/module>/);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
-      const parser = new XMLParser({
-        ignoreAttributes: true,
-        ignoreDeclaration: true,
-      });
-      const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.parent.groupId, 'Parent groupId set.');
-      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
-      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'dispatcher.other', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Other Dispatcher', 'Name set.');
-
-      result.assertNoFileContent(pom, /src\/conf\/httpd\.conf/);
-      result.assertFileContent(pom, /src\/conf\.d\/available_vhosts\/default\.vhost/);
-      result.assertFile(path.join(moduleDir, 'assembly.xml'));
-      result.assertFile(path.join(moduleDir, 'src', 'opt-in', 'USE_SOURCES_DIRECTLY'));
-
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.d', 'enabled_vhosts', 'default.vhost')).isSymbolicLink());
-      t.truthy(fs.lstatSync(path.join(moduleDir, 'src', 'conf.dispatcher.d', 'enabled_farms', 'default.farm')).isSymbolicLink());
-
-      result.assertFileContent(path.join(moduleDir, 'src', 'conf.d', 'variables', 'custom.vars'), /Define CONTENT_FOLDER_NAME other/);
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-${properties.parent.version}.zip`));
-    });
+    .run();
 });
 
-test('second module fails', async (t) => {
+test('default - existing module - different', async (t) => {
   t.plan(2);
-
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'test');
+  const fullPath = path.join(temporaryDir, 'other');
 
   const error = await t.throwsAsync(
     helpers
-      .create(generatorPath('dispatcher'))
-      .withOptions({
-        defaults: true,
-        examples: false,
-        generateInto: 'dispatcher.other',
-        appId: 'other',
-        name: 'Second Dispatcher',
-        showBuildOutput: false,
-      })
-      .inDir(fullPath, (temporary) => {
-        fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
+      .create(DispatcherDefault)
+      .inDir(fullPath, () => {
+        fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+        const parser = new XMLParser(PomUtils.xmlOptions);
+        const builder = new XMLBuilder(PomUtils.xmlOptions);
+
+        const pom = path.join(temporaryDir, 'pom.xml');
+        const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
+        const proj = PomUtils.findPomNodeArray(pomData, 'project');
+        const modules = { modules: [{ module: [{ '#text': 'dispatcher' }] }] };
+        proj.splice(7, 0, modules);
+        fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+
+        fs.mkdirSync(path.join(temporaryDir, 'dispatcher'));
+        fs.writeFileSync(path.join(temporaryDir, 'dispatcher', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:dispatcher': {} }));
       })
       .run()
   );
 
-  t.regex(error.message, /Refusing to create a second Dispatcher module\./);
+  t.is(error.message, 'Refusing to create a second Dispatcher module.', 'Error message correct.');
+});
+
+test('default - existing module - same', async () => {
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'dispatcher');
+  await helpers
+    .create(DispatcherDefault)
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      const parser = new XMLParser(PomUtils.xmlOptions);
+      const builder = new XMLBuilder(PomUtils.xmlOptions);
+
+      const pom = path.join(temporaryDir, 'pom.xml');
+      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
+      const proj = PomUtils.findPomNodeArray(pomData, 'project');
+      const modules = { modules: [{ module: [{ '#text': 'dispatcher' }] }] };
+      proj.splice(7, 0, modules);
+      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+      fs.writeFileSync(path.join(temporaryDir, 'dispatcher', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:dispatcher': {} }));
+    })
+    .run();
+});
+
+test('writing/install - v6.5', async (t) => {
+  t.plan(11);
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'dispatcher');
+  await helpers
+    .create(DispatcherWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        artifactId: 'test.dispatcher',
+        name: 'Test Project - Dispatcher',
+        appId: 'test',
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: aem65ApiMetadata,
+        aemVersion: '6.5',
+      }
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>dispatcher<\/module>/);
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'test.dispatcher', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Project - Dispatcher', 'Name set.');
+
+      result.assertFile('assembly.xml');
+      result.assertNoFile(path.join('src', 'opt-in', 'USE_SOURCES_DIRECTLY'));
+
+      t.truthy(fs.lstatSync(path.join(fullPath, 'src', 'conf.d', 'enabled_vhosts', 'test_publish.vhost')).isSymbolicLink());
+      t.truthy(fs.lstatSync(path.join(fullPath, 'src', 'conf.d', 'enabled_vhosts', 'aem_author.vhost')).isSymbolicLink());
+      t.truthy(fs.lstatSync(path.join(fullPath, 'src', 'conf.d', 'enabled_vhosts', 'aem_flush.vhost')).isSymbolicLink());
+      t.truthy(fs.lstatSync(path.join(fullPath, 'src', 'conf.d', 'enabled_vhosts', 'aem_health.vhost')).isSymbolicLink());
+
+      t.truthy(fs.lstatSync(path.join(fullPath, 'src', 'conf.dispatcher.d', 'enabled_farms', '000_ams_author_farm.any')).isSymbolicLink());
+      t.truthy(fs.lstatSync(path.join(fullPath, 'src', 'conf.dispatcher.d', 'enabled_farms', '999_ams_publish_farm.any')).isSymbolicLink());
+      result.assertFileContent(path.join('src', 'conf.d', 'variables', 'ams_default.vars'), /Define CONTENT_FOLDER_NAME test/);
+
+      result.assertFile(path.join('target', 'test.dispatcher-1.0.0-SNAPSHOT.zip'));
+
+    });
+});
+
+test('writing/install - cloud', async (t) => {
+  t.plan(7);
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'dispatcher');
+
+  await helpers
+    .create(DispatcherWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        artifactId: 'cloud.dispatcher',
+        name: 'Test Project - Dispatcher',
+        appId: 'test',
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: 'cloud',
+      }
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>dispatcher<\/module>/);
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'cloud.dispatcher', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Project - Dispatcher', 'Name set.');
+
+      result.assertNoFileContent('pom.xml', /src\/conf\/httpd\.conf/);
+      result.assertFileContent('pom.xml', /src\/conf\.d\/available_vhosts\/default\.vhost/);
+      result.assertFile('assembly.xml');
+      result.assertFile(path.join('src', 'opt-in', 'USE_SOURCES_DIRECTLY'));
+
+      t.truthy(fs.lstatSync(path.join(fullPath, 'src', 'conf.d', 'enabled_vhosts', 'default.vhost')).isSymbolicLink());
+      t.truthy(fs.lstatSync(path.join(fullPath, 'src', 'conf.dispatcher.d', 'enabled_farms', 'default.farm')).isSymbolicLink());
+
+      result.assertFileContent(path.join('src', 'conf.d', 'variables', 'custom.vars'), /Define CONTENT_FOLDER_NAME test/);
+
+      result.assertFile(path.join('target', `cloud.dispatcher-1.0.0-SNAPSHOT.zip`));
+    });
 });

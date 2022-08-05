@@ -80,17 +80,4 @@ Some files are immutable, meaning they cannot be altered or deleted.  These are 
 
 ### Immutable Files
 
-```
-conf.d/available_vhosts/default.vhost
-conf.d/dispatcher_vhost.conf
-conf.d/rewrites/default_rewrite.rules
-conf.dispatcher.d/available_farms/default.farm
-conf.dispatcher.d/cache/default_invalidate.any
-conf.dispatcher.d/cache/default_rules.any
-conf.dispatcher.d/clientheaders/default_clientheaders.any
-conf.dispatcher.d/dispatcher.any
-conf.dispatcher.d/enabled_farms/default.farm
-conf.dispatcher.d/filters/default_filters.any
-conf.dispatcher.d/renders/default_renders.any
-conf.dispatcher.d/virtualhosts/default_virtualhosts.any
-```
+See the [immutable.files file](./immutable.files)

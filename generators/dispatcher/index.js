@@ -17,19 +17,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
 
 import _ from 'lodash';
 import { globbySync } from 'globby';
 import ejs from 'ejs';
+import { XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 import ModuleMixins from '../../lib/module-mixins.js';
+import PomUtils from '../../lib/pom-utils.js';
 
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
-
-const DispatcherModuleType = 'dispatcher';
+const generatorName = '@adobe/generator-aem:dispatcher';
 
 const docLink = (aemVersion) => {
   if (aemVersion === 'cloud') {
@@ -41,12 +39,19 @@ const docLink = (aemVersion) => {
 
 class DispatcherGenerator extends Generator {
   constructor(args, options, features) {
+    features = features || {};
+    features.customInstallTask = true;
     super(args, options, features);
 
-    this.moduleType = DispatcherModuleType;
-    _.forOwn(this._moduleOptions, (v, k) => {
+    const dispOptions = _.pick(this.moduleOptions, ['generateInto', 'showBuildOutput', 'name', 'appId']);
+
+    _.forOwn(dispOptions, (v, k) => {
       this.option(k, v);
     });
+
+    this.rootGeneratorName = function() {
+      return generatorName;
+    };
   }
 
   initializing() {
@@ -54,7 +59,14 @@ class DispatcherGenerator extends Generator {
   }
 
   prompting() {
-    return this._prompting();
+    const prompts = _.filter(this._modulePrompts(), (prompt) => {
+      return prompt.name === 'name' || prompt.name === 'appId';
+    });
+
+    return this.prompt(prompts).then((answers) => {
+      _.merge(this.props, answers);
+      return answers;
+    });
   }
 
   configuring() {
@@ -62,46 +74,75 @@ class DispatcherGenerator extends Generator {
   }
 
   default() {
-    if (_.isEmpty(this.options.parent)) {
-      const config = this.config.getAll();
-      _.each(config, (value, key) => {
-        if (value.moduleType && value.moduleType === DispatcherModuleType && key !== this.relativePath) {
-          throw new Error('Refusing to create a second Dispatcher module.');
-        }
-      });
+    let dup = false;
+    const parentPath = path.dirname(this.destinationRoot());
+    const pomData = this.fs.read(path.join(parentPath, 'pom.xml'));
+    const parsed = new XMLParser().parse(pomData);
+    _.each(parsed.project.modules, (module) => {
+      const yorc = path.join(parentPath, module, '.yo-rc.json');
+      if (this.fs.exists(yorc)) {
+        dup = this.fs.readJSON(yorc)[generatorName] !== undefined &&
+          module !== path.basename(this.destinationRoot());
+        return !dup; // break early if found.
+      }
+    });
 
-      // Need to have parent update module list.
-      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app'), options);
+    if (dup) {
+      throw new Error('Refusing to create a second Dispatcher module.');
     }
   }
 
   writing() {
+    const tplProps = {
+      ...this.props,
+      docLink: docLink(this.parentProps.aemVersion),
+      parent: this.parentProps,
+      immutable: [],
+    }
     const files = [];
     files.push(...this._listTemplates('shared'));
+    const context = this.parentProps.aemVersion === 'cloud' ? 'cloud' : 'ams';
+    files.push(...this._listTemplates(context));
+    const rootPath = this.templatePath(context);
 
-    let rootPath;
-    let immutableFileList;
-    if (this.props.parent.aemVersion === 'cloud') {
-      files.push(...this._listTemplates('cloud'));
-      rootPath = this.templatePath('cloud');
-      immutableFileList = fs.readFileSync(this.templatePath('cloud', 'immutable.files'), 'utf-8').split(/\r?\n/);
-    } else {
-      files.push(...this._listTemplates('ams'));
-      rootPath = this.templatePath('ams');
-      immutableFileList = fs.readFileSync(this.templatePath('ams', 'immutable.files'), 'utf-8').split(/\r?\n/);
+    const immutableFileList = fs.readFileSync(this.templatePath(context, 'immutable.files'), 'utf-8').split(/\r?\n/);
+
+    return Promise.all(this._buildImmutablePromises(rootPath, immutableFileList, tplProps))
+      .then(() => {
+        this._writing(files, tplProps);
+
+        _.each(immutableFileList, (line) => {
+          if (line === '') {
+            return;
+          }
+          const parts = line.split('/');
+          this.fs.copy(path.join(rootPath, ...parts), this.destinationPath(...parts));
+        });
+        this._writeSymlinks(context);
+
+        if (this.env.rootGenerator() === this) {
+          PomUtils.addModuleToParent(this);
+        }
+      });
+  }
+
+  install() {
+    // Make sure build is run with this new/updated module
+    if (this.env.rootGenerator() === this) {
+      return this._install({ cwd: path.dirname(this.destinationRoot()) });
     }
+  }
 
-    _.remove(immutableFileList, (value) => {
-      return value === '';
-    });
-
-    this.props.immutable = [];
+  _buildImmutablePromises(rootPath, immutableList, tplProps) {
     const promises = [];
-    for (const line of immutableFileList) {
+    _.each(immutableList, (line) => {
+      if (line === '') {
+        return;
+      }
       promises.push(
         new Promise((resolve) => {
-          const fd = fs.createReadStream(path.join(rootPath, line), 'utf-8');
+          const parts = line.split('/');
+          const fd = fs.createReadStream(path.join(rootPath, ...parts), 'utf-8');
           const hash = crypto.createHash('md5');
           hash.setEncoding('hex');
 
@@ -111,28 +152,20 @@ class DispatcherGenerator extends Generator {
               path: line,
               md5: hash.read(),
             };
-            this.props.immutable.push(file);
+            tplProps.immutable.push(file);
             fd.close();
             resolve();
           });
           fd.pipe(hash);
         })
       );
-    }
-
-    return Promise.all(promises).then(() => {
-      this.props.docLink = docLink(this.props.parent.aemVersion);
-      this._writing(files);
-      for (const line of immutableFileList) {
-        this.fs.copy(path.join(rootPath, line), this.destinationPath(this.relativePath, line));
-      }
-
-      this._writeSymlinks();
     });
+    return promises;
   }
 
-  _writeSymlinks() {
-    const symPath = this.props.parent.aemVersion === 'cloud' ? this.templatePath('symlinks', 'cloud') : this.templatePath('symlinks', 'ams');
+
+  _writeSymlinks(context) {
+    const symPath = this.templatePath('symlinks', context);
     const symlinks = globbySync([path.join(symPath, '**/*')], { onlyFiles: true });
     for (const entry of symlinks) {
       const relPath = path.relative(symPath, entry);
@@ -140,13 +173,13 @@ class DispatcherGenerator extends Generator {
       const dest = ejs.render(temporary, this.props);
       const temporaryAvailable = dest.replaceAll('enabled', 'available');
       const src = path.join('..', path.basename(path.dirname(dest)), path.basename(dest)).replaceAll('enabled', 'available');
-      fs.mkdirSync(this.destinationPath(this.relativePath, path.dirname(dest)), { recursive: true });
-      fs.mkdirSync(this.destinationPath(this.relativePath, path.dirname(temporaryAvailable)), { recursive: true });
-      if (!fs.existsSync(this.destinationPath(this.relativePath, temporaryAvailable))) {
-        fs.cpSync(entry, this.destinationPath(this.relativePath, temporaryAvailable));
+      fs.mkdirSync(this.destinationPath( path.dirname(dest)), { recursive: true });
+      fs.mkdirSync(this.destinationPath(path.dirname(temporaryAvailable)), { recursive: true });
+      if (!fs.existsSync(this.destinationPath(temporaryAvailable))) {
+        fs.cpSync(entry, this.destinationPath(temporaryAvailable));
       }
 
-      fs.symlinkSync(src, this.destinationPath(this.relativePath, dest));
+      fs.symlinkSync(src, this.destinationPath(dest));
     }
   }
 }
@@ -155,5 +188,4 @@ _.extendWith(DispatcherGenerator.prototype, ModuleMixins, (objectValue, srcValue
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { DispatcherGenerator, DispatcherModuleType };
 export default DispatcherGenerator;

@@ -15,46 +15,28 @@
 */
 
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import _ from 'lodash';
 import { globbySync } from 'globby';
 
 import Generator from 'yeoman-generator';
 
 import ModuleMixins from '../../lib/module-mixins.js';
-
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
-
-const GeneralFEModuleType = 'frontend-general';
+import PomUtils from '../../lib/pom-utils.js';
 
 /* eslint-disable prettier/prettier */
-const tplFiles = [
-  'pom.xml',
-  'README.md',
-  '.babelrc',
-  '.eslintrc.json',
-  'tsconfig.json',
-  'webpack.common.js',
-  'webpack.dev.js',
-  'webpack.prod.js',
-  'clientlib.config.cjs',
-];
+
 /* eslint-enable prettier/prettier */
 
 class GeneralFEGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
-    this.moduleType = GeneralFEModuleType;
-
-    _.forOwn(this._moduleOptions, (v, k) => {
+    _.forOwn(this.moduleOptions, (v, k) => {
       this.option(k, v);
     });
   }
 
   initializing() {
-    this.props = {};
-    this._initializing();
+    return this._initializing();
   }
 
   prompting() {
@@ -62,55 +44,44 @@ class GeneralFEGenerator extends Generator {
   }
 
   configuring() {
-    this._configuring();
-  }
-
-  default() {
-    if (_.isEmpty(this.options.parent)) {
-      // Need to have parent update module list.
-      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app'), options);
-    }
+    return this._configuring();
   }
 
   writing() {
     const files = [];
-
-    _.each(tplFiles, (f) => {
-      files.push({
-        src: this.templatePath(f),
-        dest: this.destinationPath(this.relativePath, f),
-      });
-    });
-
-    const patterns = [this.templatePath('src', '**/*'), this.templatePath('src', '**/.*')];
-    const paths = globbySync(patterns, { onlyFiles: true });
-    for (const idx in paths) {
-      if (Object.prototype.hasOwnProperty.call(paths, idx)) {
-        const file = paths[idx];
-        files.push({
-          src: file,
-          dest: this.destinationPath(this.relativePath, path.relative(this.templatePath(), file)),
-        });
-      }
+    files.push(...this._listTemplates());
+    const tplProps = {
+      ..._.pick(this.props, ['name', 'appId', 'artifactId']),
+      parent: this.parentProps,
     }
+    this._writing(files, tplProps);
 
     const pkg = _.defaults(
       {
         name: this.props.artifactId,
-        version: this.props.parent.version,
+        version: this.parentProps.version,
       },
       this.fs.readJSON(this.templatePath('package.json'), {})
     );
-    this.writeDestinationJSON(path.join(this.relativePath, 'package.json'), pkg);
-    this._writing(files);
+    this.writeDestinationJSON('package.json', pkg);
+
+    if (this.env.rootGenerator() === this) {
+      PomUtils.addModuleToParent(this);
+    }
+
   }
+
+  install() {
+    // Make sure build is run with this new/updated module
+    if (this.env.rootGenerator() === this) {
+      return this._install({ cwd: path.dirname(this.destinationRoot()) });
+    }
+  }
+
 }
 
 _.extendWith(GeneralFEGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
-
-export { GeneralFEGenerator, GeneralFEModuleType };
 
 export default GeneralFEGenerator;

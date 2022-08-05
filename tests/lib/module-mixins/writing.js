@@ -20,7 +20,7 @@ import sinon from 'sinon/pkg/sinon-esm.js';
 
 import ModuleMixins from '../../../lib/module-mixins.js';
 
-const generatorProps = {
+const tplProps = {
   pathProperty: 'pathreplacement',
 };
 
@@ -33,7 +33,6 @@ test('default options', (t) => {
 
   const copyTplStub = sinon.stub();
   const generator = {
-    props: generatorProps,
     fs: {
       copyTpl: copyTplStub,
     },
@@ -46,7 +45,7 @@ test('default options', (t) => {
     },
   ];
 
-  ModuleMixins._writing.call(generator, templates);
+  ModuleMixins._writing.call(generator, templates, tplProps);
   t.is(copyTplStub.callCount, 1, 'Stub Called correctly.');
   const [src, dest, props, options] = copyTplStub.getCall(0).args;
   t.is(path.join('/', 'source', 'path', 'parent', '__pathProperty__', 'file'), src, 'Source parameter correct.');
@@ -60,7 +59,6 @@ test('custom delimiter', (t) => {
 
   const copyTplStub = sinon.stub();
   const generator = {
-    props: generatorProps,
     fs: {
       copyTpl: copyTplStub,
     },
@@ -81,7 +79,7 @@ test('custom delimiter', (t) => {
     },
   ];
 
-  ModuleMixins._writing.call(generator, templates, { delimiter: '$' });
+  ModuleMixins._writing.call(generator, templates, tplProps,{ delimiter: '$' });
   t.is(copyTplStub.callCount, 3, 'Stub Called correctly.');
   let [src, dest, props, options] = copyTplStub.getCall(0).args;
   t.is(path.join('/', 'source', 'path', 'parent', '__pathProperty__', 'file'), src, 'Source parameter correct.');

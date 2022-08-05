@@ -15,78 +15,83 @@
 */
 
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import _ from 'lodash';
-
 import Generator from 'yeoman-generator';
 
 import ModuleMixins from '../../lib/module-mixins.js';
-
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
+import PomUtils from '../../lib/pom-utils.js';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import ejs from 'ejs';
+import fs from 'node:fs';
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
-const uniqueProperties = ['package'];
-
-const BundleModuleType = 'bundle';
+const generatorName = '@adobe/generator-aem:bundle';
 
 class BundleGenerator extends Generator {
   constructor(args, options, features) {
+    features = features || {};
+    features.customInstallTask = true;
     super(args, options, features);
 
-    this.moduleType = BundleModuleType;
-
-    _.defaults(this._moduleOptions, {
+    _.defaults(this.moduleOptions, {
       package: {
         type: String,
         desc: 'Java Source Package (e.g. "com.mysite").',
       },
     });
 
-    _.forOwn(this._moduleOptions, (v, k) => {
+    _.forOwn(this.moduleOptions, (v, k) => {
       this.option(k, v);
     });
+
+    this.rootGeneratorName = function() {
+      return generatorName;
+    };
   }
 
   initializing() {
-    this.props = {};
-    _.defaults(this.props, _.pick(this.options, uniqueProperties));
+    this._initializing();
+
+    _.defaults(this.props, _.pick(this.options, ['package']));
 
     if (this.props.package && invalidPackageRegex.test(this.props.package)) {
       delete this.props.package;
     }
 
-    this._initializing();
-
-    if (this.props.parent.groupId) {
-      this.props.package = this.props.package || this.props.parent.groupId;
-    }
+    this.props.package = this.props.package || this.parentProps.groupId;
   }
 
   prompting() {
-    const properties = this.props;
     const prompts = [
       {
         name: 'package',
         message: 'Java Source Package (e.g. "com.mysite").',
         /* c8 ignore start */
-        validate(package_) {
+        validate(pkg) {
           return new Promise((resolve) => {
-            if (!package_ || package_.length === 0) {
+            if (!pkg || pkg.length === 0) {
               resolve('Package must be provided.');
-            } else if (invalidPackageRegex.test(package_)) {
+              return;
+            }
+
+            if (invalidPackageRegex.test(pkg)) {
               resolve('Package must only contain letters or periods (.).');
+              return;
             }
 
             resolve(true);
           });
         },
         /* c8 ignore stop */
-        when() {
+        when: () => {
           return new Promise((resolve) => {
-            if (properties.defaults && properties.package) {
+
+            // Use Options, not props as props will default to parent group id
+            // Which may not be what the user wants.
+            if (this.options.defaults && this.options.package) {
               resolve(false);
+              return;
             }
 
             resolve(true);
@@ -102,14 +107,6 @@ class BundleGenerator extends Generator {
     this._configuring();
   }
 
-  default() {
-    if (_.isEmpty(this.options.parent)) {
-      // Need to have parent update module list.
-      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app'), options);
-    }
-  }
-
   writing() {
     const files = [];
     files.push(...this._listTemplates('shared'));
@@ -118,11 +115,60 @@ class BundleGenerator extends Generator {
       files.push(...this._listTemplates('examples'));
     }
 
-    return this._latestRelease(this._apiCoordinates(this.props.parent.aemVersion)).then((aemMetadata) => {
-      this.props.aem = aemMetadata;
-      this.props.packagePath = this.props.package.replaceAll('.', path.sep);
-      this._writing(files);
-    });
+    this.props.packagePath = this.props.package.replaceAll('.', path.sep);
+    this._writing(files, this.props);
+    this._writePom();
+
+    if (this.env.rootGenerator() === this) {
+      PomUtils.addModuleToParent(this);
+    }
+  }
+
+  install() {
+    // Make sure build is run with this new/updated module
+    if (this.env.rootGenerator() === this) {
+      return this._install({ cwd: path.dirname(this.destinationRoot()) });
+    }
+  }
+
+  _writePom() {
+    const tplProps = _.pick(this.props, ['name', 'artifactId']);
+    tplProps.parent = this.parentProps;
+
+    const parser = new XMLParser(PomUtils.xmlOptions);
+    const builder = new XMLBuilder(PomUtils.xmlOptions);
+
+    // Read the template and parse w/ properties.
+    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+    const parsedGenPom = parser.parse(genPom);
+    const genProject = PomUtils.findPomNodeArray(parsedGenPom, 'project');
+    const genDependencies = PomUtils.findPomNodeArray(genProject, 'dependencies');
+
+    const pomFile = this.destinationPath('pom.xml');
+
+    if (this.fs.exists(pomFile)) {
+      const existingPom = PomUtils.findPomNodeArray(parser.parse(this.fs.read(pomFile)), 'project');
+
+      // Merge the different sections
+      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'properties'), PomUtils.findPomNodeArray(existingPom, 'properties'), PomUtils.propertyPredicate);
+
+      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'build', 'plugins'), PomUtils.findPomNodeArray(existingPom, 'build', 'plugins'), PomUtils.pluginPredicate);
+
+      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'profiles'), PomUtils.findPomNodeArray(existingPom, 'profiles'), PomUtils.profilePredicate);
+
+      PomUtils.mergePomSection(genDependencies, PomUtils.findPomNodeArray(existingPom, 'dependencies'), PomUtils.dependencyPredicate);
+    }
+
+    const addlDeps = parser.parse(fs.readFileSync(this.templatePath('partials', 'v6.5', 'dependencies.xml'), { encoding: 'utf8' }))[0].dependencies;
+    if (this.parentProps.aemVersion === 'cloud') {
+      addlDeps.push({
+        dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'uber-jar' }] }],
+      });
+      PomUtils.removeDependencies(genDependencies, addlDeps);
+    } else {
+      PomUtils.addDependencies(genDependencies, addlDeps, tplProps.parent.aem);
+    }
+    this.fs.write(pomFile, PomUtils.fixXml(builder.build(parsedGenPom)));
   }
 }
 
@@ -130,5 +176,4 @@ _.extendWith(BundleGenerator.prototype, ModuleMixins, (objectValue, srcValue) =>
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { BundleGenerator, BundleModuleType };
 export default BundleGenerator;
