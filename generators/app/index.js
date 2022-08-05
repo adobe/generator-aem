@@ -26,9 +26,25 @@ import Generator from 'yeoman-generator';
 import inquirer from 'inquirer';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
-import got from 'got';
 import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
+import MavenUtils  from '../../lib/maven-utils.js';
+
+const apiCoordinates = (version) => {
+  if (version === 'cloud') {
+    return {
+      groupId: 'com.adobe.aem',
+      artifactId: 'aem-sdk-api',
+      path: 'com/adobe/aem/aem-sdk-api',
+    };
+  }
+
+  return {
+    groupId: 'com.adobe.aem',
+    artifactId: 'uber-jar',
+    path: 'com/adobe/aem/uber-jar',
+  };
+};
 
 
 const ModuleOptions = Object.freeze({
@@ -595,13 +611,9 @@ class AEMGenerator extends Generator {
 
   configuring() {
     this._validateGAV();
-    return this._latestRelease(this._apiCoordinates(this.props.aemVersion)).then((aemMetadata) => {
+    return MavenUtils.latestRelease(apiCoordinates(this.props.aemVersion)).then((aemMetadata) => {
       this.props.aem = aemMetadata;
-
-      const current = this.config.getAll();
-      // Props will overwrite any current values.
-      _.merge(current, this.props);
-      this.config.set(current);
+      this._configuring();
     });
   }
 
@@ -808,58 +820,6 @@ class AEMGenerator extends Generator {
 
 }
 
-// If i can figure out how to mock these without adding them here; I'd move them.
-AEMGenerator.prototype._latestRelease = (coordinates, previous = false) => {
-  return new Promise((resolve, reject) => {
-    if (!coordinates || !coordinates.groupId || !coordinates.artifactId) {
-      reject(new Error('No Coordinates provided.'));
-      return;
-    }
-
-    const path = `${coordinates.groupId.replaceAll('.', '/')}/${coordinates.artifactId}`;
-
-    try {
-      got.get(`https://repo1.maven.org/maven2/${path}/maven-metadata.xml`, { responseType: 'text', resolveBodyOnly: true }).then((body) => {
-        try {
-          const parser = new XMLParser({
-            ignoreAttributes: true,
-            ignoreDeclaration: true,
-          });
-          const data = parser.parse(body);
-          const metadata = {
-            ...coordinates,
-            version: data.metadata.versioning.latest,
-          };
-          if (previous) {
-            metadata.versions = data.metadata.versioning.versions;
-          }
-
-          resolve(metadata);
-        } catch (error) {
-          reject(error);
-        }
-      });
-    } catch (error) {
-      reject(error.response ? new Error(error.response.body) : error);
-    }
-  });
-};
-
-AEMGenerator.prototype._apiCoordinates = (version) => {
-  if (version === 'cloud') {
-    return {
-      groupId: 'com.adobe.aem',
-      artifactId: 'aem-sdk-api',
-      path: 'com/adobe/aem/aem-sdk-api',
-    };
-  }
-
-  return {
-    groupId: 'com.adobe.aem',
-    artifactId: 'uber-jar',
-    path: 'com/adobe/aem/uber-jar',
-  };
-};
 
 _.extendWith(AEMGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);

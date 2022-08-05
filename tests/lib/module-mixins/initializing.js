@@ -38,7 +38,7 @@ class Mock {
         return fs.existsSync(path);
       },
       readJSON(path) {
-        return JSON.parse(fs.readFileSync(path));
+        return JSON.parse(fs.readFileSync(path, { encoding: 'utf8' }));
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
@@ -174,7 +174,7 @@ test('loaded from pom', (t) => {
         return fs.existsSync(path);
       },
       readJSON(path) {
-        return JSON.parse(fs.readFileSync(path));
+        return JSON.parse(fs.readFileSync(path, { encoding: 'utf8' }));
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
@@ -229,7 +229,7 @@ test('merged', (t) => {
         return fs.existsSync(path);
       },
       readJSON(path) {
-        return JSON.parse(fs.readFileSync(path));
+        return JSON.parse(fs.readFileSync(path, { encoding: 'utf8' }));
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });

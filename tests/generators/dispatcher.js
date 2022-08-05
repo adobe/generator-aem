@@ -31,7 +31,6 @@ import { generatorPath, fixturePath, aem65ApiMetadata, cloudSdkApiMetadata } fro
 const resolved = generatorPath('dispatcher', 'index.js');
 const DispatcherPrompt = Prompt(DispatcherGenerator, resolved);
 const DispatcherConfig = Config(DispatcherGenerator, resolved);
-const DispatcherDefault = Default(DispatcherGenerator, resolved);
 const DispatcherWriteInstall = WriteInstall(DispatcherGenerator, resolved);
 
 test('prompting', async (t) => {
@@ -57,69 +56,6 @@ test('configuring', async (t) => {
       const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
       t.deepEqual(yorc, { '@adobe/generator-aem:dispatcher': expected }, 'Config saved.');
     });
-});
-
-test('default - no existing module', async () => {
-  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'dispatcher');
-
-  await helpers
-    .create(DispatcherDefault)
-    .inDir(fullPath, () => {
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      fs.writeFileSync(path.join(fullPath, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:dispatcher': {} }));
-    })
-    .run();
-});
-
-test('default - existing module - different', async (t) => {
-  t.plan(2);
-  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'other');
-
-  const error = await t.throwsAsync(
-    helpers
-      .create(DispatcherDefault)
-      .inDir(fullPath, () => {
-        fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-        const parser = new XMLParser(PomUtils.xmlOptions);
-        const builder = new XMLBuilder(PomUtils.xmlOptions);
-
-        const pom = path.join(temporaryDir, 'pom.xml');
-        const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-        const proj = PomUtils.findPomNodeArray(pomData, 'project');
-        const modules = { modules: [{ module: [{ '#text': 'dispatcher' }] }] };
-        proj.splice(7, 0, modules);
-        fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
-
-        fs.mkdirSync(path.join(temporaryDir, 'dispatcher'));
-        fs.writeFileSync(path.join(temporaryDir, 'dispatcher', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:dispatcher': {} }));
-      })
-      .run()
-  );
-
-  t.is(error.message, 'Refusing to create a second Dispatcher module.', 'Error message correct.');
-});
-
-test('default - existing module - same', async () => {
-  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'dispatcher');
-  await helpers
-    .create(DispatcherDefault)
-    .inDir(fullPath, () => {
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      const parser = new XMLParser(PomUtils.xmlOptions);
-      const builder = new XMLBuilder(PomUtils.xmlOptions);
-
-      const pom = path.join(temporaryDir, 'pom.xml');
-      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-      const proj = PomUtils.findPomNodeArray(pomData, 'project');
-      const modules = { modules: [{ module: [{ '#text': 'dispatcher' }] }] };
-      proj.splice(7, 0, modules);
-      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
-      fs.writeFileSync(path.join(temporaryDir, 'dispatcher', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:dispatcher': {} }));
-    })
-    .run();
 });
 
 test('writing/install - v6.5', async (t) => {

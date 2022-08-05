@@ -31,6 +31,7 @@ import TestGenerator from '../fixtures/generators/simple/index.js';
 
 import { Init, Config, WriteInstall } from '../fixtures/generators/wrappers.js';
 import AEMGenerator from '../../generators/app/index.js';
+import MavenUtils from '../../lib/maven-utils.js';
 
 const resolved = generatorPath('app', 'index.js');
 const AEMAppInit = Init(AEMGenerator, resolved);
@@ -515,8 +516,8 @@ test('prompting - asked', async (t) => {
 test('configuring', async (t) => {
   t.plan(1);
   sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMGenerator.prototype, '_latestRelease', stub);
+  const fake = sinon.fake.resolves(cloudSdkApiMetadata);
+  sinon.replace(MavenUtils, 'latestRelease', fake);
 
   await helpers
     .create(AEMAppConfig)
@@ -540,8 +541,8 @@ test('configuring', async (t) => {
 test('configuring - generateInto', async (t) => {
   t.plan(1);
   sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMGenerator.prototype, '_latestRelease', stub);
+  const fake = sinon.fake.resolves(cloudSdkApiMetadata);
+  sinon.replace(MavenUtils, 'latestRelease', fake);
 
   await helpers
     .create(AEMAppConfig)
@@ -565,8 +566,8 @@ test('configuring - generateInto', async (t) => {
 test('configuring - fails on existing different pom', async (t) => {
   t.plan(1);
   sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(AEMGenerator.prototype, '_latestRelease', stub);
+  const fake = sinon.fake.resolves(cloudSdkApiMetadata);
+  sinon.replace(MavenUtils, 'latestRelease', fake);
 
   await t.throwsAsync(
     helpers
@@ -793,89 +794,6 @@ test.serial('writing/installing - cloud - merge/upgrade', async (t) => {
       t.is(spawnResult.exitCode, 0, 'Build successful.');
     });
 });
-
-test.serial('_latestRelease - AEM 6.5 - Previous', async (t) => {
-  t.plan(5);
-
-  const metadata = fs.readFileSync(fixturePath('files', 'uber-jar-metadata.xml'));
-  const fake = sinon.fake.resolves(metadata);
-  sinon.replace(got, 'get', fake);
-
-  await AEMGenerator.prototype._latestRelease({ groupId: 'com.adobe.aem', artifactId: 'uber-jar' }, true).then((data) => {
-    sinon.restore();
-    t.is(data.groupId, 'com.adobe.aem', 'Group Id');
-    t.is(data.artifactId, 'uber-jar', 'Artifact Id');
-    t.is(data.version, '6.5.12', 'Version');
-    t.truthy(data.versions, 'Historical versions available');
-    t.is(fake.firstArg, 'https://repo1.maven.org/maven2/com/adobe/aem/uber-jar/maven-metadata.xml');
-  });
-});
-
-test.serial('_latestRelease - AEMaaCS - No Previous', async (t) => {
-  t.plan(5);
-
-  const metadata = fs.readFileSync(fixturePath('files', 'sdk-api-metadata.xml'));
-  const fake = sinon.fake.resolves(metadata);
-  sinon.replace(got, 'get', fake);
-
-  await AEMGenerator.prototype._latestRelease({ groupId: 'com.adobe.aem', artifactId: 'aem-sdk-api' }).then((data) => {
-    sinon.restore();
-    t.is(data.groupId, 'com.adobe.aem', 'Group Id');
-    t.is(data.artifactId, 'aem-sdk-api', 'Artifact Id');
-    t.is(data.version, '2022.3.6698.20220318T233218Z-220400', 'Version');
-    t.falsy(data.versions, 'Historical versions not available');
-    t.is(fake.firstArg, 'https://repo1.maven.org/maven2/com/adobe/aem/aem-sdk-api/maven-metadata.xml');
-  });
-});
-
-test.serial('_latestRelease - No Coordinates', async (t) => {
-  t.plan(2);
-  const error = await t.throwsAsync(AEMGenerator.prototype._latestRelease);
-  t.regex(error.message, /No Coordinates provided\./, 'Error thrown.');
-});
-
-test.serial('_latestRelease - No Group Id', async (t) => {
-  t.plan(2);
-  const error = await t.throwsAsync(() => {
-    return AEMGenerator.prototype._latestRelease({ artifactId: 'test' });
-  });
-  t.regex(error.message, /No Coordinates provided\./, 'Error thrown.');
-});
-
-test.serial('_latestRelease - No Artifact Id', async (t) => {
-  t.plan(2);
-  const error = await t.throwsAsync(() => {
-    return AEMGenerator.prototype._latestRelease({ groupId: 'test' });
-  });
-  t.regex(error.message, /No Coordinates provided\./, 'Error thrown.');
-});
-
-test.serial('_latestRelease - Invalid XML', async (t) => {
-  t.plan(1);
-  sinon.restore();
-  const fake = sinon.fake.resolves('Not Parseable XML');
-  sinon.replace(got, 'get', fake);
-
-  await t.throwsAsync(() => {
-    return AEMGenerator.prototype._latestRelease({ groupId: 'test' }).then(() => {
-      sinon.restore();
-    });
-  });
-});
-
-test.serial('_latestRelease - Got Fails', async (t) => {
-  t.plan(1);
-  sinon.restore();
-  const fake = sinon.fake.throws(new Error('500 error'));
-  sinon.replace(got, 'get', fake);
-
-  await t.throwsAsync(() => {
-    return AEMGenerator.prototype._latestRelease({ groupId: 'test' }).then(() => {
-      sinon.restore();
-    });
-  });
-});
-
 
 // TODO: Tests to update existing project
 // TODO: Test for full build of defaults

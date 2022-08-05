@@ -17,259 +17,346 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { versions } from 'node:process';
-import { execFileSync } from 'node:child_process';
 
 import _ from 'lodash';
 import tempDirectory from 'temp-dir';
 
 import test from 'ava';
-import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
+import sinon from 'sinon/pkg/sinon-esm.js';
 
-import { XMLParser } from 'fast-xml-parser';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
 
 import IntegrationTestsGenerator from '../../../generators/tests-it/index.js';
-import ParentPomGenerator from '../../../generators/app/pom/index.js';
+import { Init, Prompt, Config, WriteInstall } from '../../fixtures/generators/wrappers.js';
+import MavenUtils from '../../../lib/maven-utils.js';
 
-const nodeVersion = versions.node;
-const npmVersion = execFileSync('npm', ['--version'])
-  .toString()
-  .replaceAll(/\r\n|\n|\r/gm, '');
+const resolved = generatorPath('tests-it', 'index.js');
+const ITInit = Init(IntegrationTestsGenerator, resolved);
+const ITPrompt = Prompt(IntegrationTestsGenerator, resolved);
+const ITConfig = Config(IntegrationTestsGenerator, resolved);
+const ITWriteInstall = WriteInstall(IntegrationTestsGenerator, resolved);
 
-test.serial('via @adobe/generator-aem - v6.5', async (t) => {
-  t.plan(5);
+test('initialize - no options', async (t) => {
+  t.plan(1);
+  await helpers
+    .create(ITInit)
+    .run()
+    .then((result) => {
+      const expected = {
+        package: undefined,
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
 
-  const itStub = sinon.stub();
-  itStub.withArgs({ groupId: 'com.adobe.cq', artifactId: 'cq-testing-clients-65' }).resolves({
+test('initialize - options', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(ITInit)
+    .withOptions({ package: 'com.test.option', publish: '' })
+    .run()
+    .then((result) => {
+      const expected = {
+        package: 'com.test.option',
+        publish: true,
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
+
+test('initialize - invalid package option', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(ITInit)
+    .withOptions({ package: 'th3s.|s.N0t.Allow3d' })
+    .run()
+    .then((result) => {
+      const expected = {
+        package: undefined,
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
+
+test('initialize - defaults', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(ITInit)
+    .withOptions({ defaults: true })
+    .run()
+    .then((result) => {
+      const expected = {
+        package: undefined,
+        publish: true,
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
+
+test('initialize - package defaults to parent groupId', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(ITInit)
+    .withOptions({ parentProps: { groupId: 'com.test.parent' } })
+    .run()
+    .then((result) => {
+      const expected = {
+        package: 'com.test.parent',
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set');
+    });
+});
+
+test('prompting - package - default', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(ITPrompt)
+    .withOptions({ props: { package: 'com.adobe.test' } })
+    .run()
+    .then((result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'package' });
+      t.is(prompt.default, 'com.adobe.test', 'Default set');
+    });
+});
+
+test('prompting - package - when - defaults & no options', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(ITPrompt)
+    .withOptions({ defaults: true })
+    .run()
+    .then(async (result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'package' });
+      t.true(await prompt.when(), 'Prompts for package.');
+    });
+});
+
+test('prompting - package - when - defaults & option', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(ITPrompt)
+    .withOptions({ defaults: true, package: 'com.adobe.option' })
+    .run()
+    .then(async (result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'package' });
+      t.false(await prompt.when(), 'Does not prompt for package.');
+    });
+});
+
+test('prompting - package - validate', async (t) => {
+  t.plan(4);
+
+  await helpers
+    .create(ITPrompt)
+    .withOptions({ defaults: true })
+    .run()
+    .then(async (result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'package' });
+      t.is(await prompt.validate(), 'Package must be provided.', 'Error message correct.');
+      t.is(await prompt.validate(''), 'Package must be provided.', 'Error message correct.');
+      t.is(await prompt.validate('th3s.|s.N0t.Allow3d'), 'Package must only contain letters or periods (.).', 'Error message correct.');
+      t.true(await prompt.validate('com.adobe.test'), 'Valid package.');
+    });
+});
+
+test('prompting - publish - defaults set', async (t) => {
+  t.plan(2);
+
+  await helpers
+    .create(ITPrompt)
+    .withOptions({ props: { publish: true } })
+    .run()
+    .then((result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'publish' });
+      t.false(prompt.when, 'When false as is set.');
+      t.true(prompt.default, 'Default is true.');
+    });
+});
+
+test('prompting - publish - nothing set', async (t) => {
+  t.plan(2);
+
+  await helpers
+    .create(ITPrompt)
+    .withOptions({})
+    .run()
+    .then((result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'publish' });
+      t.true(prompt.when, 'When is true.');
+      t.true(prompt.default, 'Default is true.');
+    });
+});
+
+test('configuring', async (t) => {
+  t.plan(1);
+  sinon.restore();
+
+  const testingClient = {
     groupId: 'com.adobe.cq',
     artifactId: 'cq-testing-clients-65',
     version: '1.1.1',
-  });
-  sinon.restore();
+  };
 
-  itStub.withArgs(_.omit(aem65ApiMetadata, ['version'])).resolves(aem65ApiMetadata);
-  sinon.replace(IntegrationTestsGenerator.prototype, '_latestRelease', itStub);
-
-  const pomStub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', pomStub);
+  const fake = sinon.fake.resolves(testingClient);
+  sinon.replace(MavenUtils, 'latestRelease', fake);
 
   await helpers
-    .create(generatorPath('app'))
-    .withGenerators([[IntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
+    .create(ITConfig)
     .withOptions({
-      defaults: true,
-      examples: true,
-      appId: 'test',
-      name: 'Test Project',
-      groupId: 'com.adobe.test',
-      aemVersion: '6.5',
-      modules: 'tests-it',
-      showBuildOutput: false,
+      props: { config: 'config' },
+      parentProps: { aemVersion: '6.5' },
     })
     .run()
     .then((result) => {
       sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
-      const moduleDir = path.join(outputRoot, 'it.tests');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>it\.tests<\/module>/);
+      const expected = {
+        '@adobe/generator-aem:tests-it': {
+          config: 'config',
+          testingClient,
+        },
+      };
+      const yoData = JSON.parse(fs.readFileSync(result.generator.destinationPath('.yo-rc.json')));
+      t.deepEqual(yoData, expected, 'Yeoman Data saved.');
+    });
+});
 
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
+test('writing/installing - publish', async (t) => {
+  t.plan(5);
+
+  const testingClient = {
+    groupId: 'com.adobe.cq',
+    artifactId: 'cq-testing-clients-65',
+    version: '1.1.1',
+  };
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'it.tests');
+  await helpers
+    .create(ITWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        examples: true,
+        package: 'com.adobe.test',
+        artifactId: 'test.it.tests',
+        name: 'Test Project - Integration Tests',
+        appId: 'test',
+        publish: true,
+        testingClient,
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: aem65ApiMetadata,
+        aemVersion: '6.5',
+      }
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>it\.tests<\/module>/);
+
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
       });
 
       const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
       t.is(pomData.project.artifactId, 'test.it.tests', 'ArtifactId set.');
       t.is(pomData.project.name, 'Test Project - Integration Tests', 'Name set.');
 
-      result.assertFileContent(pom, /<artifactId>cq-testing-clients-65<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<artifactId>cq-testing-clients-65<\/artifactId>/);
 
-      const testsRoot = path.join(moduleDir, 'src', 'main', 'java', 'com', 'adobe', 'test', 'it', 'tests');
+      const testsRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test', 'it', 'tests');
       result.assertFile(path.join(testsRoot, 'CreatePageIT.java'));
       result.assertFile(path.join(testsRoot, 'GetPageIT.java'));
       result.assertFile(path.join(testsRoot, 'HtmlUnitClient.java'));
       result.assertFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.it.tests-${properties.version}-jar-with-dependencies.jar`));
-    });
-});
+      result.assertFile(path.join('target', 'test.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
+    })
+})
 
-test.serial('via @adobe/generator-aem - cloud', async (t) => {
+
+test('writing/installing - no publish', async (t) => {
   t.plan(5);
 
-  const itStub = sinon.stub();
-  itStub.withArgs({ groupId: 'com.adobe.cq', artifactId: 'aem-cloud-testing-clients' }).resolves({
+  const testingClient = {
     groupId: 'com.adobe.cq',
     artifactId: 'aem-cloud-testing-clients',
     version: '1.1.0',
-  });
-
-  sinon.restore();
-  itStub.withArgs(_.omit(cloudSdkApiMetadata, ['version'])).resolves(cloudSdkApiMetadata);
-  sinon.replace(IntegrationTestsGenerator.prototype, '_latestRelease', itStub);
-
-  const pomStub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', pomStub);
-
-  await helpers
-    .create(generatorPath('app'))
-    .withGenerators([[IntegrationTestsGenerator, '@adobe/aem:tests-it', generatorPath('tests-it', 'index.js')]])
-    .withOptions({
-      defaults: false,
-      examples: true,
-      appId: 'test',
-      artifactId: 'test',
-      name: 'Test Project',
-      groupId: 'com.adobe.test',
-      aemVersion: 'cloud',
-      modules: 'tests-it',
-      javaVersion: 8,
-      nodeVersion,
-      npmVersion,
-      showBuildOutput: false,
-    })
-    .withPrompts({
-      groupId: 'com.adobe.test',
-      artifactId: 'test.it.module',
-      appId: 'test',
-      name: 'Integration Tests for Project',
-      publish: false,
-    })
-    .run()
-    .then((result) => {
-      sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
-      const moduleDir = path.join(outputRoot, 'it.tests');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>it\.tests<\/module>/);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
-      const parser = new XMLParser({
-        ignoreAttributes: true,
-        ignoreDeclaration: true,
-      });
-
-      const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
-      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
-      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'test.it.module', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Integration Tests for Project', 'Name set.');
-
-      result.assertFileContent(pom, /<artifactId>aem-cloud-testing-clients<\/artifactId>/);
-
-      const testsRoot = path.join(moduleDir, 'src', 'main', 'java', 'com', 'adobe', 'test', 'it', 'tests');
-      result.assertFile(path.join(testsRoot, 'CreatePageIT.java'));
-      result.assertFile(path.join(testsRoot, 'GetPageIT.java'));
-      result.assertFile(path.join(testsRoot, 'HtmlUnitClient.java'));
-      result.assertNoFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
-      result.assertFile(path.join(moduleDir, 'target', `test.it.module-${properties.version}-jar-with-dependencies.jar`));
-    });
-});
-
-test.serial('add module to existing project', async (t) => {
-  t.plan(5);
-
-  const itStub = sinon.stub();
-  itStub.withArgs({ groupId: 'com.adobe.cq', artifactId: 'aem-cloud-testing-clients' }).resolves({
-    groupId: 'com.adobe.cq',
-    artifactId: 'aem-cloud-testing-clients',
-    version: '1.1.0',
-  });
-  sinon.restore();
-
-  itStub.withArgs(_.omit(cloudSdkApiMetadata, ['version'])).resolves(cloudSdkApiMetadata);
-  sinon.replace(IntegrationTestsGenerator.prototype, '_latestRelease', itStub);
-
-  const pomStub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', pomStub);
+  }
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'test');
-
+  const fullPath = path.join(temporaryDir, 'it.tests');
   await helpers
-    .create(generatorPath('tests-it'))
+    .create(ITWriteInstall)
     .withOptions({
-      defaults: true,
-      examples: false,
-      generateInto: 'tests.it',
-      package: 'invalid-package-name',
-      appId: 'second',
-      name: 'Integration Tests',
       showBuildOutput: false,
+      props: {
+        examples: true,
+        package: 'com.adobe.test',
+        artifactId: 'test.it.tests',
+        name: 'Test Project - Integration Tests',
+        appId: 'test',
+        testingClient,
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: '6.5',
+      }
     })
-    .inDir(fullPath, (temporary) => {
-      fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
-      fs.rmSync(path.join(temporary, 'it.tests'), { recursive: true });
-      const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
-      delete data['@adobe/generator-aem'].all;
-      delete data['@adobe/generator-aem'].core;
-      delete data['@adobe/generator-aem']['ui.config'];
-      delete data['@adobe/generator-aem']['ui.apps'];
-      delete data['@adobe/generator-aem']['ui.apps.structure'];
-      delete data['@adobe/generator-aem']['ui.frontend'];
-      delete data['@adobe/generator-aem']['it.tests'];
-      fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
     })
     .run()
     .then((result) => {
-      const properties = result.generator.props;
-      const moduleDir = path.join(fullPath, 'tests.it');
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>it\.tests<\/module>/);
+
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
       });
+
       const pomData = parser.parse(pomString);
       t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'second', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Integration Tests', 'Name set.');
+      t.is(pomData.project.artifactId, 'test.it.tests', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Project - Integration Tests', 'Name set.');
 
-      const testsRoot = path.join(moduleDir, 'src', 'main', 'java', 'com', 'adobe', 'test', 'it', 'tests');
+      result.assertFileContent('pom.xml', /<artifactId>aem-cloud-testing-clients<\/artifactId>/);
+
+      const testsRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test', 'it', 'tests');
       result.assertFile(path.join(testsRoot, 'CreatePageIT.java'));
       result.assertFile(path.join(testsRoot, 'GetPageIT.java'));
       result.assertFile(path.join(testsRoot, 'HtmlUnitClient.java'));
-      result.assertFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
-      result.assertFile(path.join(moduleDir, 'target', `second-${properties.parent.version}-jar-with-dependencies.jar`));
-    });
-});
-
-test('second test module fails', async (t) => {
-  t.plan(2);
-
-  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'test');
-
-  const error = await t.throwsAsync(
-    helpers
-      .create(generatorPath('tests-it'))
-      .withOptions({
-        defaults: true,
-        examples: false,
-        generateInto: 'tests.it.second',
-        appId: 'second',
-        name: 'Second Integration Tests',
-        showBuildOutput: false,
-      })
-      .inDir(fullPath, (temporary) => {
-        fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
-      })
-      .run()
-  );
-
-  t.regex(error.message, /Refusing to create a second Integration Testing module\./);
-});
+      result.assertNoFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
+      result.assertFile(path.join('target', 'test.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
+    })
+})

@@ -1,0 +1,92 @@
+import fs from 'node:fs';
+
+import test from 'ava';
+import sinon from 'sinon/pkg/sinon-esm.js';
+import got from 'got';
+
+import MavenUtils from '../../lib/maven-utils.js'
+import { fixturePath } from '../fixtures/helpers.js';
+
+test.serial('No Coordinates', async (t) => {
+  t.plan(2);
+  const error = await t.throwsAsync(MavenUtils.latestRelease);
+  t.regex(error.message, /No Coordinates provided\./, 'Error thrown.');
+});
+
+test.serial('No Group Id', async (t) => {
+  t.plan(2);
+  const error = await t.throwsAsync(() => {
+    return MavenUtils.latestRelease({ artifactId: 'test' });
+  });
+  t.regex(error.message, /No Coordinates provided\./, 'Error thrown.');
+});
+
+test.serial('No Artifact Id', async (t) => {
+  t.plan(2);
+  const error = await t.throwsAsync(() => {
+    return MavenUtils.latestRelease({ groupId: 'test' });
+  });
+  t.regex(error.message, /No Coordinates provided\./, 'Error thrown.');
+});
+
+test.serial('Invalid XML', async (t) => {
+  t.plan(1);
+  sinon.restore();
+  const fake = sinon.fake.resolves('Not Parseable XML');
+  sinon.replace(got, 'get', fake);
+
+  await t.throwsAsync(() => {
+    return MavenUtils.latestRelease({ groupId: 'test' }).then(() => {
+      sinon.restore();
+    });
+  });
+});
+
+test.serial('Got Fails', async (t) => {
+  t.plan(1);
+  sinon.restore();
+  const fake = sinon.fake.throws(new Error('500 error'));
+  sinon.replace(got, 'get', fake);
+
+  await t.throwsAsync(() => {
+    return MavenUtils.latestRelease({ groupId: 'test' }).then(() => {
+      sinon.restore();
+    });
+  });
+});
+
+test.serial('AEM 6.5 - Previous', async (t) => {
+  t.plan(5);
+
+  sinon.restore();
+  const metadata = fs.readFileSync(fixturePath('files', 'uber-jar-metadata.xml'));
+  const fake = sinon.fake.resolves(metadata);
+  sinon.replace(got, 'get', fake);
+
+  await MavenUtils.latestRelease({ groupId: 'com.adobe.aem', artifactId: 'uber-jar' }, true).then((data) => {
+    sinon.restore();
+    t.is(data.groupId, 'com.adobe.aem', 'Group Id');
+    t.is(data.artifactId, 'uber-jar', 'Artifact Id');
+    t.is(data.version, '6.5.12', 'Version');
+    t.truthy(data.versions, 'Historical versions available');
+    t.is(fake.firstArg, 'https://repo1.maven.org/maven2/com/adobe/aem/uber-jar/maven-metadata.xml');
+  });
+});
+
+test.serial('AEMaaCS - No Previous', async (t) => {
+  t.plan(5);
+
+  sinon.restore();
+  const metadata = fs.readFileSync(fixturePath('files', 'sdk-api-metadata.xml'));
+  const fake = sinon.fake.resolves(metadata);
+  sinon.replace(got, 'get', fake);
+
+  await MavenUtils.latestRelease({ groupId: 'com.adobe.aem', artifactId: 'aem-sdk-api' }).then((data) => {
+    sinon.restore();
+    t.is(data.groupId, 'com.adobe.aem', 'Group Id');
+    t.is(data.artifactId, 'aem-sdk-api', 'Artifact Id');
+    t.is(data.version, '2022.3.6698.20220318T233218Z-220400', 'Version');
+    t.falsy(data.versions, 'Historical versions not available');
+    t.is(fake.firstArg, 'https://repo1.maven.org/maven2/com/adobe/aem/aem-sdk-api/maven-metadata.xml');
+  });
+});

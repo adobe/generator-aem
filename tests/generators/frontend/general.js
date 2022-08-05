@@ -26,10 +26,26 @@ import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 
 import GeneralFEGenerator from '../../../generators/frontend-general/index.js';
-import { WriteInstall} from '../../fixtures/generators/wrappers.js';
+import { Config, WriteInstall } from '../../fixtures/generators/wrappers.js';
 
 const resolved = generatorPath('frontend-general', 'index.js');
+const GeneralConfig = Config(GeneralFEGenerator, resolved);
 const GeneralWriteInstall = WriteInstall(GeneralFEGenerator, resolved);
+
+
+test('configuring', async (t) => {
+  t.plan(1);
+
+  const expected = { config: 'to be saved' };
+  await helpers
+    .create(GeneralConfig)
+    .withOptions({ props: expected })
+    .run()
+    .then((result) => {
+      const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
+      t.deepEqual(yorc, { '@adobe/generator-aem:frontend-general': expected }, 'Config saved.');
+    });
+});
 
 test('writing/installing - v6.5', async (t) => {
   t.plan(5);
@@ -101,4 +117,4 @@ test('writing/installing - v6.5', async (t) => {
 
       result.assertFile(path.join('target', 'test.ui.frontend-1.0.0-SNAPSHOT.zip'));
     });
-})
+});

@@ -67,8 +67,7 @@ class BundleGenerator extends Generator {
       {
         name: 'package',
         message: 'Java Source Package (e.g. "com.mysite").',
-        /* c8 ignore start */
-        validate(pkg) {
+        validate: (pkg) => {
           return new Promise((resolve) => {
             if (!pkg || pkg.length === 0) {
               resolve('Package must be provided.');
@@ -83,12 +82,8 @@ class BundleGenerator extends Generator {
             resolve(true);
           });
         },
-        /* c8 ignore stop */
         when: () => {
           return new Promise((resolve) => {
-
-            // Use Options, not props as props will default to parent group id
-            // Which may not be what the user wants.
             if (this.options.defaults && this.options.package) {
               resolve(false);
               return;

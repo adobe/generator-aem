@@ -74,22 +74,7 @@ class DispatcherGenerator extends Generator {
   }
 
   default() {
-    let dup = false;
-    const parentPath = path.dirname(this.destinationRoot());
-    const pomData = this.fs.read(path.join(parentPath, 'pom.xml'));
-    const parsed = new XMLParser().parse(pomData);
-    _.each(parsed.project.modules, (module) => {
-      const yorc = path.join(parentPath, module, '.yo-rc.json');
-      if (this.fs.exists(yorc)) {
-        dup = this.fs.readJSON(yorc)[generatorName] !== undefined &&
-          module !== path.basename(this.destinationRoot());
-        return !dup; // break early if found.
-      }
-    });
-
-    if (dup) {
-      throw new Error('Refusing to create a second Dispatcher module.');
-    }
+    this._duplicateCheck();
   }
 
   writing() {
@@ -98,7 +83,7 @@ class DispatcherGenerator extends Generator {
       docLink: docLink(this.parentProps.aemVersion),
       parent: this.parentProps,
       immutable: [],
-    }
+    };
     const files = [];
     files.push(...this._listTemplates('shared'));
     const context = this.parentProps.aemVersion === 'cloud' ? 'cloud' : 'ams';
@@ -173,7 +158,7 @@ class DispatcherGenerator extends Generator {
       const dest = ejs.render(temporary, this.props);
       const temporaryAvailable = dest.replaceAll('enabled', 'available');
       const src = path.join('..', path.basename(path.dirname(dest)), path.basename(dest)).replaceAll('enabled', 'available');
-      fs.mkdirSync(this.destinationPath( path.dirname(dest)), { recursive: true });
+      fs.mkdirSync(this.destinationPath(path.dirname(dest)), { recursive: true });
       fs.mkdirSync(this.destinationPath(path.dirname(temporaryAvailable)), { recursive: true });
       if (!fs.existsSync(this.destinationPath(temporaryAvailable))) {
         fs.cpSync(entry, this.destinationPath(temporaryAvailable));

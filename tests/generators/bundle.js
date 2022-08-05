@@ -36,6 +36,7 @@ const BundleConfig = Config(BundleGenerator, resolved);
 const BundleWriteInstall = WriteInstall(BundleGenerator, resolved);
 
 test('initialize - no options', async (t) => {
+  t.plan(1);
   await helpers
     .create(BundleInit)
     .run()

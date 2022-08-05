@@ -16,23 +16,28 @@
 
 import path from 'node:path';
 import _ from 'lodash';
-import { globbySync } from 'globby';
 
 import Generator from 'yeoman-generator';
 
 import ModuleMixins from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
 
-/* eslint-disable prettier/prettier */
+const generatorName = '@adobe/generator-aem:frontend-general';
 
-/* eslint-enable prettier/prettier */
 
 class GeneralFEGenerator extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
+    features = features || {};
+    features.customInstallTask = true;
     _.forOwn(this.moduleOptions, (v, k) => {
       this.option(k, v);
     });
+
+    this.rootGeneratorName = function() {
+      return generatorName;
+    };
+
   }
 
   initializing() {
