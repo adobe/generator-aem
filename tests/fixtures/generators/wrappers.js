@@ -55,6 +55,7 @@ export function Config(clazz, resolved) {
       options.resolved = resolved;
       super(args, options, features);
       this.props = options.props;
+      this.parentProps = options.parentProps || {};
     }
 
     configuring() {

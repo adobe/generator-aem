@@ -30,6 +30,8 @@ import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
 import MavenUtils  from '../../lib/maven-utils.js';
 
+export const generatorName = '@adobe/generator-aem';
+
 const apiCoordinates = (version) => {
   if (version === 'cloud') {
     return {
@@ -45,7 +47,6 @@ const apiCoordinates = (version) => {
     path: 'com/adobe/aem/uber-jar',
   };
 };
-
 
 const ModuleOptions = Object.freeze({
   '@adobe/aem:bundle'(parentProps) {
@@ -252,6 +253,10 @@ class AEMGenerator extends Generator {
     _.forOwn(this.moduleOptions, (v, k) => {
       this.option(k, v);
     });
+
+    this.rootGeneratorName = function() {
+      return generatorName;
+    }
   }
 
   initializing() {

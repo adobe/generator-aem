@@ -21,7 +21,6 @@ import crypto from 'node:crypto';
 import _ from 'lodash';
 import { globbySync } from 'globby';
 import ejs from 'ejs';
-import { XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 import ModuleMixins from '../../lib/module-mixins.js';

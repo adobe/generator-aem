@@ -295,9 +295,8 @@ test('writing/installing - publish', async (t) => {
       result.assertFile(path.join(testsRoot, 'HtmlUnitClient.java'));
       result.assertFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
       result.assertFile(path.join('target', 'test.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
-    })
-})
-
+    });
+});
 
 test('writing/installing - no publish', async (t) => {
   t.plan(5);
@@ -306,7 +305,7 @@ test('writing/installing - no publish', async (t) => {
     groupId: 'com.adobe.cq',
     artifactId: 'aem-cloud-testing-clients',
     version: '1.1.0',
-  }
+  };
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'it.tests');
@@ -358,5 +357,5 @@ test('writing/installing - no publish', async (t) => {
       result.assertFile(path.join(testsRoot, 'HtmlUnitClient.java'));
       result.assertNoFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
       result.assertFile(path.join('target', 'test.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
-    })
-})
+    });
+});

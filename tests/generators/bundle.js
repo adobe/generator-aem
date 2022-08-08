@@ -195,15 +195,9 @@ test('writing/installing - v6.5 - new', async (t) => {
     })
     .run()
     .then((result) => {
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>core<\/module>/);
 
-      const moduleDir = path.join(outputRoot);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -216,8 +210,8 @@ test('writing/installing - v6.5 - new', async (t) => {
       t.is(pomData.project.artifactId, 'test.core', 'ArtifactId set.');
       t.is(pomData.project.name, 'Name', 'Name set.');
 
-      result.assertFileContent(pom, /<artifactId>uber-jar<\/artifactId>/);
-      result.assertFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<artifactId>uber-jar<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
 
       const classesRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test');
       result.assertFile(path.join(classesRoot, 'package-info.java'));
@@ -231,8 +225,8 @@ test('writing/installing - v6.5 - new', async (t) => {
       result.assertFile(path.join(testsRoot, 'listeners', 'SimpleResourceListenerTest.java'));
       result.assertFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
       result.assertFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
-      result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.bnd`));
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-1.0.0-SNAPSHOT.jar`));
+      result.assertFile(path.join('src', 'main', 'bnd', `test.core.bnd`));
+      result.assertFile(path.join('target', `test.core-1.0.0-SNAPSHOT.jar`));
     });
 });
 
@@ -264,15 +258,9 @@ test('writing/installing - cloud - new', async (t) => {
     })
     .run()
     .then((result) => {
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>core<\/module>/);
 
-      const moduleDir = path.join(outputRoot);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -285,8 +273,8 @@ test('writing/installing - cloud - new', async (t) => {
       t.is(pomData.project.artifactId, 'test.core', 'ArtifactId set.');
       t.is(pomData.project.name, 'Name', 'Name set.');
 
-      result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
-      result.assertNoFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<artifactId>aem-sdk-api<\/artifactId>/);
+      result.assertNoFileContent('pom.xml', /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
 
       const classesRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test');
       result.assertFile(path.join(classesRoot, 'package-info.java'));
@@ -301,9 +289,8 @@ test('writing/installing - cloud - new', async (t) => {
       result.assertNoFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
       result.assertNoFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
 
-      result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.bnd`));
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-1.0.0-SNAPSHOT.jar`));
+      result.assertFile(path.join('src', 'main', 'bnd', `test.core.bnd`));
+      result.assertFile(path.join('target', `test.core-1.0.0-SNAPSHOT.jar`));
     });
 });
 
@@ -347,15 +334,9 @@ test('writing/installing - cloud - second', async (t) => {
     })
     .run()
     .then((result) => {
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>new<\/module>/);
 
-      const moduleDir = path.join(outputRoot);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -368,8 +349,8 @@ test('writing/installing - cloud - second', async (t) => {
       t.is(pomData.project.artifactId, 'test.new', 'ArtifactId set.');
       t.is(pomData.project.name, 'Name', 'Name set.');
 
-      result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
-      result.assertNoFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<artifactId>aem-sdk-api<\/artifactId>/);
+      result.assertNoFileContent('pom.xml', /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
 
       const classesRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test');
       result.assertFile(path.join(classesRoot, 'package-info.java'));
@@ -384,8 +365,7 @@ test('writing/installing - cloud - second', async (t) => {
       result.assertFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
       result.assertFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
 
-      result.assertFile(path.join(moduleDir, 'src', 'main', 'bnd', `${properties.artifactId}.bnd`));
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}-1.0.0-SNAPSHOT.jar`));
+      result.assertFile(path.join('src', 'main', 'bnd', `test.new.bnd`));
+      result.assertFile(path.join('target', `test.new-1.0.0-SNAPSHOT.jar`));
     });
 });

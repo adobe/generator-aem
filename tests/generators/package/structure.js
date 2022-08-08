@@ -20,156 +20,166 @@ import crypto from 'node:crypto';
 import tempDirectory from 'temp-dir';
 
 import test from 'ava';
-import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
-import { XMLParser } from 'fast-xml-parser';
-import { generatorPath, fixturePath, cloudSdkApiMetadata } from '../../fixtures/helpers.js';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import { generatorPath, fixturePath, aem65ApiMetadata, cloudSdkApiMetadata } from '../../fixtures/helpers.js';
+import { Config, WriteInstall } from '../../fixtures/generators/wrappers.js';
 
 import StructurePackageGenerator from '../../../generators/package-structure/index.js';
-import ParentPomGenerator from '../../../generators/app/pom/index.js';
-import ConfigPackageGenerator from '../../../generators/package-config/index.js';
-import AppsPackageGenerator from '../../../generators/package-apps/index.js';
+import PomUtils from '../../../lib/pom-utils.js';
 
-test.serial('via @adobe/generator-aem', async (t) => {
-  t.plan(5);
+const resolved = generatorPath('package-structure', 'index.js');
+const StructureConfig = Config(StructurePackageGenerator, resolved);
+const StructureWriteInstall = WriteInstall(StructurePackageGenerator, resolved);
 
-  sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
+test('configuring - generates appId list', async (t) => {
+  t.plan(1);
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'ui.apps.structure');
 
   await helpers
-    .create(generatorPath('app'))
-    .withGenerators([[StructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')]])
-    .withOptions({
-      defaults: true,
-      examples: true,
-      appId: 'test',
-      name: 'Test Project',
-      groupId: 'com.adobe.test',
-      aemVersion: 'cloud',
-      modules: 'package-structure',
-      showBuildOutput: false,
+    .create(StructureConfig)
+    .withOptions({ props: { appId: 'passed' } })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      const parser = new XMLParser(PomUtils.xmlOptions);
+      const builder = new XMLBuilder(PomUtils.xmlOptions);
+      const pom = path.join(temporaryDir, 'pom.xml');
+      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
+      const proj = PomUtils.findPomNodeArray(pomData, 'project');
+      const modules = {
+        modules: [
+          { module: [{ '#text': 'ui.apps' }] },
+          { module: [{ '#text': 'ui.config' }] },
+          { module: [{ '#text': 'ui.content' }] },
+        ]
+      };
+      proj.splice(7, 0, modules);
+      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { appId: 'test' } }));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { appId: 'config' } }));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.content'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.content', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-content': { appId: 'test' } }));
     })
     .run()
     .then((result) => {
-      sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
-      const moduleDir = path.join(outputRoot, 'ui.apps.structure');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui\.apps.structure<\/module>/);
 
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
+      const expected = {
+        appId: 'passed',
+        appIds: ['passed', 'test', 'config'],
+      };
+      const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
+      t.deepEqual(yorc, { '@adobe/generator-aem:package-structure': expected }, 'Config saved.');
+
+    });
+});
+
+test('writing/installing', async (t) => {
+  t.plan(5);
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'ui.apps.structure');
+
+  await helpers
+    .create(StructureWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        artifactId: 'test.ui.apps.structure',
+        name: 'Test Module - Apps Structure',
+        appIds: ['test', 'other'],
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: '6.5',
+      }
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.apps.structure<\/module>/);
+
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
       });
+
       const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
       t.is(pomData.project.artifactId, 'test.ui.apps.structure', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Test Project - Repository Structure Package', 'Name set.');
+      t.is(pomData.project.name, 'Test Module - Apps Structure', 'Name set.');
 
-      result.assertFile(path.join(moduleDir, 'README.md'));
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.ui.apps.structure-${properties.version}.zip`));
+      result.assertFileContent('pom.xml', /<filter><root>\/apps\/test<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/apps\/other<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/test<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/other<\/root><\/filter>/);
+      result.assertFile(path.join('target', 'test.ui.apps.structure-1.0.0-SNAPSHOT.zip'));
     });
 });
 
-test.serial('add module to existing project', async (t) => {
+
+test('writing/installing - merges existing filters', async (t) => {
   t.plan(5);
-
-  sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'test');
+  const fullPath = path.join(temporaryDir, 'ui.apps.structure');
+
   await helpers
-    .create(generatorPath('package-structure'))
-    .withGenerators([
-      [ConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
-      [AppsPackageGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
-    ])
+    .create(StructureWriteInstall)
     .withOptions({
-      defaults: true,
-      examples: false,
-      generateInto: 'second.structure',
-      appId: 'test',
-      artifactId: 'second',
-      name: 'Structure Package',
       showBuildOutput: false,
+      props: {
+        artifactId: 'test.ui.apps.structure',
+        name: 'Test Module - Apps Structure',
+        appIds: ['test', 'other'],
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: '6.5',
+      }
     })
-    .inDir(fullPath, (temporary) => {
-      fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
-      fs.rmSync(path.join(temporary, 'ui.apps.structure'), { recursive: true });
-
-      const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
-      // Delete initial structure package
-      delete data['@adobe/generator-aem']['ui.apps.structure'];
-      // Delete additional things to reduce context
-      delete data['@adobe/generator-aem'].all;
-      delete data['@adobe/generator-aem'].core;
-      delete data['@adobe/generator-aem']['it.tests'];
-      delete data['@adobe/generator-aem']['ui.frontend'];
-
-      fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'), path.join(fullPath, 'pom.xml'));
     })
     .run()
     .then((result) => {
-      sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
-      const moduleDir = path.join(fullPath, 'second.structure');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>second.structure<\/module>/);
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.apps.structure<\/module>/);
 
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
       });
+
       const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.parent.groupId, 'Parent groupId set.');
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'second', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Structure Package', 'Name set.');
+      t.is(pomData.project.artifactId, 'test.ui.apps.structure', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Module - Apps Structure', 'Name set.');
 
-      result.assertFileContent(pom, /<filter><root>\/apps\/test<\/root><\/filter>/);
-      result.assertFileContent(pom, /<filter><root>\/content\/dam\/test<\/root><\/filter>/);
-      result.assertFile(path.join(moduleDir, 'README.md'));
-
-      result.assertFile(path.join(moduleDir, 'target', `second-${properties.parent.version}.zip`));
+      result.assertFileContent('pom.xml', /<filter><root>\/apps\/test<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/apps\/other<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/apps\/existing<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/test<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/other<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/existing<\/root><\/filter>/);
+      result.assertFile(path.join('target', 'test.ui.apps.structure-1.0.0-SNAPSHOT.zip'));
     });
-});
-
-test('second package fails', async (t) => {
-  t.plan(2);
-
-  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'test');
-
-  const error = await t.throwsAsync(
-    helpers
-      .create(generatorPath('package-structure'))
-      .withOptions({
-        defaults: true,
-        examples: false,
-        generateInto: 'ui.apps.otherstructure',
-        appId: 'othersturcture',
-        name: 'Second Structure',
-        showBuildOutput: false,
-      })
-      .inDir(fullPath, (temporary) => {
-        fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
-      })
-      .run()
-  );
-
-  t.regex(error.message, /Refusing to create a second Repository Structure module\./);
 });
