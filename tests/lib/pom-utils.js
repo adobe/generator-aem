@@ -111,6 +111,61 @@ test('readPom - does not exist', (t) => {
   t.deepEqual(PomUtils.readPom(generator), {}, 'Pom not found.');
 });
 
+test('listParentPomModules - no node', (t) => {
+  t.plan(1);
+  const generator = {
+    destinationRoot()  {
+      return fixturePath('projects', 'cloud', 'module');
+    },
+    fs: {
+      exists(path) {
+        return fs.existsSync(path);
+      },
+      read(path) {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      }
+    },
+  }
+  t.deepEqual(PomUtils.listParentPomModules(generator), [], 'Empty list returned.');
+});
+
+test('listParentPomModules - none', (t) => {
+  t.plan(1);
+  const generator = {
+    destinationRoot()  {
+      return fixturePath('projects', 'v6.5', 'module');
+    },
+    fs: {
+      exists(path) {
+        return fs.existsSync(path);
+      },
+      read(path) {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      }
+    },
+  }
+  t.deepEqual(PomUtils.listParentPomModules(generator), [], 'Empty list returned.');
+});
+
+test('listParentPomModules - list', (t) => {
+  t.plan(1);
+  const generator = {
+    destinationRoot()  {
+      return fixturePath('pom', 'modules', 'module');
+    },
+    fs: {
+      exists(path) {
+        return fs.existsSync(path);
+      },
+      read(path) {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      }
+    },
+  }
+  const expected = ['core', 'ui.apps', 'ui.apps.structure', 'unknown'];
+  t.deepEqual(PomUtils.listParentPomModules(generator), expected, 'List returned.');
+});
+
 test('findPomNodeArray - does not exist', (t) => {
   t.plan(1);
   t.is(PomUtils.findPomNodeArray(pomStruct, 'dependency'), undefined, 'Not found');
