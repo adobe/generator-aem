@@ -49,10 +49,10 @@ test('no duplicate', (t) => {
   fs.writeFileSync(path.join(temporaryDir, 'someother', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:someother': {} }));
 
   const generator = {
-    destinationRoot: function() {
+    destinationRoot() {
       return fullPath;
     },
-    rootGeneratorName: function() {
+    rootGeneratorName() {
       return '@adobe/generator-aem:test';
     },
     fs: {
@@ -60,18 +60,17 @@ test('no duplicate', (t) => {
         return fs.existsSync(path);
       },
       readJSON(path) {
-        return JSON.parse(fs.readFileSync(path, { encoding: 'utf8' }));
+        return JSON.parse(fs.readFileSync(path));
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
+      },
     },
   };
 
   t.notThrows(() => {
     ModuleMixins._duplicateCheck.call(generator);
   }, 'Does not error.');
-
 });
 
 test('same folder', (t) => {
@@ -95,10 +94,10 @@ test('same folder', (t) => {
   fs.writeFileSync(path.join(temporaryDir, 'module', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:test': {} }));
 
   const generator = {
-    destinationRoot: function() {
+    destinationRoot() {
       return fullPath;
     },
-    rootGeneratorName: function() {
+    rootGeneratorName() {
       return '@adobe/generator-aem:test';
     },
     fs: {
@@ -106,11 +105,11 @@ test('same folder', (t) => {
         return fs.existsSync(path);
       },
       readJSON(path) {
-        return JSON.parse(fs.readFileSync(path, { encoding: 'utf8' }));
+        return JSON.parse(fs.readFileSync(path));
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
+      },
     },
   };
 
@@ -118,7 +117,6 @@ test('same folder', (t) => {
     ModuleMixins._duplicateCheck.call(generator);
   }, 'Does not error.');
 });
-
 
 test('duplicate', (t) => {
   t.plan(2);
@@ -142,10 +140,10 @@ test('duplicate', (t) => {
   fs.writeFileSync(path.join(temporaryDir, 'test', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:test': {} }));
 
   const generator = {
-    destinationRoot: function() {
+    destinationRoot() {
       return fullPath;
     },
-    rootGeneratorName: function() {
+    rootGeneratorName() {
       return '@adobe/generator-aem:test';
     },
     fs: {
@@ -153,17 +151,20 @@ test('duplicate', (t) => {
         return fs.existsSync(path);
       },
       readJSON(path) {
-        return JSON.parse(fs.readFileSync(path, { encoding: 'utf8' }));
+        return JSON.parse(fs.readFileSync(path));
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
+      },
     },
   };
 
-  const error = t.throws(() => {
+  const error = t.throws(
+    () => {
       ModuleMixins._duplicateCheck.call(generator);
-    }, undefined,
-    'Duplicate generates an error.');
+    },
+    undefined,
+    'Duplicate generates an error.'
+  );
   t.regex(error.message, /Refusing to create a second '@adobe\/generator-aem:test' module./, 'Error message matched');
 });

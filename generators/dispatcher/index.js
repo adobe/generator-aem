@@ -48,7 +48,7 @@ class DispatcherGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -91,23 +91,23 @@ class DispatcherGenerator extends Generator {
 
     const immutableFileList = fs.readFileSync(this.templatePath(context, 'immutable.files'), 'utf-8').split(/\r?\n/);
 
-    return Promise.all(this._buildImmutablePromises(rootPath, immutableFileList, tplProps))
-      .then(() => {
-        this._writing(files, tplProps);
+    return Promise.all(this._buildImmutablePromises(rootPath, immutableFileList, tplProps)).then(() => {
+      this._writing(files, tplProps);
 
-        _.each(immutableFileList, (line) => {
-          if (line === '') {
-            return;
-          }
-          const parts = line.split('/');
-          this.fs.copy(path.join(rootPath, ...parts), this.destinationPath(...parts));
-        });
-        this._writeSymlinks(context);
-
-        if (this.env.rootGenerator() === this) {
-          PomUtils.addModuleToParent(this);
+      _.each(immutableFileList, (line) => {
+        if (line === '') {
+          return;
         }
+
+        const parts = line.split('/');
+        this.fs.copy(path.join(rootPath, ...parts), this.destinationPath(...parts));
       });
+      this._writeSymlinks(context);
+
+      if (this.env.rootGenerator() === this) {
+        PomUtils.addModuleToParent(this);
+      }
+    });
   }
 
   install() {
@@ -123,6 +123,7 @@ class DispatcherGenerator extends Generator {
       if (line === '') {
         return;
       }
+
       promises.push(
         new Promise((resolve) => {
           const parts = line.split('/');
@@ -146,7 +147,6 @@ class DispatcherGenerator extends Generator {
     });
     return promises;
   }
-
 
   _writeSymlinks(context) {
     const symPath = this.templatePath('symlinks', context);

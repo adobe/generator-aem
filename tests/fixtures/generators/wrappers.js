@@ -14,6 +14,8 @@
  limitations under the License.
 */
 
+import _ from 'lodash';
+
 export function Init(clazz, resolved) {
   return class extends clazz {
     constructor(args, options, features) {
@@ -22,10 +24,11 @@ export function Init(clazz, resolved) {
     }
 
     initializing() {
-      this.props = this.props || this.options.props || {}
+      this.props = this.props || this.options.props || {};
       this.parentProps = this.options.parentProps || {};
       return super.initializing();
     }
+
     _initializing() {
     }
   };
@@ -45,8 +48,12 @@ export function Prompt(clazz, resolved) {
 
     _prompting(prompts) {
       this.prompts = prompts;
+      return this.prompt(prompts).then((answers) => {
+        _.merge(this.props, answers);
+        return answers;
+      });
     }
-  }
+  };
 }
 
 export function Config(clazz, resolved) {
@@ -54,7 +61,7 @@ export function Config(clazz, resolved) {
     constructor(args, options, features) {
       options.resolved = resolved;
       super(args, options, features);
-      this.props = options.props;
+      this.props = options.props || {};
       this.parentProps = options.parentProps || {};
     }
 

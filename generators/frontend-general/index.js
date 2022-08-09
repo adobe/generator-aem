@@ -22,8 +22,7 @@ import Generator from 'yeoman-generator';
 import ModuleMixins from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
 
-const generatorName = '@adobe/generator-aem:frontend-general';
-
+export const generatorName = '@adobe/generator-aem:frontend-general';
 
 class GeneralFEGenerator extends Generator {
   constructor(args, options, features) {
@@ -34,10 +33,9 @@ class GeneralFEGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
-
   }
 
   initializing() {
@@ -49,7 +47,7 @@ class GeneralFEGenerator extends Generator {
   }
 
   configuring() {
-    return this._configuring();
+    this._configuring();
   }
 
   writing() {
@@ -58,7 +56,7 @@ class GeneralFEGenerator extends Generator {
     const tplProps = {
       ..._.pick(this.props, ['name', 'appId', 'artifactId']),
       parent: this.parentProps,
-    }
+    };
     this._writing(files, tplProps);
 
     const pkg = _.defaults(
@@ -73,7 +71,6 @@ class GeneralFEGenerator extends Generator {
     if (this.env.rootGenerator() === this) {
       PomUtils.addModuleToParent(this);
     }
-
   }
 
   install() {
@@ -82,7 +79,6 @@ class GeneralFEGenerator extends Generator {
       return this._install({ cwd: path.dirname(this.destinationRoot()) });
     }
   }
-
 }
 
 _.extendWith(GeneralFEGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {

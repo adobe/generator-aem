@@ -39,7 +39,7 @@
                     <filters>
                         <!-- /apps root -->
                         <filter><root>/apps</root></filter>
-                        <filter><root>/apps/existing</root></filter>
+                        <filter><root>/apps/test</root></filter>
 
                         <!-- Common overlay roots -->
                         <filter><root>/apps/sling</root></filter>
@@ -52,7 +52,7 @@
                         <filter><root>/apps/settings</root></filter>
 
                         <!-- DAM folder root, will be created via repoinit -->
-                        <filter><root>/content/dam/existing</root></filter>
+                        <filter><root>/content/dam/test</root></filter>
 
                     </filters>
                 </configuration>

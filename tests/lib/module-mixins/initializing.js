@@ -38,18 +38,17 @@ class Mock {
         return fs.existsSync(path);
       },
       readJSON(path) {
-        return JSON.parse(fs.readFileSync(path, { encoding: 'utf8' }));
+        return JSON.parse(fs.readFileSync(path));
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
+      },
     };
     this.destinationPath = (...partials) => {
       return fixturePath(...fixturePaths, ...partials);
     };
 
-    this.destinationRoot = () => {
-    };
+    this.destinationRoot = () => {};
   }
 }
 
@@ -58,15 +57,15 @@ class Config {
     this.map = new Map();
   }
 
-  get = function(key) {
+  get = function (key) {
     return this.map.get(key);
   };
 
-  set = function(key, value) {
+  set = function (key, value) {
     return this.map.set(key, value);
   };
 
-  getAll = function() {
+  getAll = function () {
     return Object.fromEntries(this.map);
   };
 }
@@ -174,17 +173,16 @@ test('loaded from pom', (t) => {
         return fs.existsSync(path);
       },
       readJSON(path) {
-        return JSON.parse(fs.readFileSync(path, { encoding: 'utf8' }));
+        return JSON.parse(fs.readFileSync(path));
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
+      },
     },
     destinationPath(...partials) {
       return path.join(temporaryDir, 'test', ...partials);
     },
-    destinationRoot() {
-    },
+    destinationRoot() {},
   };
 
   fs.mkdirSync(path.join(temporaryDir));
@@ -229,17 +227,16 @@ test('merged', (t) => {
         return fs.existsSync(path);
       },
       readJSON(path) {
-        return JSON.parse(fs.readFileSync(path, { encoding: 'utf8' }));
+        return JSON.parse(fs.readFileSync(path));
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
+      },
     },
     destinationPath(...partials) {
       return path.join(temporaryDir, 'test', ...partials);
     },
-    destinationRoot() {
-    },
+    destinationRoot() {},
   };
 
   generator.config.set('name', 'Local Yo');

@@ -77,7 +77,7 @@ test('writing/install - v6.5', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aem: aem65ApiMetadata,
         aemVersion: '6.5',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
@@ -110,7 +110,6 @@ test('writing/install - v6.5', async (t) => {
       result.assertFileContent(path.join('src', 'conf.d', 'variables', 'ams_default.vars'), /Define CONTENT_FOLDER_NAME test/);
 
       result.assertFile(path.join('target', 'test.dispatcher-1.0.0-SNAPSHOT.zip'));
-
     });
 });
 
@@ -134,7 +133,7 @@ test('writing/install - cloud', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aem: cloudSdkApiMetadata,
         aemVersion: 'cloud',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));

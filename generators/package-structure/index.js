@@ -14,20 +14,20 @@
  limitations under the License.
 */
 
+import fs from 'node:fs';
 import path from 'node:path';
 
 import _ from 'lodash';
+import ejs from 'ejs';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 
 import ModuleMixins from '../../lib/module-mixins.js';
 import PomUtils, { filevaultPlugin } from '../../lib/pom-utils.js';
-import { generatorName as rootGeneratorName } from '../app/index.js';
-import ejs from 'ejs';
-import fs from 'node:fs';
+import { generatorName as parentGeneratorName } from '../app/index.js';
 
-const generatorName = '@adobe/generator-aem:package-structure';
+export const generatorName = '@adobe/generator-aem:package-structure';
 
 class StructurePackageGenerator extends Generator {
   constructor(args, options, features) {
@@ -38,10 +38,9 @@ class StructurePackageGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
-
   }
 
   initializing() {
@@ -62,12 +61,16 @@ class StructurePackageGenerator extends Generator {
     // Collect all the AppIds - Should this check only for Apps/Content/Config types?
     const root = path.dirname(this.destinationRoot());
     const pom = new XMLParser().parse(this.fs.read(path.join(root, 'pom.xml')));
+    if (!pom.project.modules || !pom.project.modules.module) {
+      return;
+    }
+
     _.each(pom.project.modules.module, (module) => {
       const yorcFile = path.join(root, module, '.yo-rc.json');
       if (this.fs.exists(yorcFile)) {
         const yorc = this.fs.readJSON(path.join(yorcFile));
         _.forOwn(yorc, (value, key) => {
-          if (key.startsWith(rootGeneratorName) && value.appId) {
+          if (key.startsWith(parentGeneratorName) && value.appId) {
             appIds.add(value.appId);
           }
         });
@@ -122,7 +125,7 @@ class StructurePackageGenerator extends Generator {
     const existingFilters = this._findPluginFilters(existingPlugin);
     const genFilters = this._findPluginFilters(PomUtils.findPomNodeArray(parsedGenPom, 'project', 'build', 'plugins'));
 
-    genFilters.push({ '#comment': [{ '#text': ' Filter roots from existing pom. '}]});
+    genFilters.push({ '#comment': [{ '#text': ' Filter roots from existing pom. ' }] });
     PomUtils.mergePomSection(genFilters, existingFilters, (target, filter) => {
       return _.find(target, (targetFilter) => _.isEqual(filter, targetFilter)) !== undefined;
     });
@@ -134,9 +137,12 @@ class StructurePackageGenerator extends Generator {
       if (!plugin.plugin) {
         return false;
       }
-      return _.find(plugin.plugin, (item) => {
-        return item.artifactId && item.artifactId[0]['#text'] === filevaultPlugin;
-      }) !== undefined;
+
+      return (
+        _.find(plugin.plugin, (item) => {
+          return item.artifactId && item.artifactId[0]['#text'] === filevaultPlugin;
+        }) !== undefined
+      );
     }).plugin;
 
     return PomUtils.findPomNodeArray(plugin, 'configuration', 'filters');
@@ -144,8 +150,7 @@ class StructurePackageGenerator extends Generator {
 
   _flattenFilters(xml) {
     // Make the filter entries be one line w/ the root as well.
-    return xml.replace(/(<filter>)\s*\n\s*([^\s]+)\s*\n\s*(<\/filter>)/g, '$1$2$3');
-
+    return xml.replace(/(<filter>)\s*\n\s*(\S+)\s*\n\s*(<\/filter>)/g, '$1$2$3');
   }
 }
 

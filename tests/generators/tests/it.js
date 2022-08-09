@@ -265,7 +265,7 @@ test('writing/installing - publish', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aem: aem65ApiMetadata,
         aemVersion: '6.5',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
@@ -327,7 +327,7 @@ test('writing/installing - no publish', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aem: cloudSdkApiMetadata,
         aemVersion: '6.5',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));

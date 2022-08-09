@@ -268,7 +268,7 @@ test('artifactId - default - module generate folder appended', async (t) => {
   await ModuleMixins._prompting.call(generator);
 
   generator.props = { appId: 'property' };
-  generator.prompt = async function(prompts) {
+  generator.prompt = async function (prompts) {
     const prompt = _.find(prompts, { name: 'artifactId' });
     t.is(await prompt.default({}), 'property.module', 'Property & Generate Into default');
     return new Promise((resolve) => {

@@ -28,7 +28,7 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
-import MavenUtils  from '../../lib/maven-utils.js';
+import MavenUtils from '../../lib/maven-utils.js';
 
 export const generatorName = '@adobe/generator-aem';
 
@@ -54,11 +54,11 @@ const ModuleOptions = Object.freeze({
       generateInto: 'core',
       ...(parentProps.defaults
         ? {
-          appId: parentProps.appId,
-          package: parentProps.groupId,
-          name: `${parentProps.name} - Core Bundle`,
-          artifactId: `${parentProps.artifactId}.core`,
-        }
+            appId: parentProps.appId,
+            package: parentProps.groupId,
+            name: `${parentProps.name} - Core Bundle`,
+            artifactId: `${parentProps.artifactId}.core`,
+          }
         : {}),
     };
   },
@@ -67,10 +67,10 @@ const ModuleOptions = Object.freeze({
       generateInto: 'ui.frontend',
       ...(parentProps.defaults
         ? {
-          appId: parentProps.appId,
-          name: `${parentProps.name} - UI Frontend`,
-          artifactId: `${parentProps.artifactId}.ui.frontend`,
-        }
+            appId: parentProps.appId,
+            name: `${parentProps.name} - UI Frontend`,
+            artifactId: `${parentProps.artifactId}.ui.frontend`,
+          }
         : {}),
     };
   },
@@ -79,10 +79,10 @@ const ModuleOptions = Object.freeze({
       generateInto: 'ui.apps.structure',
       ...(parentProps.defaults
         ? {
-          appId: parentProps.appId,
-          name: `${parentProps.name} - Repository Structure Package`,
-          artifactId: `${parentProps.artifactId}.ui.apps.structure`,
-        }
+            appId: parentProps.appId,
+            name: `${parentProps.name} - Repository Structure Package`,
+            artifactId: `${parentProps.artifactId}.ui.apps.structure`,
+          }
         : {}),
     };
   },
@@ -91,12 +91,12 @@ const ModuleOptions = Object.freeze({
       generateInto: 'ui.apps',
       ...(parentProps.defaults
         ? {
-          appId: parentProps.appId,
-          name: `${parentProps.name} - UI Apps Package`,
-          artifactId: `${parentProps.artifactId}.ui.apps`,
-          bundleRef: 'core',
-          frontendRef: 'ui.frontend',
-        }
+            appId: parentProps.appId,
+            name: `${parentProps.name} - UI Apps Package`,
+            artifactId: `${parentProps.artifactId}.ui.apps`,
+            bundleRef: 'core',
+            frontendRef: 'ui.frontend',
+          }
         : {}),
     };
   },
@@ -105,10 +105,10 @@ const ModuleOptions = Object.freeze({
       generateInto: 'ui.config',
       ...(parentProps.defaults
         ? {
-          appId: parentProps.appId,
-          name: `${parentProps.name} - UI Config Package`,
-          artifactId: `${parentProps.artifactId}.ui.config`,
-        }
+            appId: parentProps.appId,
+            name: `${parentProps.name} - UI Config Package`,
+            artifactId: `${parentProps.artifactId}.ui.config`,
+          }
         : {}),
     };
   },
@@ -117,12 +117,12 @@ const ModuleOptions = Object.freeze({
       generateInto: 'ui.content',
       ...(parentProps.defaults
         ? {
-          appId: parentProps.appId,
-          name: `${parentProps.name} - UI Content Package`,
-          artifactId: `${parentProps.artifactId}.ui.content`,
-          appsRef: 'ui.apps',
-          configRef: 'ui.config',
-        }
+            appId: parentProps.appId,
+            name: `${parentProps.name} - UI Content Package`,
+            artifactId: `${parentProps.artifactId}.ui.content`,
+            appsRef: 'ui.apps',
+            configRef: 'ui.config',
+          }
         : {}),
     };
   },
@@ -131,10 +131,10 @@ const ModuleOptions = Object.freeze({
       generateInto: 'all',
       ...(parentProps.defaults
         ? {
-          appId: parentProps.appId,
-          name: `${parentProps.name} - All`,
-          artifactId: `${parentProps.artifactId}.all`,
-        }
+            appId: parentProps.appId,
+            name: `${parentProps.name} - All`,
+            artifactId: `${parentProps.artifactId}.all`,
+          }
         : {}),
     };
   },
@@ -143,10 +143,10 @@ const ModuleOptions = Object.freeze({
       generateInto: 'it.tests',
       ...(parentProps.defaults
         ? {
-          appId: parentProps.appId,
-          name: `${parentProps.name} - Integration Tests`,
-          artifactId: `${parentProps.artifactId}.it.tests`,
-        }
+            appId: parentProps.appId,
+            name: `${parentProps.name} - Integration Tests`,
+            artifactId: `${parentProps.artifactId}.it.tests`,
+          }
         : {}),
     };
   },
@@ -155,10 +155,10 @@ const ModuleOptions = Object.freeze({
       generateInto: 'dispatcher',
       ...(parentProps.defaults
         ? {
-          appId: parentProps.appId,
-          name: `${parentProps.name} - Dispatcher`,
-          artifactId: `${parentProps.artifactId}.dispatcher`,
-        }
+            appId: parentProps.appId,
+            name: `${parentProps.name} - Dispatcher`,
+            artifactId: `${parentProps.artifactId}.dispatcher`,
+          }
         : {}),
     };
   },
@@ -254,9 +254,9 @@ class AEMGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
-    }
+    };
   }
 
   initializing() {
@@ -309,8 +309,8 @@ class AEMGenerator extends Generator {
       if (this.props.appId) {
         _.defaults(this.props, { artifactId: this.props.appId });
       }
-      _.defaults(this.props, propsDefault);
 
+      _.defaults(this.props, propsDefault);
 
       if (this.options.modules) {
         _.each(this.options.modules, (module) => {
@@ -318,6 +318,7 @@ class AEMGenerator extends Generator {
           if (!this.modules[module]) {
             this.modules[module] = new Set();
           }
+
           this.modules[module].add(defaultName);
         });
       } else {
@@ -610,6 +611,7 @@ class AEMGenerator extends Generator {
         });
         delete this.props.mixins;
       }
+
       return answers;
     });
   }
@@ -727,11 +729,13 @@ class AEMGenerator extends Generator {
             if (!this.mixins[mixin]) {
               this.mixins[mixin] = new Set();
             }
+
             this.mixins[mixin].add(name);
           } else {
             if (!this.modules[type]) {
               this.modules[type] = new Set();
             }
+
             this.modules[type].add(name);
           }
         });
@@ -740,7 +744,7 @@ class AEMGenerator extends Generator {
         this.modules.unknown.add(name);
       }
     });
-}
+  }
 
   _moduleNameWhen = (module, answers) => {
     return new Promise((resolve) => {
@@ -822,9 +826,7 @@ class AEMGenerator extends Generator {
 
     this.fs.write(pomFile, PomUtils.fixXml(builder.build(parsedGenPom)));
   };
-
 }
-
 
 _.extendWith(AEMGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);

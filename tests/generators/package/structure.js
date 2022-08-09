@@ -49,11 +49,7 @@ test('configuring - generates appId list', async (t) => {
       const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
       const proj = PomUtils.findPomNodeArray(pomData, 'project');
       const modules = {
-        modules: [
-          { module: [{ '#text': 'ui.apps' }] },
-          { module: [{ '#text': 'ui.config' }] },
-          { module: [{ '#text': 'ui.content' }] },
-        ]
+        modules: [{ module: [{ '#text': 'ui.apps' }] }, { module: [{ '#text': 'ui.config' }] }, { module: [{ '#text': 'ui.content' }] }],
       };
       proj.splice(7, 0, modules);
       fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
@@ -69,14 +65,12 @@ test('configuring - generates appId list', async (t) => {
     })
     .run()
     .then((result) => {
-
       const expected = {
         appId: 'passed',
         appIds: ['passed', 'test', 'config'],
       };
       const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
       t.deepEqual(yorc, { '@adobe/generator-aem:package-structure': expected }, 'Config saved.');
-
     });
 });
 
@@ -100,7 +94,7 @@ test('writing/installing', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aem: cloudSdkApiMetadata,
         aemVersion: '6.5',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
@@ -130,7 +124,6 @@ test('writing/installing', async (t) => {
     });
 });
 
-
 test('writing/installing - merges existing filters', async (t) => {
   t.plan(5);
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -141,9 +134,9 @@ test('writing/installing - merges existing filters', async (t) => {
     .withOptions({
       showBuildOutput: false,
       props: {
-        artifactId: 'test.ui.apps.structure',
+        artifactId: 'new.ui.apps.structure',
         name: 'Test Module - Apps Structure',
-        appIds: ['test', 'other'],
+        appIds: ['new', 'other'],
       },
       parentProps: {
         groupId: 'com.adobe.test',
@@ -151,7 +144,7 @@ test('writing/installing - merges existing filters', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aem: cloudSdkApiMetadata,
         aemVersion: '6.5',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
@@ -171,15 +164,15 @@ test('writing/installing - merges existing filters', async (t) => {
       t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'test.ui.apps.structure', 'ArtifactId set.');
+      t.is(pomData.project.artifactId, 'new.ui.apps.structure', 'ArtifactId set.');
       t.is(pomData.project.name, 'Test Module - Apps Structure', 'Name set.');
 
-      result.assertFileContent('pom.xml', /<filter><root>\/apps\/test<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/apps\/new<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/apps\/other<\/root><\/filter>/);
-      result.assertFileContent('pom.xml', /<filter><root>\/apps\/existing<\/root><\/filter>/);
-      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/test<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/apps\/test<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/new<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/other<\/root><\/filter>/);
-      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/existing<\/root><\/filter>/);
-      result.assertFile(path.join('target', 'test.ui.apps.structure-1.0.0-SNAPSHOT.zip'));
+      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/test<\/root><\/filter>/);
+      result.assertFile(path.join('target', 'new.ui.apps.structure-1.0.0-SNAPSHOT.zip'));
     });
 });

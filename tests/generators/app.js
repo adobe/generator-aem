@@ -92,7 +92,6 @@ test('initialize - defaults', async (t) => {
       t.deepEqual(result.generator.props, props, 'Properties set');
       t.deepEqual(result.generator.modules, modules, 'Modules set');
       t.deepEqual(result.generator.mixins, mixins, 'Mixins set');
-
     });
 });
 
@@ -258,7 +257,6 @@ test('initialize from pom - with modules', async (t) => {
       t.deepEqual(result.generator.props, props, 'Properties set');
       t.deepEqual(result.generator.modules, modules, 'Modules set');
       t.deepEqual(result.generator.mixins, mixins, 'Mixins set');
-
     });
 });
 
@@ -492,7 +490,19 @@ test('prompting - asked', async (t) => {
     .withPrompts(prompts)
     .run()
     .then((result) => {
-      const props = _.omit(prompts, ['moduleSelection', 'bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-all', 'tests-it', 'dispatcher', 'frontend-general', 'mixins']);
+      const props = _.omit(prompts, [
+        'moduleSelection',
+        'bundle',
+        'frontend',
+        'package-structure',
+        'package-apps',
+        'package-config',
+        'package-all',
+        'tests-it',
+        'dispatcher',
+        'frontend-general',
+        'mixins',
+      ]);
       const modules = {
         bundle: new Set(['prompted']),
         'frontend-general': new Set(['prompted']),

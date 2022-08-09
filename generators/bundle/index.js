@@ -16,17 +16,17 @@
 
 import path from 'node:path';
 
+import fs from 'node:fs';
 import _ from 'lodash';
 import Generator from 'yeoman-generator';
 
-import ModuleMixins from '../../lib/module-mixins.js';
-import PomUtils from '../../lib/pom-utils.js';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import ejs from 'ejs';
-import fs from 'node:fs';
+import ModuleMixins from '../../lib/module-mixins.js';
+import PomUtils from '../../lib/pom-utils.js';
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
-const generatorName = '@adobe/generator-aem:bundle';
+export const generatorName = '@adobe/generator-aem:bundle';
 
 class BundleGenerator extends Generator {
   constructor(args, options, features) {
@@ -45,7 +45,7 @@ class BundleGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -67,7 +67,7 @@ class BundleGenerator extends Generator {
       {
         name: 'package',
         message: 'Java Source Package (e.g. "com.mysite").',
-        validate: (pkg) => {
+        validate(pkg) {
           return new Promise((resolve) => {
             if (!pkg || pkg.length === 0) {
               resolve('Package must be provided.');
@@ -163,6 +163,7 @@ class BundleGenerator extends Generator {
     } else {
       PomUtils.addDependencies(genDependencies, addlDeps, tplProps.parent.aem);
     }
+
     this.fs.write(pomFile, PomUtils.fixXml(builder.build(parsedGenPom)));
   }
 }

@@ -188,7 +188,7 @@ test('writing/installing - v6.5 - new', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aem: aem65ApiMetadata,
         aemVersion: '6.5',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
@@ -251,7 +251,7 @@ test('writing/installing - cloud - new', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aem: cloudSdkApiMetadata,
         aemVersion: 'cloud',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
@@ -316,7 +316,7 @@ test('writing/installing - cloud - second', async (t) => {
         version: '1.0.0-SNAPSHOT',
         aem: cloudSdkApiMetadata,
         aemVersion: 'cloud',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
@@ -328,7 +328,7 @@ test('writing/installing - cloud - second', async (t) => {
       const pom = path.join(temporaryDir, 'pom.xml');
       const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
       const proj = PomUtils.findPomNodeArray(pomData, 'project');
-      const modules = { modules: [{module: [{'#text': 'core'}]}]};
+      const modules = { modules: [{ module: [{ '#text': 'core' }] }] };
       proj.splice(7, 0, modules);
       fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
     })

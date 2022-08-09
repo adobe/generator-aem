@@ -32,7 +32,6 @@ const resolved = generatorPath('frontend-general', 'index.js');
 const GeneralConfig = Config(GeneralFEGenerator, resolved);
 const GeneralWriteInstall = WriteInstall(GeneralFEGenerator, resolved);
 
-
 test('configuring', async (t) => {
   t.plan(1);
 
@@ -51,7 +50,6 @@ test('writing/installing - v6.5', async (t) => {
   t.plan(5);
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'ui.frontend');
-
 
   await helpers
     .create(GeneralWriteInstall)

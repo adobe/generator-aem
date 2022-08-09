@@ -14,17 +14,17 @@
  limitations under the License.
 */
 
+import fs from 'node:fs';
 import path from 'node:path';
 
 import _ from 'lodash';
+import ejs from 'ejs';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 import ModuleMixins from '../../lib/module-mixins.js';
 import MavenUtils from '../../lib/maven-utils.js';
 import PomUtils from '../../lib/pom-utils.js';
-import ejs from 'ejs';
-import fs from 'node:fs';
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
 const generatorName = '@adobe/generator-aem:tests-it';
@@ -63,7 +63,7 @@ class IntegrationTestsGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -76,9 +76,11 @@ class IntegrationTestsGenerator extends Generator {
     if (this.options.publish !== undefined || this.options.defaults) {
       this.props.publish = true;
     }
+
     if (this.props.package && invalidPackageRegex.test(this.props.package)) {
       delete this.props.package;
     }
+
     this.props.package = this.props.package || this.parentProps.groupId;
   }
 
@@ -87,7 +89,7 @@ class IntegrationTestsGenerator extends Generator {
       {
         name: 'package',
         message: 'Java Source Package (e.g. "com.mysite").',
-        validate: (pkg) => {
+        validate(pkg) {
           return new Promise((resolve) => {
             if (!pkg || pkg.length === 0) {
               resolve('Package must be provided.');
@@ -149,7 +151,7 @@ class IntegrationTestsGenerator extends Generator {
     const tplProps = {
       ...this.props,
       packagePath: this.props.package.replaceAll('.', path.sep),
-    }
+    };
     this._writing(files, tplProps);
     this._writePom();
 
@@ -169,31 +171,34 @@ class IntegrationTestsGenerator extends Generator {
     const tplProps = _.pick(this.props, ['name', 'artifactId', 'testingClient']);
     tplProps.parent = this.parentProps;
 
-    const parser = new XMLParser(PomUtils.xmlOptions);
-    const builder = new XMLBuilder(PomUtils.xmlOptions);
-
     // Read the template and parse w/ properties.
     const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+
+    const pomFile = this.destinationPath('pom.xml');
+    if (this.fs.exists(pomFile)) {
+      this._mergeWritePom(genPom, pomFile);
+    } else {
+      this.fs.write(pomFile, genPom);
+    }
+  }
+
+  _mergeWritePom(genPom, existingFile) {
+    const parser = new XMLParser(PomUtils.xmlOptions);
+    const builder = new XMLBuilder(PomUtils.xmlOptions);
     const parsedGenPom = parser.parse(genPom);
     const genProject = PomUtils.findPomNodeArray(parsedGenPom, 'project');
     const genDependencies = PomUtils.findPomNodeArray(genProject, 'dependencies');
+    const existingPom = PomUtils.findPomNodeArray(parser.parse(this.fs.read(existingFile)), 'project');
 
-    const pomFile = this.destinationPath('pom.xml');
+    // Merge the different sections
+    PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'properties'), PomUtils.findPomNodeArray(existingPom, 'properties'), PomUtils.propertyPredicate);
 
-    if (this.fs.exists(pomFile)) {
-      const existingPom = PomUtils.findPomNodeArray(parser.parse(this.fs.read(pomFile)), 'project');
+    PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'build', 'plugins'), PomUtils.findPomNodeArray(existingPom, 'build', 'plugins'), PomUtils.pluginPredicate);
 
-      // Merge the different sections
-      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'properties'), PomUtils.findPomNodeArray(existingPom, 'properties'), PomUtils.propertyPredicate);
+    PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'profiles'), PomUtils.findPomNodeArray(existingPom, 'profiles'), PomUtils.profilePredicate);
 
-      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'build', 'plugins'), PomUtils.findPomNodeArray(existingPom, 'build', 'plugins'), PomUtils.pluginPredicate);
-
-      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'profiles'), PomUtils.findPomNodeArray(existingPom, 'profiles'), PomUtils.profilePredicate);
-
-      PomUtils.mergePomSection(genDependencies, PomUtils.findPomNodeArray(existingPom, 'dependencies'), PomUtils.dependencyPredicate);
-    }
-    this.fs.write(pomFile, PomUtils.fixXml(builder.build(parsedGenPom)));
-
+    PomUtils.mergePomSection(genDependencies, PomUtils.findPomNodeArray(existingPom, 'dependencies'), PomUtils.dependencyPredicate);
+    this.fs.write(existingFile, PomUtils.fixXml(builder.build(parsedGenPom)));
   }
 }
 

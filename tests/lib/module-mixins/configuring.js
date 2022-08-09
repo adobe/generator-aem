@@ -24,11 +24,11 @@ class Config {
     this.map = new Map();
   }
 
-  get = function(key) {
+  get = function (key) {
     return this.map.get(key);
   };
 
-  set = function(key, value) {
+  set = function (key, value) {
     if (typeof key === 'object') {
       this.map = new Map(_.toPairs(key));
     } else {
@@ -36,7 +36,7 @@ class Config {
     }
   };
 
-  getAll = function() {
+  getAll = function () {
     return Object.fromEntries(this.map);
   };
 }
@@ -61,7 +61,7 @@ test('existing config - parent data', (t) => {
     },
   };
 
-  generator.config.set({ module: 'not test'});
+  generator.config.set({ module: 'not test' });
   ModuleMixins._configuring.call(generator);
   t.deepEqual(generator.config.getAll(), { module: 'test' }, 'Saved Config');
 });

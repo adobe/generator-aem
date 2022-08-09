@@ -16,16 +16,16 @@
 
 import fs from 'node:fs';
 
+import path from 'node:path';
+import crypto from 'node:crypto';
 import _ from 'lodash';
 
 import test from 'ava';
 import { XMLBuilder } from 'fast-xml-parser';
 
+import tempDirectory from 'temp-dir';
 import PomUtils from '../../lib/pom-utils.js';
 import { fixturePath } from '../fixtures/helpers.js';
-import path from 'node:path';
-import tempDirectory from 'temp-dir';
-import crypto from 'node:crypto';
 
 const pomStruct = [
   {
@@ -350,7 +350,6 @@ test('mergePomSections - not found', (t) => {
   t.is(target[4]['project.build.sourceEncoding'][0]['#text'], 'UTF-8', 'Item added to correct spot.');
 });
 
-
 test('addModuleToParent - no modules', (t) => {
   t.plan(1);
 
@@ -367,12 +366,12 @@ test('addModuleToParent - no modules', (t) => {
       },
       write(path, content) {
         toWrite = content;
-      }
+      },
     },
   };
   PomUtils.addModuleToParent(generator);
-  t.regex(toWrite, /modules>\s+<module>core<\/module>\s+<\/modules>/)
-})
+  t.regex(toWrite, /modules>\s+<module>core<\/module>\s+<\/modules>/);
+});
 
 test('addModuleToParent - modules - no match', (t) => {
   t.plan(1);
@@ -390,11 +389,11 @@ test('addModuleToParent - modules - no match', (t) => {
       },
       write(path, content) {
         toWrite = content;
-      }
+      },
     },
   };
   PomUtils.addModuleToParent(generator);
-  t.regex(toWrite, /<module>dne<\/module>\s+<\/modules>/)
+  t.regex(toWrite, /<module>dne<\/module>\s+<\/modules>/);
 });
 
 test('addModuleToParent - modules - exists', (t) => {
@@ -413,9 +412,9 @@ test('addModuleToParent - modules - exists', (t) => {
       },
       write(path, content) {
         toWrite = content;
-      }
+      },
     },
   };
   PomUtils.addModuleToParent(generator);
-  t.regex(toWrite, /modules>\s+<module>core<\/module>\s+<module>/)
-})
+  t.regex(toWrite, /modules>\s+<module>core<\/module>\s+<module>/);
+});
