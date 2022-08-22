@@ -22,57 +22,14 @@ import tempDirectory from 'temp-dir';
 import test from 'ava';
 import helpers from 'yeoman-test';
 
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
-import { generatorPath, fixturePath, aem65ApiMetadata, cloudSdkApiMetadata } from '../../fixtures/helpers.js';
-import { Config, WriteInstall } from '../../fixtures/generators/wrappers.js';
+import { XMLParser } from 'fast-xml-parser';
+import { generatorPath, fixturePath, aem65ApiMetadata, cloudSdkApiMetadata, addModulesToPom } from '../../fixtures/helpers.js';
+import { WriteInstall } from '../../fixtures/generators/wrappers.js';
 
 import StructurePackageGenerator from '../../../generators/package-structure/index.js';
-import PomUtils from '../../../lib/pom-utils.js';
 
 const resolved = generatorPath('package-structure', 'index.js');
-const StructureConfig = Config(StructurePackageGenerator, resolved);
 const StructureWriteInstall = WriteInstall(StructurePackageGenerator, resolved);
-
-test('configuring - generates appId list', async (t) => {
-  t.plan(1);
-  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'ui.apps.structure');
-
-  await helpers
-    .create(StructureConfig)
-    .withOptions({ props: { appId: 'passed' } })
-    .inDir(fullPath, () => {
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      const parser = new XMLParser(PomUtils.xmlOptions);
-      const builder = new XMLBuilder(PomUtils.xmlOptions);
-      const pom = path.join(temporaryDir, 'pom.xml');
-      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-      const proj = PomUtils.findPomNodeArray(pomData, 'project');
-      const modules = {
-        modules: [{ module: [{ '#text': 'ui.apps' }] }, { module: [{ '#text': 'ui.config' }] }, { module: [{ '#text': 'ui.content' }] }],
-      };
-      proj.splice(7, 0, modules);
-      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
-
-      fs.mkdirSync(path.join(temporaryDir, 'ui.apps'));
-      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { appId: 'test' } }));
-
-      fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
-      fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { appId: 'config' } }));
-
-      fs.mkdirSync(path.join(temporaryDir, 'ui.content'));
-      fs.writeFileSync(path.join(temporaryDir, 'ui.content', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-content': { appId: 'test' } }));
-    })
-    .run()
-    .then((result) => {
-      const expected = {
-        appId: 'passed',
-        appIds: ['passed', 'test', 'config'],
-      };
-      const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
-      t.deepEqual(yorc, { '@adobe/generator-aem:package-structure': expected }, 'Config saved.');
-    });
-});
 
 test('writing/installing', async (t) => {
   t.plan(5);
@@ -86,18 +43,40 @@ test('writing/installing', async (t) => {
       props: {
         artifactId: 'test.ui.apps.structure',
         name: 'Test Module - Apps Structure',
-        appIds: ['test', 'other'],
+        appId: 'other',
       },
       parentProps: {
         groupId: 'com.adobe.test',
         artifactId: 'test',
         version: '1.0.0-SNAPSHOT',
         aem: cloudSdkApiMetadata,
-        aemVersion: '6.5',
+        aemVersion: 'cloud',
       },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+
+      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps' }] }, { module: [{ '#text': 'ui.config' }] }, { module: [{ '#text': 'ui.content' }] }]);
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(temporaryDir, 'ui.apps', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { appId: 'test' } }));
+      fs.copyFileSync(
+        fixturePath('projects', 'cloud', 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
+        path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
+      )
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { appId: 'config' } }));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.content', 'pom.xml'), path.join(temporaryDir, 'ui.content', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.content', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-content': { appId: 'test' } }));
+      fs.copyFileSync(
+        fixturePath('projects', 'cloud', 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
+        path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
+      )
     })
     .run()
     .then((result) => {
@@ -118,8 +97,10 @@ test('writing/installing', async (t) => {
 
       result.assertFileContent('pom.xml', /<filter><root>\/apps\/test<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/apps\/other<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/apps\/config<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/test<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/other<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/config<\/root><\/filter>/);
       result.assertFile(path.join('target', 'test.ui.apps.structure-1.0.0-SNAPSHOT.zip'));
     });
 });
@@ -136,19 +117,41 @@ test('writing/installing - merges existing filters', async (t) => {
       props: {
         artifactId: 'new.ui.apps.structure',
         name: 'Test Module - Apps Structure',
-        appIds: ['new', 'other'],
+        appId: 'other',
       },
       parentProps: {
         groupId: 'com.adobe.test',
         artifactId: 'test',
         version: '1.0.0-SNAPSHOT',
-        aem: cloudSdkApiMetadata,
+        aem: aem65ApiMetadata,
         aemVersion: '6.5',
       },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'), path.join(fullPath, 'pom.xml'));
+
+      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps' }] }, { module: [{ '#text': 'ui.config' }] }, { module: [{ '#text': 'ui.content' }] }]);
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(temporaryDir, 'ui.apps', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { appId: 'new' } }));
+      fs.copyFileSync(
+        fixturePath('projects', 'cloud', 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
+        path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
+      )
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { appId: 'config' } }));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.content', 'pom.xml'), path.join(temporaryDir, 'ui.content', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.content', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-content': { appId: 'new' } }));
+      fs.copyFileSync(
+        fixturePath('projects', 'cloud', 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
+        path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
+      )
     })
     .run()
     .then((result) => {
@@ -169,9 +172,11 @@ test('writing/installing - merges existing filters', async (t) => {
 
       result.assertFileContent('pom.xml', /<filter><root>\/apps\/new<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/apps\/other<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/apps\/config<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/apps\/test<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/new<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/other<\/root><\/filter>/);
+      result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/config<\/root><\/filter>/);
       result.assertFileContent('pom.xml', /<filter><root>\/content\/dam\/test<\/root><\/filter>/);
       result.assertFile(path.join('target', 'new.ui.apps.structure-1.0.0-SNAPSHOT.zip'));
     });
