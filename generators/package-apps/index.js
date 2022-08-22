@@ -14,9 +14,11 @@
  limitations under the License.
 */
 
+import fs from 'node:fs';
 import path from 'node:path';
 
 import _ from 'lodash';
+import ejs from 'ejs';
 
 import Generator from 'yeoman-generator';
 
@@ -26,30 +28,29 @@ import { generatorName as frontendGeneratorName } from '../frontend-general/inde
 import { generatorName as structureGeneratorName } from '../package-structure/index.js';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import PomUtils from '../../lib/pom-utils.js';
-import ejs from 'ejs';
-import fs from 'node:fs';
 
-const generatorName = '@adobe/generator-aem:package-apps';
-
+export const generatorName = '@adobe/generator-aem:package-apps';
 
 class AppsPackageGenerator extends Generator {
   constructor(args, options, features) {
+    features = features || {};
+    features.customInstallTask = true;
     super(args, options, features);
 
     _.defaults(this.moduleOptions, {
       bundleRef: {
         type: String,
-        desc: 'Module name of optional Java bundle dependency, in this multi-module project.',
+        desc: 'Artifact Id of optional Java bundle dependency, in this multi-module project.',
       },
 
       frontendRef: {
         type: String,
-        desc: 'Module name of optional Frontend dependency, in this multi-module project.',
+        desc: 'Artifact Id of optional Frontend dependency, in this multi-module project.',
       },
 
       structureRef: {
         type: String,
-        desc: 'Module name of optional Apps Structure Package dependency, in this multi-module project.',
+        desc: 'Artifact Id of Apps Structure Package dependency, in this multi-module project.',
       },
 
       precompileScripts: {
@@ -68,24 +69,26 @@ class AppsPackageGenerator extends Generator {
 
   initializing() {
     this._initializing();
-    this.precompileScripts = this.options.precompileScripts;
+    if (this.options.precompileScripts !== undefined) {
+      this.props.precompileScripts = this.options.precompileScripts;
+    }
 
     _.defaults(this.props, _.pick(this.options, ['bundleRef', 'frontendRef', 'structureRef', 'precompileScripts']));
 
     if (this.options.defaults) {
       this.props.bundle = {
-        ref: 'core',
+        path: 'core',
         artifactId: `${this.props.appId}.core`,
       };
       this.props.frontend = {
-        ref: 'ui.frontend',
+        path: 'ui.frontend',
         artifactId: `${this.props.appId}.ui.frontend`,
       };
       this.props.structure = {
-        ref: 'ui.apps.structure',
+        path: 'ui.apps.structure',
         artifactId: `${this.props.appId}.ui.apps.structure`,
       };
-      this.precompileScripts = true;
+      this.props.precompileScripts = true;
     }
 
     this.availableBundles = this._findModules(bundleGeneratorName);
@@ -221,47 +224,18 @@ class AppsPackageGenerator extends Generator {
     }
   }
 
-  _findModules = (type) => {
-    const modules = [];
-    const root = path.dirname(this.destinationRoot());
-
-    const moduleList = this._listParentPomModules();
-    _.each(moduleList, (module) => {
-      const yorcFile = path.join(root, module, '.yo-rc.json');
-      if (this.fs.exists(yorcFile)) {
-        const yorc = this.fs.readJSON(path.join(yorcFile));
-        if (yorc[type] !== undefined) {
-          modules.push({ ref: module, artifactId: yorc[type].artifactId });
-        }
-      }
-    });
-    return modules;
-  };
-
   _lookupArtifact(name) {
     const root = path.dirname(this.destinationRoot());
-    const moduleList = this._listParentPomModules();
+    const moduleList = PomUtils.listParentPomModules(this, root)
     let artifact = undefined;
     _.each(moduleList, (module) => {
       const pom = new XMLParser().parse(this.fs.read(path.join(root, module, 'pom.xml')));
       if (pom.project.artifactId === name) {
-        artifact = { ref: module, artifactId: pom.project.artifactId };
+        artifact = { path: module, artifactId: pom.project.artifactId };
         return false;
       }
     });
     return artifact;
-  }
-
-  _listParentPomModules() {
-    const root = path.dirname(this.destinationRoot());
-    if (!this.fs.exists(path.join(root, 'pom.xml'))) {
-      return [];
-    }
-    const pom = new XMLParser().parse(this.fs.read(path.join(root, 'pom.xml')));
-    if (!pom.project.modules || !pom.project.modules.module) {
-      return [];
-    }
-    return Array.isArray(pom.project.modules.module) ? pom.project.modules.module : [pom.project.modules.module];
   }
 
   _writePom(tplProps) {

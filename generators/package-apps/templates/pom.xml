@@ -50,7 +50,7 @@
                 </resource>
                 <%_ if (locals.frontend) { _%>
                 <resource>
-                  <directory>${project.basedir}/../<%= frontend.ref %>/src/main/content/jcr_root</directory>
+                  <directory>${project.basedir}/../<%= frontend.path %>/src/main/content/jcr_root</directory>
                 </resource>
                 <%_ } _%>
               </resources>

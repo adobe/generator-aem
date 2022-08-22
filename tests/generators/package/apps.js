@@ -19,6 +19,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import tempDirectory from 'temp-dir';
 
+import _ from 'lodash';
 import test from 'ava';
 import helpers from 'yeoman-test';
 
@@ -26,13 +27,12 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import AppsPackageGenerator from '../../../generators/package-apps/index.js';
 import { Init, Prompt, Config, WriteInstall } from '../../fixtures/generators/wrappers.js';
-import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
-import _ from 'lodash';
-import PomUtils from '../../../lib/pom-utils.js';
+import { generatorPath, fixturePath, addModulesToPom, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
 
 const resolved = generatorPath('package-apps', 'index.js');
 const AppsInit = Init(AppsPackageGenerator, resolved);
 const AppsPrompt = Prompt(AppsPackageGenerator, resolved);
+const AppsConfig = Config(AppsPackageGenerator, resolved);
 const AppsWriteInstall = WriteInstall(AppsPackageGenerator, resolved);
 
 test('initialize - no options', async (t) => {
@@ -42,7 +42,68 @@ test('initialize - no options', async (t) => {
     .create(AppsInit)
     .run()
     .then((result) => {
-      t.deepEqual(result.generator.props, {}, 'Properties set.');
+      t.deepEqual(result.generator.props, { }, 'Properties set.');
+    });
+});
+
+test('initialize - defaults', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(AppsInit)
+    .withOptions({
+      defaults: true,
+      props: {
+        appId: 'test',
+      }
+    })
+    .run()
+    .then((result) => {
+      const expected = {
+        appId: 'test',
+        bundle: {
+          path: 'core',
+          artifactId: 'test.core'
+        },
+        frontend: {
+          path: 'ui.frontend',
+          artifactId: 'test.ui.frontend',
+        },
+        structure: {
+          path: 'ui.apps.structure',
+          artifactId: 'test.ui.apps.structure',
+        },
+        precompileScripts: true,
+      }
+      t.deepEqual(result.generator.props, expected, 'Properties set.');
+    });
+});
+
+test('initialize - structure found', async (t) => {
+  t.plan(1);
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'ui.apps');
+
+  await helpers
+    .create(AppsInit)
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps.structure'));
+      fs.writeFileSync(
+        path.join(temporaryDir, 'ui.apps.structure', '.yo-rc.json'),
+        JSON.stringify({ '@adobe/generator-aem:package-structure': { artifactId: 'test.ui.apps.structure' } })
+      );
+      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps.structure' }] }]);
+    })
+    .run()
+    .then((result) => {
+      const expected = {
+        structure: {
+          path: 'ui.apps.structure',
+          artifactId: 'test.ui.apps.structure',
+        },
+      }
+      t.deepEqual(result.generator.props, expected, 'Properties set.');
     });
 });
 
@@ -104,15 +165,15 @@ test('initialize - options - refs exist - yorc', async (t) => {
     .then((result) => {
       const expected = {
         bundle: {
-          ref: 'core',
+          path: 'core',
           artifactId: 'test.core',
         },
         frontend: {
-          ref: 'ui.frontend',
+          path: 'ui.frontend',
           artifactId: 'test.ui.frontend',
         },
         structure: {
-          ref: 'ui.apps.structure',
+          path: 'ui.apps.structure',
           artifactId: 'test.ui.apps.structure',
         },
         precompileScripts: true
@@ -155,15 +216,15 @@ test('initialize - options - refs exist - poms', async (t) => {
     .then((result) => {
       const expected = {
         bundle: {
-          ref: 'core',
+          path: 'core',
           artifactId: 'test.core',
         },
         frontend: {
-          ref: 'ui.frontend',
+          path: 'ui.frontend',
           artifactId: 'test.ui.frontend',
         },
         structure: {
-          ref: 'ui.apps.structure',
+          path: 'ui.apps.structure',
           artifactId: 'test.ui.apps.structure',
         },
         precompileScripts: true
@@ -180,7 +241,7 @@ test('prompting - bundleRef - defaults', async (t) => {
     .run()
     .then(async (result) => {
       result.generator.options.defaults = true;
-      result.generator.props.bundle = { ref: 'core', artifactId: 'test.core' };
+      result.generator.props.bundle = { path: 'core', artifactId: 'test.core' };
       const prompts = result.generator.prompts;
       const prompt = _.find(prompts, { name: 'bundleRef' });
       t.false(await prompt.when(), 'Does not prompt.');
@@ -210,7 +271,7 @@ test('prompting - bundleRef - choices', async (t) => {
 
   class Mock extends AppsPrompt {
     prompting() {
-      this.availableBundles = [{ ref: 'core', artifactId: 'test.core' }, { ref: 'bundle', artifactId: 'test.bundle' }];
+      this.availableBundles = [{ path: 'core', artifactId: 'test.core' }, { path: 'bundle', artifactId: 'test.bundle' }];
       super.prompting();
     }
   }
@@ -262,7 +323,7 @@ test('prompting - bundleRef - post processing - selected', async (t) => {
 
   class Mock extends AppsPrompt {
     prompting() {
-      this.availableBundles = [{ ref: 'core', artifactId: 'test.core' }, { ref: 'bundle', artifactId: 'test.bundle' }];
+      this.availableBundles = [{ path: 'core', artifactId: 'test.core' }, { path: 'bundle', artifactId: 'test.bundle' }];
       super.prompting();
     }
   }
@@ -279,7 +340,7 @@ test('prompting - bundleRef - post processing - selected', async (t) => {
     .run()
     .then(async (result) => {
       t.is(result.generator.props.bundleRef, undefined, 'Deletes Bundle Ref');
-      t.deepEqual(result.generator.props.bundle, { ref: 'core', artifactId: 'test.core' }, 'Sets Bundle');
+      t.deepEqual(result.generator.props.bundle, { path: 'core', artifactId: 'test.core' }, 'Sets Bundle');
     });
 });
 
@@ -291,7 +352,7 @@ test('prompting - frontendRef - defaults', async (t) => {
     .run()
     .then(async (result) => {
       result.generator.options.defaults = true;
-      result.generator.props.frontend = { ref: 'ui.frontend', artifactId: 'test.ui.frontend' };
+      result.generator.props.frontend = { path: 'ui.frontend', artifactId: 'test.ui.frontend' };
       const prompts = result.generator.prompts;
       const prompt = _.find(prompts, { name: 'frontendRef' });
       t.false(await prompt.when(), 'Does not prompt.');
@@ -321,7 +382,7 @@ test('prompting - frontendRef - choices', async (t) => {
 
   class Mock extends AppsPrompt {
     prompting() {
-      this.availableFrontends = [{ ref: 'ui.frontend', artifactId: 'test.ui.frontend' }, { ref: 'ui.spa', artifactId: 'test.ui.spa' }];
+      this.availableFrontends = [{ path: 'ui.frontend', artifactId: 'test.ui.frontend' }, { path: 'ui.spa', artifactId: 'test.ui.spa' }];
       super.prompting();
     }
   }
@@ -372,7 +433,7 @@ test('prompting - frontendRef - post processing - selected', async (t) => {
 
   class Mock extends AppsPrompt {
     prompting() {
-      this.availableFrontends = [{ ref: 'ui.frontend', artifactId: 'test.ui.frontend' }, { ref: 'ui.spa', artifactId: 'test.ui.spa' }];
+      this.availableFrontends = [{ path: 'ui.frontend', artifactId: 'test.ui.frontend' }, { path: 'ui.spa', artifactId: 'test.ui.spa' }];
       super.prompting();
     }
   }
@@ -389,7 +450,7 @@ test('prompting - frontendRef - post processing - selected', async (t) => {
     .run()
     .then(async (result) => {
       t.is(result.generator.props.bundleRef, undefined, 'Deletes Frontend Ref');
-      t.deepEqual(result.generator.props.frontend, { ref: 'ui.frontend', artifactId: 'test.ui.frontend' }, 'Sets Frontend');
+      t.deepEqual(result.generator.props.frontend, { path: 'ui.frontend', artifactId: 'test.ui.frontend' }, 'Sets Frontend');
     });
 });
 
@@ -415,6 +476,20 @@ test('prompting - precompileScripts', async (t) => {
     });
 });
 
+test('configuring', async (t) => {
+  t.plan(1);
+
+  const expected = { config: 'to be saved' };
+  await helpers
+    .create(AppsConfig)
+    .withOptions({ props: expected })
+    .run()
+    .then((result) => {
+      const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
+      t.deepEqual(yorc, { '@adobe/generator-aem:package-apps': expected }, 'Config saved.');
+    });
+});
+
 test('writing/installing - v6.5 - examples', async (t) => {
   t.plan(5);
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -431,7 +506,7 @@ test('writing/installing - v6.5 - examples', async (t) => {
         name: 'Name',
         appId: 'test',
         structure: {
-          ref: 'ui.apps.structure',
+          path: 'ui.apps.structure',
           artifactId: 'test.ui.apps.structure',
         },
       },
@@ -507,7 +582,7 @@ test('writing/installing - cloud - no examples', async (t) => {
         name: 'Name',
         appId: 'test',
         structure: {
-          ref: 'ui.apps.structure',
+          path: 'ui.apps.structure',
           artifactId: 'test.ui.apps.structure',
         },
       },
@@ -583,15 +658,15 @@ test('writing/installing - bundle & frontend references', async (t) => {
         name: 'Name',
         appId: 'test',
         structure: {
-          ref: 'ui.apps.structure',
+          path: 'ui.apps.structure',
           artifactId: 'test.ui.apps.structure',
         },
         bundle: {
-          ref: 'core',
+          path: 'core',
           artifactId: 'test.core',
         },
         frontend: {
-          ref: 'ui.frontend',
+          path: 'ui.frontend',
           artifactId: 'test.ui.frontend',
         },
       },
@@ -654,19 +729,80 @@ test('writing/installing - bundle & frontend references', async (t) => {
     });
 });
 
-function addModulesToPom(temporaryDir, toAdd = []) {
-  const parser = new XMLParser(PomUtils.xmlOptions);
-  const builder = new XMLBuilder(PomUtils.xmlOptions);
-  const pom = path.join(temporaryDir, 'pom.xml');
-  const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-  const proj = PomUtils.findPomNodeArray(pomData, 'project');
+test('writing/installing - merges existing pom', async(t) => {
+  t.plan(5);
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'ui.apps');
 
-  let modules = PomUtils.findPomNodeArray(proj, 'modules');
-  if (modules) {
-    modules.push(...toAdd);
-  } else {
-    modules = { modules: toAdd };
-    proj.splice(7, 0, modules);
-  }
-  fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
-}
+  await helpers
+    .create(AppsWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        examples: false,
+        package: 'com.adobe.test',
+        artifactId: 'test.ui.apps',
+        name: 'Name',
+        appId: 'test',
+        structure: {
+          path: 'ui.apps.structure',
+          artifactId: 'test.ui.apps.structure',
+        },
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: 'cloud',
+      },
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(fullPath, 'pom.xml'));
+      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps.structure' }] }]);
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps.structure'));
+      fs.copyFileSync(
+        fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'),
+        path.join(temporaryDir, 'ui.apps.structure', 'pom.xml')
+      );
+      fs.writeFileSync(
+        path.join(temporaryDir, 'ui.apps.structure', '.yo-rc.json'),
+        JSON.stringify({ '@adobe/generator-aem:package-structure': { artifactId: 'test.ui.apps.structure' } })
+      );
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.apps<\/module>/);
+
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'test.ui.apps', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Name', 'Name set.');
+
+      result.assertFileContent('pom.xml', /<artifactId>aem-sdk-api<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<artifactId>commons-lang3<\/artifactId>/);
+      result.assertNoFileContent('pom.xml', /<artifactId>cq-wcm-taglib<\/artifactId>/);
+      result.assertNoFileContent('pom.xml', /<artifactId>test.core<\/artifactId>/);
+      result.assertNoFileContent('pom.xml', /<artifactId>test.ui.frontend<\/artifactId>/);
+
+      const contentPath = path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test');
+
+      result.assertFile(path.join(contentPath, 'clientlibs', '.content.xml'));
+      result.assertFile(path.join(contentPath, 'components', '.content.xml'));
+      result.assertFile(path.join(contentPath, 'i18n', '.content.xml'));
+      result.assertNoFile(path.join(contentPath, 'components', 'helloworld', 'helloworld.html'));
+
+      result.assertFile(path.join('src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'));
+      result.assertFile(path.join('target', `test.ui.apps-1.0.0-SNAPSHOT.zip`));
+    });
+})
