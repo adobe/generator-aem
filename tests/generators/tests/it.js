@@ -133,6 +133,7 @@ test('prompting - package - when - defaults & no options', async (t) => {
   await helpers
     .create(ITPrompt)
     .withOptions({ defaults: true })
+    .withPrompts({ package: 'not used' })
     .run()
     .then(async (result) => {
       const prompts = result.generator.prompts;
@@ -161,6 +162,7 @@ test('prompting - package - validate', async (t) => {
   await helpers
     .create(ITPrompt)
     .withOptions({ defaults: true })
+    .withPrompts({ package: 'not used' })
     .run()
     .then(async (result) => {
       const prompts = result.generator.prompts;
@@ -178,6 +180,7 @@ test('prompting - publish - defaults set', async (t) => {
   await helpers
     .create(ITPrompt)
     .withOptions({ props: { publish: true } })
+    .withPrompts({ package: 'not used' })
     .run()
     .then((result) => {
       const prompts = result.generator.prompts;
@@ -193,6 +196,7 @@ test('prompting - publish - nothing set', async (t) => {
   await helpers
     .create(ITPrompt)
     .withOptions({})
+    .withPrompts({ package: 'not used' })
     .run()
     .then((result) => {
       const prompts = result.generator.prompts;
@@ -268,7 +272,7 @@ test('writing/installing - publish', async (t) => {
       },
     })
     .inDir(fullPath, () => {
-      fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
     })
     .run()
     .then((result) => {
@@ -326,7 +330,7 @@ test('writing/installing - no publish', async (t) => {
         artifactId: 'test',
         version: '1.0.0-SNAPSHOT',
         aem: cloudSdkApiMetadata,
-        aemVersion: '6.5',
+        aemVersion: 'cloud',
       },
     })
     .inDir(fullPath, () => {
@@ -359,3 +363,67 @@ test('writing/installing - no publish', async (t) => {
       result.assertFile(path.join('target', 'test.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
     });
 });
+
+test('writing/installing - merges existing pom', async(t) => {
+  t.plan(5);
+
+  const testingClient = {
+    groupId: 'com.adobe.cq',
+    artifactId: 'aem-cloud-testing-clients',
+    version: '1.1.0',
+  };
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'it.tests');
+  await helpers
+    .create(ITWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        examples: true,
+        package: 'com.adobe.test',
+        artifactId: 'test.it.tests',
+        name: 'Test Project - Integration Tests',
+        appId: 'test',
+        testingClient,
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: '6.5',
+      },
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'it.tests', 'pom.xml'), path.join(fullPath, 'pom.xml'));
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>it\.tests<\/module>/);
+
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'test.it.tests', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Project - Integration Tests', 'Name set.');
+
+      result.assertFileContent('pom.xml', /<artifactId>aem-cloud-testing-clients<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<artifactId>jmockit<\/artifactId>/);
+
+      const testsRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test', 'it', 'tests');
+      result.assertFile(path.join(testsRoot, 'CreatePageIT.java'));
+      result.assertFile(path.join(testsRoot, 'GetPageIT.java'));
+      result.assertFile(path.join(testsRoot, 'HtmlUnitClient.java'));
+      result.assertNoFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
+      result.assertFile(path.join('target', 'test.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
+    });
+})

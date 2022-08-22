@@ -187,7 +187,6 @@ class IntegrationTestsGenerator extends Generator {
     const builder = new XMLBuilder(PomUtils.xmlOptions);
     const parsedGenPom = parser.parse(genPom);
     const genProject = PomUtils.findPomNodeArray(parsedGenPom, 'project');
-    const genDependencies = PomUtils.findPomNodeArray(genProject, 'dependencies');
     const existingPom = PomUtils.findPomNodeArray(parser.parse(this.fs.read(existingFile)), 'project');
 
     // Merge the different sections
@@ -197,7 +196,7 @@ class IntegrationTestsGenerator extends Generator {
 
     PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'profiles'), PomUtils.findPomNodeArray(existingPom, 'profiles'), PomUtils.profilePredicate);
 
-    PomUtils.mergePomSection(genDependencies, PomUtils.findPomNodeArray(existingPom, 'dependencies'), PomUtils.dependencyPredicate);
+    PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'dependencies'), PomUtils.findPomNodeArray(existingPom, 'dependencies'), PomUtils.dependencyPredicate);
     this.fs.write(existingFile, PomUtils.fixXml(builder.build(parsedGenPom)));
   }
 }
