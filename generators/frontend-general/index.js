@@ -26,9 +26,9 @@ export const generatorName = '@adobe/generator-aem:frontend-general';
 
 class GeneralFEGenerator extends Generator {
   constructor(args, options, features) {
-    super(args, options, features);
     features = features || {};
     features.customInstallTask = true;
+    super(args, options, features);
     _.forOwn(this.moduleOptions, (v, k) => {
       this.option(k, v);
     });
