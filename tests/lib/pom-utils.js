@@ -126,7 +126,7 @@ test('listParentPomModules - no node', (t) => {
       }
     },
   }
-  t.deepEqual(PomUtils.listParentPomModules(generator), [], 'Empty list returned.');
+  t.deepEqual(PomUtils.listParentPomModules(generator, fixturePath('projects', 'cloud')), [], 'Empty list returned.');
 });
 
 test('listParentPomModules - none', (t) => {
@@ -144,7 +144,7 @@ test('listParentPomModules - none', (t) => {
       }
     },
   }
-  t.deepEqual(PomUtils.listParentPomModules(generator), [], 'Empty list returned.');
+  t.deepEqual(PomUtils.listParentPomModules(generator, fixturePath('projects', 'v6.5')), [], 'Empty list returned.');
 });
 
 test('listParentPomModules - list', (t) => {
@@ -163,7 +163,7 @@ test('listParentPomModules - list', (t) => {
     },
   }
   const expected = ['core', 'ui.apps', 'ui.apps.structure', 'unknown'];
-  t.deepEqual(PomUtils.listParentPomModules(generator), expected, 'List returned.');
+  t.deepEqual(PomUtils.listParentPomModules(generator, fixturePath('pom', 'modules')), expected, 'List returned.');
 });
 
 test('findPomNodeArray - does not exist', (t) => {
