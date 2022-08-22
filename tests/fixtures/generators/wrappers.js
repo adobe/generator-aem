@@ -104,7 +104,9 @@ export function WriteInstall(clazz, resolved) {
     }
 
     install() {
-      return super.install();
+      if (super.install) {
+        return super.install();
+      }
     }
   };
 }

@@ -113,6 +113,7 @@ test('prompting - package - when - defaults & no options', async (t) => {
   await helpers
     .create(BundlePrompt)
     .withOptions({ defaults: true })
+    .withPrompts({ package: 'not used' })
     .run()
     .then(async (result) => {
       const prompts = result.generator.prompts;
@@ -141,6 +142,7 @@ test('prompting - package - validate', async (t) => {
   await helpers
     .create(BundlePrompt)
     .withOptions({ defaults: true })
+    .withPrompts({ package: 'not used' })
     .run()
     .then(async (result) => {
       const prompts = result.generator.prompts;
@@ -369,3 +371,71 @@ test('writing/installing - cloud - second', async (t) => {
       result.assertFile(path.join('target', `test.new-1.0.0-SNAPSHOT.jar`));
     });
 });
+
+test('writing/installing - merges existing pom', async(t) => {
+  t.plan(5);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'core');
+  await helpers
+    .create(BundleWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        package: 'com.adobe.test',
+        artifactId: 'test.core',
+        name: 'Name',
+        appId: 'test',
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: 'cloud',
+      },
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'core', 'pom.xml'), path.join(fullPath, 'pom.xml'));
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>core<\/module>/);
+
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'test.core', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Name', 'Name set.');
+
+      result.assertFileContent('pom.xml', /<artifactId>aem-sdk-api<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<artifactId>commons-lang3<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<property>someproperty<\/property>/);
+      result.assertFileContent('pom.xml', /<id>autoInstallBundle<\/id>/);
+      result.assertNoFileContent('pom.xml', /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
+
+      const classesRoot = path.join('src', 'main', 'java', 'com', 'adobe', 'test');
+      result.assertFile(path.join(classesRoot, 'package-info.java'));
+      result.assertNoFile(path.join(classesRoot, 'filters', 'LoggingFilter.java'));
+      result.assertNoFile(path.join(classesRoot, 'listeners', 'SimpleResourceListener.java'));
+      result.assertNoFile(path.join(classesRoot, 'schedulers', 'SimpleScheduledTask.java'));
+      result.assertNoFile(path.join(classesRoot, 'servlets', 'SimpleServlet.java'));
+
+      const testsRoot = path.join('src', 'test', 'java', 'com', 'adobe', 'test');
+      result.assertNoFile(path.join(testsRoot, 'filters', 'LoggingFilterTest.java'));
+      result.assertNoFile(path.join(testsRoot, 'listeners', 'SimpleResourceListenerTest.java'));
+      result.assertNoFile(path.join(testsRoot, 'schedulers', 'SimpleScheduledTaskTest.java'));
+      result.assertNoFile(path.join(testsRoot, 'servlets', 'SimpleServletTest.java'));
+
+      result.assertFile(path.join('src', 'main', 'bnd', `test.core.bnd`));
+      result.assertFile(path.join('target', `test.core-1.0.0-SNAPSHOT.jar`));
+    });
+})

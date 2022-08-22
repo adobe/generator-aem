@@ -16,6 +16,9 @@
 
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import PomUtils from '../../lib/pom-utils.js';
+import fs from 'node:fs';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -41,12 +44,31 @@ export function fixturePath(...dest) {
   return path.join(projectRoot, 'tests', 'fixtures', ...dest);
 }
 
+export function addModulesToPom(temporaryDir, toAdd = []) {
+  const parser = new XMLParser(PomUtils.xmlOptions);
+  const builder = new XMLBuilder(PomUtils.xmlOptions);
+  const pom = path.join(temporaryDir, 'pom.xml');
+  const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
+  const proj = PomUtils.findPomNodeArray(pomData, 'project');
+
+  let modules = PomUtils.findPomNodeArray(proj, 'modules');
+  if (modules) {
+    modules.push(...toAdd);
+  } else {
+    modules = { modules: toAdd };
+    proj.splice(7, 0, modules);
+  }
+  fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+}
+
+
 const helpers = {
   cloudSdkApiMetadata,
   aem65ApiMetadata,
   projectRoot,
   generatorPath,
   fixturePath,
+  addModulesToPom
 };
 
 export default helpers;

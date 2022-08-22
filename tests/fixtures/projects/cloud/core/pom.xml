@@ -26,6 +26,10 @@
   <artifactId>test.core</artifactId>
   <name>Test Project - Core Bundle</name>
 
+  <properties>
+    <property>someproperty</property>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
@@ -102,5 +106,37 @@
       <groupId>uk.org.lidalia</groupId>
       <artifactId>slf4j-test</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.11</version>
+    </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>autoInstallBundle</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.sling</groupId>
+              <artifactId>sling-maven-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>install-bundle</id>
+                  <goals>
+                    <goal>install</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
 </project>

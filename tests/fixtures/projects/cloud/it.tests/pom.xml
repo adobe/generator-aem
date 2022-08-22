@@ -26,4 +26,11 @@
   <artifactId>test.it.tests</artifactId>
   <name>Test Project - Integration Tests</name>
 
+  <dependencies>
+    <dependency>
+      <groupId>org.jmockit</groupId>
+      <artifactId>jmockit</artifactId>
+      <version>1.49</version>
+    </dependency>
+  </dependencies>
 </project>

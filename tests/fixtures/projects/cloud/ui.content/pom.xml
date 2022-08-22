@@ -14,8 +14,7 @@
  |  See the License for the specific language governing permissions and
  |  limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -24,31 +23,17 @@
     <version>1.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>test.all</artifactId>
-  <name>Test Project - All Package</name>
+  <artifactId>test.ui.content</artifactId>
+  <packaging>content-package</packaging>
+  <name>Test Project - Content Package</name>
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.jackrabbit</groupId>
         <artifactId>filevault-package-maven-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <group>com.adobe.test</group>
-          <packageType>container</packageType>
-          <!-- skip sub package validation for now as some vendor packages like CIF apps will not pass -->
-          <skipSubPackageValidation>true</skipSubPackageValidation>
-          <embeddeds>
-            <embedded>
-              <groupId>org.apache.commons</groupId>
-              <artifactId>commons-lang3</artifactId>
-              <target>/apps/test-vendor-packages/application/install</target>
-            </embedded>
-          </embeddeds>
-        </configuration>
       </plugin>
     </plugins>
   </build>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -57,15 +42,4 @@
     </dependency>
   </dependencies>
 
-  <profiles>
-    <profile>
-      <id>precompiledScripts</id>
-      <activation>
-        <property>
-          <name>skipScriptPrecompilation</name>
-          <value>!true</value>
-        </property>
-      </activation>
-    </profile>
-  </profiles>
 </project>

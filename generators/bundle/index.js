@@ -145,12 +145,18 @@ class BundleGenerator extends Generator {
       const existingPom = PomUtils.findPomNodeArray(parser.parse(this.fs.read(pomFile)), 'project');
 
       // Merge the different sections
-      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'properties'), PomUtils.findPomNodeArray(existingPom, 'properties'), PomUtils.propertyPredicate);
-
+      let existing = PomUtils.findPomNodeArray(existingPom, 'properties');
+      if (existing) {
+        const insert = _.findIndex(genProject, (item) => _.has(item, 'build'));
+        genProject.splice(insert, 0, { properties: existing });
+      }
       PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'build', 'plugins'), PomUtils.findPomNodeArray(existingPom, 'build', 'plugins'), PomUtils.pluginPredicate);
 
-      PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'profiles'), PomUtils.findPomNodeArray(existingPom, 'profiles'), PomUtils.profilePredicate);
-
+      existing = PomUtils.findPomNodeArray(existingPom, 'profiles');
+      if (existing) {
+        const insert =_.findIndex(genProject, (item) => _.has(item, 'dependencies')) + 1;
+        genProject.splice(insert, 0, { profiles: existing });
+      }
       PomUtils.mergePomSection(genDependencies, PomUtils.findPomNodeArray(existingPom, 'dependencies'), PomUtils.dependencyPredicate);
     }
 
