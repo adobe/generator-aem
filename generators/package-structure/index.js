@@ -38,7 +38,7 @@ class StructurePackageGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function () {
+    this.rootGeneratorName = function() {
       return generatorName;
     };
   }
@@ -58,25 +58,6 @@ class StructurePackageGenerator extends Generator {
       appIds.add(this.props.appId);
     }
 
-    // Collect all the AppIds - Should this check only for Apps/Content/Config types?
-    const root = path.dirname(this.destinationRoot());
-    const pom = new XMLParser().parse(this.fs.read(path.join(root, 'pom.xml')));
-    if (!pom.project.modules || !pom.project.modules.module) {
-      return;
-    }
-
-    _.each(pom.project.modules.module, (module) => {
-      const yorcFile = path.join(root, module, '.yo-rc.json');
-      if (this.fs.exists(yorcFile)) {
-        const yorc = this.fs.readJSON(path.join(yorcFile));
-        _.forOwn(yorc, (value, key) => {
-          if (key.startsWith(parentGeneratorName) && value.appId) {
-            appIds.add(value.appId);
-          }
-        });
-      }
-    });
-    this.props.appIds = [...appIds];
     this._configuring();
   }
 
@@ -101,7 +82,25 @@ class StructurePackageGenerator extends Generator {
   }
 
   _writePom() {
-    const tplProps = _.pick(this.props, ['name', 'artifactId', 'appIds']);
+
+    // Collect all the AppIds - Should this check only for Apps/Content/Config types?
+    const root = path.dirname(this.destinationRoot());
+    const modules = PomUtils.listParentPomModules(this, root);
+    const appIds = new Set([this.props.appId]);
+    _.each(modules, (module) => {
+      const yorcFile = path.join(root, module, '.yo-rc.json');
+      if (this.fs.exists(yorcFile)) {
+        const yorc = this.fs.readJSON(path.join(yorcFile));
+        _.forOwn(yorc, (value, key) => {
+          if (key.startsWith(parentGeneratorName) && value.appId) {
+            appIds.add(value.appId);
+          }
+        });
+      }
+    });
+
+    const tplProps = _.pick(this.props, ['name', 'artifactId']);
+    tplProps.appIds = [...appIds];
     tplProps.parent = this.parentProps;
 
     // Read the template and parse w/ properties.
