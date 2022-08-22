@@ -17,271 +17,290 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+
 import tempDirectory from 'temp-dir';
 
 import test from 'ava';
-import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
-
+import sinon from 'sinon/pkg/sinon-esm.js';
 import { XMLParser } from 'fast-xml-parser';
-import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
 
-import BundleGenerator from '../../../generators/bundle/index.js';
-import ConfigPackageGenerator from '../../../generators/package-config/index.js';
-import StructurePackageGenerator from '../../../generators/package-structure/index.js';
+import MavenUtils from '../../../lib/maven-utils.js';
+import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata, addModulesToPom } from '../../fixtures/helpers.js';
+import { Config, WriteInstall } from '../../fixtures/generators/wrappers.js';
+
 import AllPackageGenerator from '../../../generators/package-all/index.js';
-import ParentPomGenerator from '../../../generators/app/pom/index.js';
-import AppsPackageGenerator from '../../../generators/package-apps/index.js';
 
-test.serial('via @adobe/generator-aem - v6.5 - no modules', async (t) => {
-  t.plan(5);
+const resolved = generatorPath('package-all', 'index.js');
+const AllConfig = Config(AllPackageGenerator, resolved);
+const AllWriteInstall = WriteInstall(AllPackageGenerator, resolved);
 
-  sinon.restore();
-  const stub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-
+test('configuring - v6.5', async (t) => {
+  t.plan(1);
+  const expected = { config: 'to be saved', analyserVersion: '1.4.16' };
   await helpers
-    .create(generatorPath('app'))
-    .withGenerators([[AllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')]])
+    .create(AllConfig)
     .withOptions({
-      defaults: true,
-      examples: true,
-      appId: 'test',
-      name: 'Test Project',
-      groupId: 'com.adobe.test',
-      aemVersion: '6.5',
-      modules: 'package-all',
-      showBuildOutput: false,
+      props: expected,
+      parentProps: { aemVersion: '6.5' }
+    })
+    .run()
+    .then((result) => {
+      const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
+      t.deepEqual(yorc, { '@adobe/generator-aem:package-all': expected }, 'Config saved.');
+    });
+});
+
+test('configuring - cloud', async (t) => {
+  t.plan(1);
+  sinon.restore();
+
+  const analyser = {
+    groupId: 'com.adobe.aem',
+    artifactId: 'aemanalyser-maven-plugin',
+    version: '1.4.16',
+  };
+
+  const fake = sinon.fake.resolves(analyser);
+  sinon.replace(MavenUtils, 'latestRelease', fake);
+
+  const expected = { config: 'to be saved', analyserVersion: '1.4.16' };
+  await helpers
+    .create(AllConfig)
+    .withOptions({
+      props: expected,
+      parentProps: { aemVersion: 'cloud' },
     })
     .run()
     .then((result) => {
       sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
-      const moduleDir = path.join(outputRoot, 'all');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>all<\/module>/);
 
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
-      const parser = new XMLParser({
-        ignoreAttributes: true,
-        ignoreDeclaration: true,
-      });
-      const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
-      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
-      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'test.all', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Test Project - All', 'Name set.');
-
-      result.assertNoFileContent(pom, /<artifactId>test\.ui\.apps<\/artifactId>/);
-      result.assertNoFileContent(pom, /<artifactId>test\.ui\.core<\/artifactId>/);
-      result.assertNoFileContent(pom, /<artifactId>test\.ui\.config<\/artifactId>/);
-      result.assertNoFileContent(pom, /<target>\/apps\/test-packages\/application\/install<\/target>/);
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.all-${properties.version}.zip`));
+      const yorc = result.generator.fs.readJSON(result.generator.destinationPath('.yo-rc.json'));
+      t.deepEqual(yorc, { '@adobe/generator-aem:package-all': expected }, 'Config saved.');
     });
 });
 
-test.serial('via @adobe/generator-aem - v6.5 - bundle', async (t) => {
+test('writing/installing - no modules', async (t) => {
   t.plan(5);
-
-  sinon.restore();
-  const stub = sinon.stub().resolves(aem65ApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-
-  await helpers
-    .create(generatorPath('app'))
-    .withGenerators([
-      [BundleGenerator, '@adobe/aem:bundle', generatorPath('bundle', 'index.js')],
-      [AllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')],
-    ])
-    .withOptions({
-      defaults: true,
-      examples: true,
-      appId: 'test',
-      name: 'Test Project',
-      groupId: 'com.adobe.test',
-      aemVersion: 6.5,
-      modules: 'bundle,package-all',
-      showBuildOutput: false,
-    })
-    .run()
-    .then((result) => {
-      sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
-      const moduleDir = path.join(outputRoot, 'all');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>all<\/module>/);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
-      const parser = new XMLParser({
-        ignoreAttributes: true,
-        ignoreDeclaration: true,
-      });
-      const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
-      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
-      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'test.all', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Test Project - All', 'Name set.');
-
-      result.assertFileContent(pom, /<artifactId>test\.core<\/artifactId>/);
-      result.assertNoFileContent(pom, /<artifactId>test\.ui\.apps<\/artifactId>/);
-      result.assertNoFileContent(pom, /<artifactId>test\.ui\.config<\/artifactId>/);
-      result.assertFileContent(pom, /<target>\/apps\/test-packages\/application\/install<\/target>/);
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.all-${properties.version}.zip`));
-    });
-});
-
-test.serial('via @adobe/generator-aem - cloud - packages', async (t) => {
-  t.plan(5);
-
-  sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-
-  await helpers
-    .create(generatorPath('app'))
-    .withGenerators([
-      [StructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
-      [AppsPackageGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
-      [ConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
-      [AllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')],
-    ])
-    .withOptions({
-      defaults: true,
-      examples: true,
-      appId: 'test',
-      name: 'Test Project',
-      groupId: 'com.adobe.test',
-      aemVersion: 'cloud',
-      modules: 'package-apps,package-config,package-structure,package-all',
-      showBuildOutput: false,
-    })
-    .run()
-    .then((result) => {
-      sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = result.generator.destinationPath();
-      const moduleDir = path.join(outputRoot, 'all');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>all<\/module>/);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
-      const parser = new XMLParser({
-        ignoreAttributes: true,
-        ignoreDeclaration: true,
-      });
-      const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
-      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
-      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'test.all', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Test Project - All', 'Name set.');
-
-      result.assertNoFileContent(pom, /<artifactId>test\.core<\/artifactId>/);
-      result.assertFileContent(pom, /<artifactId>test\.ui\.apps<\/artifactId>/);
-      result.assertFileContent(pom, /<artifactId>test\.ui\.config<\/artifactId>/);
-      result.assertFileContent(pom, /<artifactId>test\.ui\.apps\.structure<\/artifactId>/);
-      result.assertFileContent(pom, /<target>\/apps\/test-packages\/application\/install<\/target>/);
-
-      result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.all-${properties.version}.zip`));
-    });
-});
-
-test.serial('add module to existing project', async (t) => {
-  t.plan(5);
-  sinon.restore();
-  const stub = sinon.stub().resolves(cloudSdkApiMetadata);
-  sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'test');
+  const fullPath = path.join(temporaryDir, 'all');
+
   await helpers
-    .create(generatorPath('package-all'))
-    .withGenerators([
-      [StructurePackageGenerator, '@adobe/aem:package-structure', generatorPath('package-structure', 'index.js')],
-      [AppsPackageGenerator, '@adobe/aem:package-apps', generatorPath('package-apps', 'index.js')],
-      [ConfigPackageGenerator, '@adobe/aem:package-config', generatorPath('package-config', 'index.js')],
-      [AllPackageGenerator, '@adobe/aem:package-all', generatorPath('package-all', 'index.js')],
-    ])
+    .create(AllWriteInstall)
     .withOptions({
-      defaults: true,
-      examples: false,
-      generateInto: 'ui.all.other',
-      appId: 'other',
-      name: 'Second All',
       showBuildOutput: false,
+      props: {
+        artifactId: 'test.all',
+        name: 'Test Module - All Package',
+        appId: 'test',
+        analyserVersion: '1.4.16',
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: 'cloud',
+      },
     })
-    .inDir(fullPath, (temporary) => {
-      fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
-      fs.rmSync(path.join(temporary, 'all'), { recursive: true });
-      const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
-      delete data['@adobe/generator-aem'].all;
-      delete data['@adobe/generator-aem'].core;
-      delete data['@adobe/generator-aem']['it.tests'];
-      delete data['@adobe/generator-aem']['ui.frontend'];
-      fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      // addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps.structure' }] }]);
+
     })
     .run()
     .then((result) => {
-      sinon.restore();
-      const properties = result.generator.props;
-      const outputRoot = path.join(temporaryDir, 'test');
-      const moduleDir = path.join(fullPath, 'ui.all.other');
-      result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui\.all\.other<\/module>/);
-
-      const pom = path.join(moduleDir, 'pom.xml');
-      result.assertFile(pom);
-      const pomString = fs.readFileSync(pom, 'utf8');
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>all<\/module>/);
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
       });
+
       const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, properties.parent.groupId, 'Parent groupId set.');
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'other', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Second All', 'Name set.');
+      t.is(pomData.project.artifactId, 'test.all', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Module - All Package', 'Name set.');
 
-      result.assertFileContent(pom, /<artifactId>test\.ui\.apps<\/artifactId>/);
-      result.assertFileContent(pom, /<artifactId>test\.ui\.config<\/artifactId>/);
-      result.assertFileContent(pom, /<artifactId>test\.ui\.apps\.structure<\/artifactId>/);
-      result.assertFileContent(pom, /<target>\/apps\/other-packages\/application\/install<\/target>/);
-
-      result.assertFile(path.join(moduleDir, 'target', `other-${properties.parent.version}.zip`));
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<embeddeds>\s+<\/embeddeds>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<artifactId>aemanalyser-maven-plugin<\/artifactId>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<dependencies>\s+<\/dependencies>/);
     });
 });
 
-test('second module fails', async (t) => {
-  t.plan(2);
-
+test('writing/installing - with modules', async (t) => {
+  t.plan(5);
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-  const fullPath = path.join(temporaryDir, 'test');
+  const fullPath = path.join(temporaryDir, 'all');
 
-  const error = await t.throwsAsync(
-    helpers
-      .create(generatorPath('package-all'))
-      .withOptions({
-        defaults: true,
-        examples: false,
-        generateInto: 'ui.all.other',
-        appId: 'other',
-        name: 'Second All',
-        showBuildOutput: false,
-      })
-      .inDir(fullPath, (temporary) => {
-        fs.cpSync(fixturePath('projects'), temporary, { recursive: true });
-      })
-      .run()
-  );
+  await helpers
+    .create(AllWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        artifactId: 'test.all',
+        name: 'Test Module - All Package',
+        appId: 'test',
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: aem65ApiMetadata,
+        aemVersion: '6.5',
+      },
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      addModulesToPom(temporaryDir, [
+        { module: [{ '#text': 'core' }] },
+        { module: [{ '#text': 'ui.apps' }] },
+        { module: [{ '#text': 'ui.config' }] },
+        { module: [{ '#text': 'ui.content' }] }
+      ]);
 
-  t.regex(error.message, /Refusing to create a second All Package module\./);
+      fs.mkdirSync(path.join(temporaryDir, 'core'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'core', 'pom.xml'), path.join(temporaryDir, 'core', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'core', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:bundle': { artifactId: 'test.core' } }));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(temporaryDir, 'ui.apps', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { artifactId: 'test.ui.apps' } }));
+      fs.copyFileSync(
+        fixturePath('projects', 'cloud', 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
+        path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
+      );
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { artifactId: 'test.ui.config' } }));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.content', 'pom.xml'), path.join(temporaryDir, 'ui.content', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.content', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-content': { artifactId: 'test.ui.content' } }));
+      fs.copyFileSync(
+        fixturePath('projects', 'cloud', 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
+        path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
+      );
+
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>all<\/module>/);
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'test.all', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Module - All Package', 'Name set.');
+
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.core<\/artifactId>\s+<target>\/apps\/test-packages\/application\/install<\/target>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.apps<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-packages\/application\/install<\/target>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.config<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-packages\/application\/install<\/target>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.content<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-packages\/application\/install<\/target>/);
+
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.core<\/artifactId>\s+<version>\${project.version}<\/version>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.apps<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.config<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.content<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/);
+    });
+});
+
+test('writing/installing - merges existing pom', async (t) => {
+  t.plan(5);
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'all');
+
+  await helpers
+    .create(AllWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        artifactId: 'test.all',
+        name: 'Test Module - All Package',
+        appId: 'test',
+        analyserVersion: '1.4.16',
+      },
+      parentProps: {
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: 'cloud',
+      },
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      addModulesToPom(temporaryDir, [
+        { module: [{ '#text': 'core' }] },
+        { module: [{ '#text': 'ui.apps' }] },
+        { module: [{ '#text': 'ui.config' }] },
+        { module: [{ '#text': 'ui.content' }] }
+      ]);
+
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'all', 'pom.xml'), path.join(fullPath, 'pom.xml'));
+
+      fs.mkdirSync(path.join(temporaryDir, 'core'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'core', 'pom.xml'), path.join(temporaryDir, 'core', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'core', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:bundle': { artifactId: 'test.core' } }));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(temporaryDir, 'ui.apps', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { artifactId: 'test.ui.apps' } }));
+      fs.copyFileSync(
+        fixturePath('projects', 'cloud', 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
+        path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
+      );
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { artifactId: 'test.ui.config' } }));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.content', 'pom.xml'), path.join(temporaryDir, 'ui.content', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.content', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-content': { artifactId: 'test.ui.content' } }));
+      fs.copyFileSync(
+        fixturePath('projects', 'cloud', 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
+        path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
+      );
+
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>all<\/module>/);
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const parser = new XMLParser({
+        ignoreAttributes: true,
+        ignoreDeclaration: true,
+      });
+
+      const pomData = parser.parse(pomString);
+      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
+      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
+      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
+      t.is(pomData.project.artifactId, 'test.all', 'ArtifactId set.');
+      t.is(pomData.project.name, 'Test Module - All Package', 'Name set.');
+
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.core<\/artifactId>\s+<target>\/apps\/test-packages\/application\/install<\/target>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.apps<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-packages\/application\/install<\/target>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.config<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-packages\/application\/install<\/target>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.content<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-packages\/application\/install<\/target>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>org.apache.commons<\/groupId>\s+<artifactId>commons-lang3<\/artifactId>\s+<target>\/apps\/test-vendor-packages\/application\/install<\/target>/);
+
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.core<\/artifactId>\s+<version>\${project.version}<\/version>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.apps<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.config<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.content<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>org.apache.commons<\/groupId>\s+<artifactId>commons-lang3<\/artifactId>\s+<version>3.11<\/version>/);
+
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<id>precompiledScripts<\/id>/);
+    });
 });

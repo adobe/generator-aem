@@ -40,16 +40,19 @@
           <!-- skip sub package validation for now as some vendor packages like CIF apps will not pass -->
           <skipSubPackageValidation>true</skipSubPackageValidation>
           <embeddeds>
-          <%_ if (locals.dependencies) { _%>
-            <%_ dependencies.forEach((d) => { _%>
+            <%_ embeddeds.forEach((embedded) => { _%>
             <embedded>
-              <groupId><%= d.groupId %></groupId>
-              <artifactId><%= d.artifactId %></artifactId>
-              <type><%= d.type %></type>
-              <target><%= d.target %></target>
+              <groupId><%= parent.groupId %></groupId>
+              <artifactId><%= embedded.artifactId %></artifactId>
+              <%_ if (embedded.type) { _%>
+              <type><%= embedded.type %></type>
+              <%_ } _%>
+              <%_ if (embedded.classifier) { _%>
+              <classifier><%= embedded.classifier %></classifier>
+              <%_ } _%>
+              <target>/apps/<%= appId %>-packages/application/install</target>
             </embedded>
             <%_ }); _%>
-          <%_ } _%>
           </embeddeds>
         </configuration>
       </plugin>
@@ -78,6 +81,7 @@
       <plugin>
         <groupId>com.adobe.aem</groupId>
         <artifactId>aemanalyser-maven-plugin</artifactId>
+        <version><%= analyserVersion %></version>
         <executions>
           <execution>
             <id>aem-analyser</id>
@@ -92,16 +96,19 @@
   </build>
 
   <dependencies>
-  <%_ if (locals.dependencies) { _%>
-    <%_ dependencies.forEach((d) => { _%>
+    <%_ embeddeds.forEach((embedded) => { _%>
     <dependency>
-      <groupId><%= d.groupId %></groupId>
-      <artifactId><%= d.artifactId %></artifactId>
-      <version><%= d.version %></version>
-      <type><%= d.type %></type>
+      <groupId><%= parent.groupId %></groupId>
+      <artifactId><%= embedded.artifactId %></artifactId>
+      <version>${project.version}</version>
+      <%_ if (embedded.type) { _%>
+      <type><%= embedded.type %></type>
+      <%_ } _%>
+      <%_ if (embedded.classifier) { _%>
+      <classifier><%= embedded.classifier %></classifier>
+      <%_ } _%>
     </dependency>
     <%_ }); _%>
-  <%_ } _%>
   </dependencies>
 
   <profiles>

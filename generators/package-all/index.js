@@ -14,43 +14,41 @@
  limitations under the License.
 */
 
+import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import _ from 'lodash';
+import ejs from 'ejs';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 import ModuleMixins from '../../lib/module-mixins.js';
+import MavenUtils from '../../lib/maven-utils.js';
+import PomUtils, { filevaultPlugin } from '../../lib/pom-utils.js';
 
-import { BundleModuleType } from '../bundle/index.js';
-import { StructurePackageModuleType } from '../package-structure/index.js';
-import { ConfigPackageModuleType } from '../package-config/index.js';
-import { AppsPackageModuleType } from '../package-apps/index.js';
-import { ContentPackageModuleType } from '../package-content/index.js';
+import { generatorName as bundleGeneratorName } from '../bundle/index.js';
+import { generatorName as configGeneratorName } from '../package-config/index.js';
+import { generatorName as appsGeneratorName } from '../package-apps/index.js';
+import { generatorName as contentGeneratorName } from '../package-content/index.js';
 
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
-
-const AllPackageModuleType = 'package-all';
-
-/* eslint-disable prettier/prettier */
-const packagedModules = new Set([
-  BundleModuleType,
-  StructurePackageModuleType,
-  ConfigPackageModuleType,
-  AppsPackageModuleType,
-  ContentPackageModuleType,
-]);
-/* eslint-enable prettier/prettier */
+export const generatorName = '@adobe/generator-aem:package-all';
+const analyserCoordinates = {
+  groupId: 'com.adobe.aem',
+  artifactId: 'aemanalyser-maven-plugin'
+};
 
 class AllPackageGenerator extends Generator {
   constructor(args, options, features) {
+    features = features || {};
+    features.customInstallTask = true;
     super(args, options, features);
-    this.moduleType = AllPackageModuleType;
-
-    _.forOwn(this._moduleOptions, (v, k) => {
+    _.forOwn(this.moduleOptions, (v, k) => {
       this.option(k, v);
     });
+
+    this.rootGeneratorName = function() {
+      return generatorName;
+    };
   }
 
   initializing() {
@@ -62,53 +60,140 @@ class AllPackageGenerator extends Generator {
   }
 
   configuring() {
+    if (this.parentProps.aemVersion === 'cloud') {
+      return MavenUtils.latestRelease(analyserCoordinates).then((metadata) => {
+        this.props.analyserVersion = metadata.version;
+        this._configuring();
+      });
+    }
+
     this._configuring();
   }
 
   default() {
-    if (_.isEmpty(this.options.parent)) {
-      const config = this.config.getAll();
-      _.each(config, (value, key) => {
-        if (value.moduleType && value.moduleType === AllPackageModuleType && key !== this.relativePath) {
-          throw new Error('Refusing to create a second All Package module.');
-        }
-      });
-
-      // Need to have parent update module list.
-      const options = { generateInto: this.destinationRoot(), showBuildOutput: this.options.showBuildOutput };
-      this.composeWith(path.join(dirname, '..', 'app'), options);
-    }
+    this._duplicateCheck();
   }
 
   writing() {
-    const files = [];
+    this._writeFilter();
+    this._writePom();
+    if (this.env.rootGenerator() === this) {
+      PomUtils.addModuleToParent(this);
+    }
+  }
 
-    files.push(...this._listTemplates());
+  install() {
+    // Make sure build is run with this new/updated module
+    if (this.env.rootGenerator() === this) {
+      return this._install({ cwd: path.dirname(this.destinationRoot()) });
+    }
+  }
 
-    const config = this.config.getAll();
-    const dependencies = [];
-    _.forOwn(config, (value) => {
-      if (value.moduleType && packagedModules.has(value.moduleType)) {
-        dependencies.push({
-          /* eslint-disable no-template-curly-in-string */
-          groupId: '${project.groupId}',
-          artifactId: value.artifactId,
-          version: '${project.version}',
-          type: value.moduleType === BundleModuleType ? 'jar' : 'zip',
-          target: `/apps/${this.props.appId}-packages/application/install`,
-          /* eslint-enable no-template-curly-in-string */
-        });
+  _writeFilter() {
+    const filter = {
+      src: this.templatePath('filter.xml'),
+      dest: this.destinationPath('src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
+    };
+    this._writing([filter], { appId: this.props.appId });
+  }
+
+  _writePom() {
+
+    // Read the template and parse w/ properties.
+    const tplProps = _.pick(this.props, ['name', 'artifactId', 'appId']);
+    tplProps.parent = this.parentProps;
+    if (this.parentProps.aemVersion === 'cloud') {
+      tplProps.analyserVersion = this.props.analyserVersion;
+    }
+    tplProps.embeddeds = this._buildEmbeddeds()
+
+    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+
+    const pomFile = this.destinationPath('pom.xml');
+    if (this.fs.exists(pomFile)) {
+      this._mergeWritePom(genPom, pomFile);
+    } else {
+      this.fs.write(pomFile, genPom);
+    }
+  }
+
+  _buildEmbeddeds() {
+
+    const embeddeds = [...this._findModules(bundleGeneratorName)];
+
+    const apps = this._findModules(appsGeneratorName);
+    _.each(apps, (module) => {
+      embeddeds.push({ artifactId: module.artifactId, type: 'zip' });
+      if (module.precompileScripts) {
+        embeddeds.push({ artifactId: module.artifactId, classifier: 'precompiled-scripts' });
       }
     });
-    this.props.dependencies = dependencies;
+    _.each([configGeneratorName, contentGeneratorName], (type) => {
+      const modules = this._findModules(type);
+      _.each(modules, (module) => {
+        embeddeds.push({ artifactId: module.artifactId, type: 'zip' });
+      })
+    })
+    return embeddeds;
+  }
 
-    this._writing(files);
+  _mergeWritePom(genPom, existingFile) {
+    const parser = new XMLParser(PomUtils.xmlOptions);
+    const builder = new XMLBuilder(PomUtils.xmlOptions);
+    const parsedGenPom = parser.parse(genPom);
+    const genProject = PomUtils.findPomNodeArray(parsedGenPom, 'project');
+    const existingPom = PomUtils.findPomNodeArray(parser.parse(this.fs.read(existingFile)), 'project');
+
+    // Merge the filevault's embeddeds
+    const existingEmbeddeds = this._findPluginEmbeddeds(PomUtils.findPomNodeArray(existingPom, 'build', 'plugins'));
+    const genEmbeddeds = this._findPluginEmbeddeds(PomUtils.findPomNodeArray(genProject, 'build', 'plugins'));
+    PomUtils.mergePomSection(genEmbeddeds, existingEmbeddeds, embeddedPredicate);
+
+    // Merge the dependencies
+    PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'dependencies'), PomUtils.findPomNodeArray(existingPom, 'dependencies'), PomUtils.dependencyPredicate);
+    PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'profiles'), PomUtils.findPomNodeArray(existingPom, 'profiles'), PomUtils.profilePredicate);
+    this.fs.write(existingFile, PomUtils.fixXml(builder.build(parsedGenPom)));
+  }
+
+  _findPluginEmbeddeds(pluginList) {
+    const plugin = _.find(pluginList, (plugin) => {
+      if (!plugin.plugin) {
+        return false;
+      }
+
+      return (
+        _.find(plugin.plugin, (item) => {
+          return item.artifactId && item.artifactId[0]['#text'] === filevaultPlugin;
+        }) !== undefined
+      );
+    }).plugin;
+
+    return PomUtils.findPomNodeArray(plugin, 'configuration', 'embeddeds');
   }
 }
+
+const embeddedPredicate = (target, embedded) => {
+  if (!embedded.embedded) {
+    return false;
+  }
+
+  const groupId = PomUtils.findPomNodeArray(embedded.embedded, 'groupId')[0]['#text'];
+  const artifactId = PomUtils.findPomNodeArray(embedded.embedded, 'artifactId')[0]['#text'];
+
+  return _.find(target, (item) => {
+    if (!item.embedded) {
+      return false;
+    }
+    const findGroupId = PomUtils.findPomNodeArray(item.embedded, 'groupId');
+    const findArtifactId = PomUtils.findPomNodeArray(item.embedded, 'artifactId');
+
+    return groupId === findGroupId[0]['#text'] && artifactId === findArtifactId[0]['#text'];
+  });
+}
+
 
 _.extendWith(AllPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
 
-export { AllPackageGenerator, AllPackageModuleType };
 export default AllPackageGenerator;
