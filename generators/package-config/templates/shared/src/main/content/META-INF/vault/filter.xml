@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <workspaceFilter version="1.0">
+  <%_ appIds.forEach((appId) => { _%>
   <filter root="/apps/<%= appId %>/osgiconfig"/>
+  <%_ }); _%>
 </workspaceFilter>
