@@ -1,0 +1,153 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import tempDirectory from 'temp-dir';
+
+import test from 'ava';
+import helpers from 'yeoman-test';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+
+import { fixturePath, generatorPath, addDependenciesToPom } from '../../../fixtures/helpers.js';
+import { Init, WriteInstall } from '../../../fixtures/generators/wrappers.js';
+
+import { bundleGav, testGav, contentGav, configGav, versionStruct } from '../../../../generators/mixin-cc/index.js';
+import PomUtils from '../../../../lib/pom-utils.js';
+import BundleModuleCoreComponentMixin from '../../../../generators/mixin-cc/bundle/index.js';
+
+const resolved = generatorPath('mixin-cc', 'bundle', 'index.js');
+const CCBundleInit = Init(BundleModuleCoreComponentMixin, resolved);
+const CCBundleWrite = WriteInstall(BundleModuleCoreComponentMixin, resolved);
+
+test('initializing', async (t) => {
+  t.plan(1);
+  await helpers
+    .create(CCBundleInit)
+    .withOptions({
+      generateInto: 'core',
+      aemVersion: 'cloud',
+    })
+    .run()
+    .then((result) => {
+      t.deepEqual(result.generator.props, { aemVersion: 'cloud' }, 'Properties set.');
+    });
+});
+
+test('writing - cloud', async (t) => {
+  t.plan(1);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'core');
+
+  await helpers
+    .create(CCBundleWrite)
+    .withOptions({
+      props: {
+        aemVersion: 'cloud',
+      }
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+
+      const parser = new XMLParser(PomUtils.xmlOptions);
+      const builder = new XMLBuilder(PomUtils.xmlOptions);
+      const pom = path.join(temporaryDir, 'pom.xml');
+      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
+      const proj = PomUtils.findPomNodeArray(pomData, 'project');
+
+      let pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
+      pomProperties.push({ 'core.wcm.components.version': [{ '#text': '2.20.2' }] });
+      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+
+      addDependenciesToPom(temporaryDir, [
+        { 'dependency': [...bundleGav, versionStruct] },
+        { 'dependency': [...testGav, versionStruct] }
+      ]);
+
+      fs.writeFileSync(path.join(temporaryDir, '.yo-rc.json'),
+        JSON.stringify({
+            '@adobe/generator-aem': {
+              aemVersion: 'cloud',
+            }
+          }
+        ));
+
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'core', 'pom.xml'), path.join(fullPath, 'pom.xml'));
+      fs.writeFileSync(path.join(fullPath, '.yo-rc.json'),
+        JSON.stringify({
+            '@adobe/generator-aem:bundle': {
+              package: 'com.adobe.test',
+            }
+          }
+        ));
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.core<\/artifactId>\s+<scope>test/);
+      result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.testing\.aem-mock-plugin<\/artifactId>\s+<scope>test/);
+      result.assertFile(path.join('src', 'test', 'java', 'com', 'adobe', 'test', 'testcontext', 'AppAemContext.java'));
+
+      const spawnResult = result.generator.spawnCommandSync('mvn', ['clean', 'verify'], { stdio: 'ignore', cwd: path.join(temporaryDir, 'core') });
+      t.is(spawnResult.exitCode, 0, 'Build successful.');
+    });
+});
+
+
+test('writing - v6.5', async (t) => {
+  t.plan(1);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'core');
+
+  await helpers
+    .create(CCBundleWrite)
+    .withOptions({
+      props: {
+        aemVersion: '6.5',
+      }
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+
+      const parser = new XMLParser(PomUtils.xmlOptions);
+      const builder = new XMLBuilder(PomUtils.xmlOptions);
+      const pom = path.join(temporaryDir, 'pom.xml');
+      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
+      const proj = PomUtils.findPomNodeArray(pomData, 'project');
+
+      let pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
+      pomProperties.push({ 'core.wcm.components.version': [{ '#text': '2.20.2' }] });
+      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+
+      addDependenciesToPom(temporaryDir, [
+        { 'dependency': [...bundleGav, versionStruct] },
+        { 'dependency': [...testGav, versionStruct] }
+      ]);
+
+
+      fs.writeFileSync(path.join(temporaryDir, '.yo-rc.json'),
+        JSON.stringify({
+            '@adobe/generator-aem': {
+              aemVersion: '6.5',
+            }
+          }
+        ));
+
+      fs.copyFileSync(fixturePath('projects', 'v6.5', 'core', 'pom.xml'), path.join(fullPath, 'pom.xml'));
+      fs.writeFileSync(path.join(fullPath, '.yo-rc.json'),
+        JSON.stringify({
+            '@adobe/generator-aem:bundle': {
+              package: 'com.adobe.other.test',
+            }
+          }
+        ));
+    })
+    .run()
+    .then((result) => {
+      result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.core<\/artifactId>\s+<\/dependency>/);
+      result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.testing\.aem-mock-plugin<\/artifactId>\s+<scope>test/);
+      result.assertFile(path.join('src', 'test', 'java', 'com', 'adobe', 'other', 'test', 'testcontext', 'AppAemContext.java'));
+
+      const spawnResult = result.generator.spawnCommandSync('mvn', ['clean', 'verify'], { stdio: 'ignore', cwd: fullPath });
+      t.is(spawnResult.exitCode, 0, 'Build successful.');
+    });
+});

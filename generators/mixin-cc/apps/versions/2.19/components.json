@@ -1,0 +1,207 @@
+[
+  {
+    "components": [
+      {
+        "name": "accordion",
+        "title": "Accordion",
+        "version": 1,
+        "group": "<%= projName %> - Content",
+        "newContainerType": "core/wcm/components/container/v1/container/new"
+      },
+      {
+        "name": "breadcrumb",
+        "title": "Breadcrumb",
+        "group": "<%= projName %> - Content",
+        "version": 3
+      },
+      {
+        "name": "button",
+        "title": "Button",
+        "group": "<%= projName %> - Content",
+        "version": 2
+      },
+      {
+        "name": "carousel",
+        "title": "Carousel",
+        "group": "<%= projName %> - Content",
+        "version": 1,
+        "newContainerType": "core/wcm/components/container/v1/container/new",
+        "amp": true
+      },
+      {
+        "name": "container",
+        "title": "Container",
+        "group": "<%= projName %> - Content",
+        "version": 1,
+        "newContainerType": "core/wcm/components/container/v1/container/new"
+      },
+      {
+        "name": "contentfragment",
+        "title": "Content Fragment",
+        "group": "<%= projName %> - Content",
+        "version": 1
+      },
+      {
+        "name": "contentfragmentlist",
+        "title": "Content Fragment List",
+        "group": "<%= projName %> - Content",
+        "version": 2
+      },
+      {
+        "name": "download",
+        "title": "Download",
+        "group": "<%= projName %> - Content",
+        "version": 2
+      },
+      {
+        "name": "embed",
+        "title": "Embed",
+        "group": "<%= projName %> - Content",
+        "version": 2
+      },
+      {
+        "name": "experiencefragment",
+        "title": "Experience Fragment",
+        "group": "<%= projName %> - Content",
+        "version": 2
+      },
+      {
+        "name": "image",
+        "title": "Image",
+        "group": "<%= projName %> - Content",
+        "version": 3
+      },
+      {
+        "name": "languagenavigation",
+        "title": "Language Navigation",
+        "group": "<%= projName %> - Structure",
+        "version": 2
+      },
+      {
+        "name": "list",
+        "title": "List",
+        "group": "<%= projName %> - Content",
+        "version": 3
+      },
+      {
+        "name": "navigation",
+        "title": "Navigation",
+        "group": "<%= projName %> - Structure",
+        "version": 2
+      },
+      {
+        "name": "page",
+        "title": "<%= projName %> Page",
+        "group": ".hidden",
+        "version": 3,
+        "amp": true
+      },
+      {
+        "name": "pdfviewer",
+        "title": "PDF Viewer",
+        "group": "<%= projName %> - Content",
+        "version": 1,
+        "amp": true
+      },
+      {
+        "name": "progressbar",
+        "title": "Progress Bar",
+        "group": "<%= projName %> - Content",
+        "version": 1
+      },
+      {
+        "name": "remotepage",
+        "title": "<%= projName %> Remote SPA Page",
+        "group": ".hidden",
+        "superType": "page"
+      },
+      {
+        "name": "remotepagenext",
+        "title": "<%= projName %> Remote Next.js Page",
+        "group": ".hidden",
+        "superType": "page"
+      },
+      {
+        "name": "search",
+        "title": "Quick Search",
+        "group": "<%= projName %> - Structure",
+        "version": 1,
+        "amp": true
+      },
+      {
+        "name": "separator",
+        "title": "Separator",
+        "group": "<%= projName %> - Content",
+        "version": 1
+      },
+      {
+        "name": "tabs",
+        "title": "Tabs",
+        "group": "<%= projName %> - Content",
+        "version": 1,
+        "newContainerType": "core/wcm/components/container/v1/container/new",
+        "amp": true
+      },
+      {
+        "name": "teaser",
+        "title": "Teaser",
+        "group": "<%= projName %> - Content",
+        "version": 2
+      },
+      {
+        "name": "text",
+        "title": "Text",
+        "group": "<%= projName %> - Content",
+        "version": 2
+      },
+      {
+        "name": "title",
+        "title": "Title",
+        "group": "<%= projName %> - Content",
+        "version": 3
+      },
+      {
+        "name": "xfpage",
+        "title": "<%= projName %> Experience Fragment",
+        "group": ".hidden",
+        "version": 3
+      }
+    ]
+  },
+  {
+    "relativePath": "form",
+    "components": [
+      {
+        "name": "button",
+        "title": "Form Button",
+        "group": "<%= projName %> - Form",
+        "version": 2
+      },
+      {
+        "name": "container",
+        "title": "Core Form Container",
+        "group": "<%= projName %> - Form",
+        "version": 2,
+        "newContainerType": "core/wcm/components/form/container/v2/container/new"
+      },
+      {
+        "name": "hidden",
+        "title": "Form Hidden",
+        "group": "<%= projName %> - Form",
+        "version": 2
+      },
+      {
+        "name": "options",
+        "title": "Form Options",
+        "group": "<%= projName %> - Form",
+        "version": 2
+      },
+      {
+        "name": "text",
+        "title": "Form Text",
+        "group": "<%= projName %> - Form",
+        "version": 2
+      }
+    ]
+  }
+]

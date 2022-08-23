@@ -32,7 +32,7 @@ import MavenUtils from '../../lib/maven-utils.js';
 
 export const generatorName = '@adobe/generator-aem';
 
-const apiCoordinates = (version) => {
+export const apiCoordinates = (version) => {
   if (version === 'cloud') {
     return {
       groupId: 'com.adobe.aem',
@@ -678,7 +678,7 @@ class AEMGenerator extends Generator {
     ];
 
     this._writeGitignore();
-    this._writing(files);
+    this._writing(files, this.props);
     this._writePom();
   }
 

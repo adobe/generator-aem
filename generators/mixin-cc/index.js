@@ -15,435 +15,355 @@
 */
 
 import path from 'node:path';
+import { readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-import fs from 'node:fs';
 import _ from 'lodash';
 import chalk from 'chalk';
-import ejs from 'ejs';
+import { Octokit } from '@octokit/rest';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 
-import { Octokit } from '@octokit/rest';
+import PomUtils from '../../lib/pom-utils.js';
+import ModuleMixins from '../../lib/module-mixins.js';
 
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
-import { globbySync } from 'globby';
-import { BundleModuleType } from '../bundle/index.js';
-import { AppsPackageModuleType } from '../package-apps/index.js';
+import { generatorName as rootGeneratorName, apiCoordinates } from '../app/index.js';
+import { generatorName as bundleGeneratorName } from '../bundle/index.js';
+import { generatorName as appsGeneratorName } from '../package-apps/index.js';
+import { generatorName as allGeneratorName } from '../package-all/index.js';
+
+import BundleModuleCoreComponentMixin from './bundle/index.js';
+import AppsPackageModuleCoreComponentMixin from './apps/index.js';
+import AllPackageModuleCoreComponentMixin from './all/index.js';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
-const octokit = new Octokit();
+export const generatorName = '@adobe/generator-aem:mixin-cc';
 
-const CoreComponentMixinModuleType = 'mixin-cc';
-
-const unique = ['bundles', 'apps', 'version'];
-const ccPomProperty = 'core.wcm.components.version';
-const repo = Object.freeze({ owner: 'adobe', repo: 'aem-core-wcm-components' });
+const versionProperty = 'core.wcm.components.version';
 /* eslint-disable no-template-curly-in-string */
-
-const xmlOptions = {
-  preserveOrder: true,
-  format: true,
-  ignoreAttributes: false,
-  commentPropName: '#comment',
-};
-
-const versionGav =  { version: [{ '#text': '${core.wcm.components.version}' }] };
-const bundleDep = Object.freeze({
-  dependency: [
-    { groupId: [{ '#text': 'com.adobe.cq' }] },
-    { artifactId: [{ '#text': 'core.wcm.components.core' }] },
-  ],
-});
-const contentDep = Object.freeze({
-  dependency: [
-    { groupId: [{ '#text': 'com.adobe.cq' }] },
-    { artifactId: [{ '#text': 'core.wcm.components.content' }] },
-    { type: [{ '#text': 'zip' }] },
-  ],
-});
-const configDep = Object.freeze({
-  dependency: [
-    { groupId: [{ '#text': 'com.adobe.cq' }] },
-    { artifactId: [{ '#text': 'core.wcm.components.config' }] },
-    { type: [{ '#text': 'zip' }] },
-  ],
-});
+export const versionStruct = { version: [{ '#text': '${core.wcm.components.version}' }] };
 /* eslint-enable no-template-curly-in-string */
+
+export const bundleGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.core' }] }]);
+export const testGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.testing.aem-mock-plugin' }] }, { scope: [{ '#text': 'test' }] }]);
+export const contentGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.content' }] }, { type: [{ '#text': 'zip' }] }]);
+export const configGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.config' }] }, { type: [{ '#text': 'zip' }] }]);
 
 class CoreComponentMixinGenerator extends Generator {
   constructor(args, options, features) {
+    features = features || {};
+    features.customInstallTask = true;
     super(args, options, features);
-    this.moduleType = CoreComponentMixinModuleType;
-    this._moduleOptions = {
+
+    const opts = {
       defaults: {
         desc: 'Use all defaults for user input.',
       },
-      bundles: {
-        type(arg) {
-          return arg.split(',');
-        },
-        desc: 'Bundle module reference(s), for adding dependency and unit test context.',
+      bundleRef: {
+        type: String,
+        desc: 'Optional Bundle module reference, for adding dependency and unit test context.',
       },
-      apps: {
-        type(arg) {
-          return arg.split(',');
-        },
-        desc: 'Apps Package module reference(s), for adding proxy components.',
+      appsRef: {
+        type: String,
+        desc: 'Apps Package module reference, for adding proxy components.',
       },
+      version: {
+        type: String,
+        desc: 'Version of the Core Components to use, use `latest` for always using latest release.',
+      }
     };
 
-    _.forOwn(this._moduleOptions, (v, k) => {
+    _.forOwn(opts, (v, k) => {
       this.option(k, v);
     });
+
+    this.rootGeneratorName = function() {
+      return generatorName;
+    };
   }
 
   initializing() {
-    this.props = {};
-    _.defaults(this.props, _.pick(this.options, unique));
+    this._setDestinationRoot();
 
-    const config = this.config.get(CoreComponentMixinModuleType);
-    _.defaults(this.props, config);
+    this.props = {
+      version: this.options.version,
+    };
 
-    _.remove(this.props.bundles, (module) => {
-      const modConfig = this.config.get(module);
-      return !modConfig || modConfig.moduleType !== BundleModuleType;
-    });
+    this.availableBundles = ModuleMixins._findModules.bind(this, bundleGeneratorName)();
+    this.availableApps = ModuleMixins._findModules.bind(this, appsGeneratorName)();
 
-    if (this.props.bundles && this.props.bundles.length === 0) {
-      delete this.props.bundles;
-    }
-
-    _.remove(this.props.apps, (module) => {
-      const modConfig = this.config.get(module);
-      return !modConfig || modConfig.moduleType !== AppsPackageModuleType;
-    });
-
-    if (this.props.apps && this.props.apps.length === 0) {
-      delete this.props.apps;
-    }
-  }
-
-  prompting() {
-    const config = this.config.getAll();
-    const bundleModules = [];
-    const appsModules = [];
-    _.forOwn(config, (value, key) => {
-      if (value.moduleType) {
-        switch (value.moduleType) {
-          case BundleModuleType: {
-            bundleModules.push(key);
-            break;
-          }
-
-          case AppsPackageModuleType: {
-            appsModules.push(key);
-            break;
-          }
-          // No Default
-        }
-      }
-    });
-
-    if (!this.props.apps && appsModules.length === 0) {
+    if (this.availableApps.length === 0) {
       throw new Error('Project must have at least one UI Apps module to use Core Component mixin.');
     }
 
+
+    let module = _.find(this.availableBundles, ['path', this.options.bundleRef]);
+    if (module) {
+      this.props.bundles = [module.path];
+    }
+
+    module = _.find(this.availableApps, ['path', this.options.appsRef]);
+    if (module) {
+      this.props.apps = [module.path];
+    }
+
+    if (this.options.defaults) {
+      _.defaults(this.props, { version: 'latest', bundles: ['core'], apps: ['ui.apps'] });
+    }
+
+    const config = this.config.getAll();
+    this.props.version = this.props.version || config.version;
+    this.props.bundles = this.props.bundles || [];
+    this.props.apps = this.props.apps || [];
+
+    if (config.bundles) {
+      this.props.bundles = _.union(this.props.bundles, config.bundles);
+    }
+
+    if (config.apps) {
+      this.props.apps = _.union(this.props.apps, config.apps);
+    }
+
+  }
+
+  prompting() {
     const prompts = [
       {
-        name: 'bundles',
-        message: 'Bundle module reference(s), for adding dependency and unit test context.',
-        type: 'checkbox',
-        choices() {
+        name: 'latest',
+        message: 'Use latest version of Core Components, or select a version?',
+        type: 'confirm',
+        when: () => {
           return new Promise((resolve) => {
-            resolve([
-              { value: 'None' },
-              ..._.map(bundleModules, (name) => {
-                return { value: name };
-              }),
-            ]);
+            if (this.options.defaults) {
+              resolve(false);
+              return;
+            }
+            resolve(this.props.version === undefined);
           });
         },
-        default: [0],
-        when: !this.props.bundles && bundleModules.length > 0,
+        default: true,
+      },
+      {
+        name: 'version',
+        message: 'Select version of Core Components to use:',
+        type: 'list',
+        when: (answers) => {
+          return new Promise((resolve) => {
+            resolve(!answers.latest);
+          });
+        },
+        choices: this._listVersions,
+      },
+
+      {
+        name: 'bundles',
+        message: 'Optional Bundle module reference(s), for adding dependency and unit test context.',
+        type: 'checkbox',
+        when: () => {
+          return new Promise((resolve) => {
+            if (this.options.defaults) {
+              resolve(false);
+              return;
+            }
+            resolve(this.props.bundles.length === 0 && this.availableBundles.length !== 0);
+          });
+        },
+        choices: () => {
+          return new Promise((resolve) => {
+            resolve(_.map(this.availableBundles, 'path'));
+          });
+        }
       },
       {
         name: 'apps',
-        message: 'Apps Package module reference(s), for adding proxy components.',
+        message: 'App module reference(s), for adding proxy components.',
         type: 'checkbox',
-        choices() {
+        when: () => {
           return new Promise((resolve) => {
-            resolve(
-              _.map(appsModules, (name) => {
-                return { value: name };
-              })
-            );
+            if (this.options.defaults) {
+              resolve(false);
+              return;
+            }
+            resolve(this.props.apps.length === 0);
           });
         },
-        when: !this.props.apps && appsModules.length > 1,
-        default: [0],
+        choices: () => {
+          return new Promise((resolve) => {
+            resolve(_.map(this.availableApps, 'path'));
+          });
+        },
+        validate: (chosen) => {
+          return new Promise((resolve) => {
+            if (chosen && chosen.length > 0) {
+              resolve(true);
+              return;
+            }
+            resolve('At least one Apps module reference must be provided.');
+          });
+        }
       },
     ];
 
-    return this._ccVersion()
-      .then((releases) => {
-        this.props.version = releases[0];
-        return this.prompt(prompts);
-      })
-      .catch((error) => {
-        throw new Error(chalk.red('Unable to retrieve Core Component versions, error was:\n\n\t') + chalk.yellow(error.message));
-      })
-      .then((answers) => {
-        this.props.bundles = _.map(answers.bundles, (idx) => bundleModules[idx]);
-
-        this.props.apps = appsModules.length === 1 ? appsModules : _.map(answers.apps, (idx) => appsModules[idx]);
-      });
+    return this.prompt(prompts).then((answers) => {
+      _.merge(this.props, _.pick(answers, ['version', 'bundles', 'apps']));
+      if (answers.latest) {
+        this.props.version = 'latest';
+      }
+    });
   }
 
   configuring() {
-    const current = this.config.get(CoreComponentMixinModuleType) || {};
-    _.merge(current, this.props);
-    this.config.set(CoreComponentMixinModuleType, current);
+    ModuleMixins._configuring.call(this);
+  }
+
+  default() {
+    this.props.aemVersion = this.fs.readJSON(this.destinationPath('.yo-rc.json'))[rootGeneratorName].aemVersion;
+    return this._resolveVersion().then((ccVersion) => {
+      this.props.version = ccVersion;
+      // Run the specific mixin for each module.
+      _.each(this.props.bundles, (module) => {
+        this.composeWith({
+            Generator: BundleModuleCoreComponentMixin,
+            path: path.join('bundle', 'index.js'),
+          },
+          {
+            generateInto: module,
+            aemVersion: this.props.aemVersion,
+          });
+      });
+      _.each(this.props.apps, (module) => {
+        this.composeWith({
+            Generator: AppsPackageModuleCoreComponentMixin,
+            path: path.join('apps', 'index.js'),
+          },
+          {
+            generateInto: module,
+            aemVersion: this.props.aemVersion,
+            version: ccVersion
+          });
+      });
+      if (this.props.aemVersion !== 'cloud') {
+        const allModule = ModuleMixins._findModules.call(this, allGeneratorName);
+        this.composeWith({
+            Generator: AllPackageModuleCoreComponentMixin,
+            path: path.join('all', 'index.js'),
+          },
+          {
+            generateInto: allModule.path
+          });
+      }
+    });
   }
 
   writing() {
-
-    const isCloud = this.config.get('aemVersion') === 'cloud';
-    // For each module; update the pom to add the CC dependency.
-    const promises = [];
-    promises.push(this._processRoot(isCloud));
-
-    _.each(this.props.bundles, (module) => {
-      promises.push(this._processCore(module, isCloud));
-    });
-
-    _.each(this.props.apps, (module) => {
-      promises.push(this._processApps(module, isCloud));
-    });
-    promises.push(this._processAll(isCloud));
-
-    return Promise.all(promises);
+    this._writePom();
   }
 
-  /**
-   * Returns a Promise that will resolve to latest the available Core Components version in GitHub.
-   */
-  _ccVersion = () => {
-    return octokit.repos
-      .listReleases(repo)
-      .then((response) => {
-        return _.map(response.data, 'tag_name');
-      })
-      .then((releases) => {
-        return _.remove(releases, (r) => {
-          return r.match(/(\d+\.\d+\.\d+)/);
-        }).splice(0, 1);
-      });
-  };
-
-  /**
-   * Processes the root pom to add CC dependencies and version.
-   */
-  _processRoot = (isCloud) => {
-    return new Promise((resolve) => {
-      const pom = this.destinationPath('pom.xml');
-      const parsed = this._readPom(pom);
-      const project = _.find(parsed, (item) => _.has(item, 'project')).project;
-      // Find and add/update version property
-      const properties = _.find(project, (item) => _.has(item, 'properties')).properties;
-
-      let ccRef = _.find(properties, (item) => _.has(item, ccPomProperty));
-      if (ccRef) {
-        ccRef[0]['#text'] = this.props.version;
-      } else {
-        ccRef = {};
-        ccRef[ccPomProperty] = [{ '#text': this.props.version }];
-        properties.push(ccRef);
-      }
-
-      // Find and add dependencies if necessary.
-      const dependencies = _.find(project, (item) => _.has(item, 'dependencyManagement')).dependencyManagement[0].dependencies;
-      let dep;
-      if (!isCloud) {
-        dep = _.cloneDeep(configDep)
-        dep.dependency.splice(2, 0, versionGav);
-        this._insertDependency(dependencies, dep);
-        dep = _.cloneDeep(contentDep)
-        dep.dependency.splice(2, 0, versionGav);
-        this._insertDependency(dependencies, dep);
-      }
-      dep = _.cloneDeep(bundleDep)
-      dep.dependency.splice(2, 0, versionGav);
-      this._insertDependency(dependencies, dep);
-      this._writePom(pom, parsed);
-      resolve();
-    });
-  };
-
-  _processApps = (module, isCloud) => {
-    const fileVersion = this.props.version.match(/(\d+\.\d+)\.\d+/)[1];
-    const componentFile = path.join(dirname, 'components', fileVersion, 'components.json');
-    if (!fs.existsSync(componentFile)) {
-      throw new Error(`Unable to find Core Component list for version ${fileVersion}`);
+  install() {
+    // Make sure build is run with this new/updated module
+    if (this.env.rootGenerator() === this) {
+      return ModuleMixins._install.call(this, { cwd: this.destinationRoot() });
     }
-
-    const componentGroups = JSON.parse(fs.readFileSync(componentFile));
-    const appId = this.config.get(module).appId;
-    const tplProperties = {
-      projName: this.config.get('name'),
-      appId,
-    };
-
-    const outputRoot = path.join(this.destinationPath(module, 'src', 'main', 'content', 'jcr_root', 'apps', appId, 'components'));
-
-    const promises = [];
-    _.each(componentGroups, (group) => {
-      group.relativePath ||= '';
-      promises.push(...this._buildCompPromises(tplProperties, path.join(outputRoot, group.relativePath), group.components, group.relativePath));
-    })
-
-    return Promise.all(promises).then(() => {
-      const pom = this.destinationPath(module, 'pom.xml');
-      const parsed = this._readPom(pom);
-    });
-  };
-
-  _processCore = (module, isCloud) => {
-    return new Promise((resolve) => {
-      const pom = this.destinationPath(module, 'pom.xml');
-      const parsed = this._readPom(pom);
-      const project = _.find(parsed, (item) => _.has(item, 'project')).project;
-      // Find and add dependencies if necessary.
-      const dependencies = _.find(project, (item) => _.has(item, 'dependencies')).dependencies;
-
-      const dep = _.cloneDeep(bundleDep)
-      if (isCloud) {
-        dep.dependency.splice(2, 0, { scope: [{ '#text': 'test' }] });
-      }
-      this._insertDependency(dependencies, dep);
-      this._writePom(pom, parsed)
-      resolve();
-    });
-  };
-
-  _processAll = (isCloud) => {
-    return new Promise((resolve) => {
-      const pom = this.destinationPath('all', 'pom.xml');
-      const parsed = this._readPom(pom);
-      resolve();
-    });
-  };
-
-  _readPom(pom) {
-    const parser = new XMLParser(xmlOptions);
-    const data = this.fs.read(pom);
-    return parser.parse(data);
   }
 
-  _writePom(pom, data) {
-    const builder = new XMLBuilder(xmlOptions);
-    this.fs.write(pom, this._fixXml(builder.build(data)));
-  }
-
-  _insertDependency(dependencies, dependency) {
-    const found = _.find(dependencies, (item) => {
-      if (!item.dependency) {
-        return false;
-      }
-      return _.find(item.dependency, (gav) => _.isEqual(gav, dependency));
-    })
-    if (found) {
+  _setDestinationRoot() {
+    let yorcFile = this.destinationPath('.yo-rc.json');
+    if (this.fs.exists(yorcFile) && this.fs.readJSON(yorcFile)[rootGeneratorName] !== undefined) {
       return;
     }
 
-    const insertBefore =
-      _.findIndex(dependencies, (item) => {
-        if (!item.dependency) {
-          return false;
-        }
-
-        return _.find(item.dependency, (gav) => {
-          return gav.groupId && gav.groupId[0]['#text'] === 'com.adobe.aem';
-        });
-      }) + 1; // Insert after index of SDK/Uber jar.
-    dependencies.splice(insertBefore, 0, dependency);
-  }
-
-  _fixXml(xml) {
-    // XML generated by library splits text into multi line, this removes those and fixes file formatting.
-    return xml.replace(/(<[a-zA-Z\d.]+>)\s*\n\s*([^<]+)\s*\n\s*(<\/[a-zA-Z\d.]+>)/g, '$1$2$3');
-  }
-
-  _buildCompPromises(properties, outputRoot, components, folderQualifier) {
-    const promises = [];
-    fs.mkdirSync(path.join(outputRoot));
-    _.each(components, (comp) => {
-      const transformed = _.transform(
-        comp,
-        (result, value, key) => {
-          result[key] = typeof value === 'string' || value instanceof String ? ejs.render(value, properties) : value;
-        },
-        {}
+    this.destinationRoot(path.dirname(this.destinationPath()));
+    yorcFile = this.destinationPath('.yo-rc.json');
+    if (!this.fs.exists(yorcFile) || this.fs.readJSON(yorcFile)[rootGeneratorName] === undefined) {
+      throw new Error(
+        chalk.red(`${this.moduleName} Generator cannot be use outside existing project context.`) +
+        '\n\n' +
+        `You are trying to use the ${this.moduleName} Generator without the context of a parent project.\n` +
+        'This is not a supported feature. Please either: \n\n' +
+        '\t * Run in the context of a project previously created using: ' +
+        chalk.yellow('yo @adobe/aem') +
+        ', or\n' +
+        `\t * Run ${this.moduleName} Generator from existing AEM project root, by using: ` +
+        chalk.yellow('yo @adobe/aem --modules <<module type>>') +
+        '.'
       );
-
-      const ref = _.find(components, (c) => {
-        return c.name && c.name === comp.superType;
-      });
-
-      const relPath = folderQualifier.length === 0 ? folderQualifier : folderQualifier + '/'
-
-      const superType = ref ? `core/wcm/components/${relPath}${ref.name}/v${ref.version}/${ref.name}` : `core/wcm/components/${relPath}${comp.name}/v${comp.version}/${comp.name}`;
-
-      const tplProps = {
-        superType,
-      };
-      _.defaults(tplProps, properties, transformed);
-
-      promises.push(this._buildCompPromise(comp, tplProps, outputRoot));
-    });
-    return promises;
+    }
   }
 
-  _buildCompPromise(config, tplProperties, outputRoot) {
-    return new Promise((resolve) => {
-      const outputDir = path.join(outputRoot, config.name);
-      fs.mkdirSync(outputDir);
-      const files = [];
-      let templates = globbySync([this.templatePath('shared', '**/*'), this.templatePath('shared', '**/.*')], { onlyFiles: true });
-      _.each(templates, (t) => {
-        files.push({
-          src: t,
-          dest: this.destinationPath(outputDir, path.relative(this.templatePath('shared'), t)),
-        });
+  _listVersions() {
+    return readdir(path.join(dirname, 'apps', 'versions'), { withFileTypes: true })
+      .then((dirent) => {
+        return dirent.filter((dirent) => dirent.isDirectory())
+          .map(dirent => dirent.name)
+          .sort((l, r) => parseFloat(r) - parseFloat(l));
       });
-      templates = globbySync([this.templatePath('unique', config.name, '**/*'), this.templatePath('unique', config.name, '**/.*')], { onlyFiles: true });
-      _.each(templates, (t) => {
-        files.push({
-          src: t,
-          dest: this.destinationPath(outputDir, path.relative(this.templatePath('unique', config.name), t)),
-        });
+  }
+
+  _resolveVersion() {
+    if (this.props.version === 'latest') {
+      return this._listVersions().then((versions) => {
+        return this._ccVersion(versions[0]);
       });
+    }
+    return this._ccVersion(this.props.version);
+  }
 
-      if (config.newContainerType) {
-        templates = globbySync([this.templatePath('container-types', '**/*'), this.templatePath('container-types', '**/.*')], { onlyFiles: true });
-        _.each(templates, (t) => {
-          files.push({
-            src: t,
-            dest: this.destinationPath(outputDir, path.relative(this.templatePath('container-types'), t)),
-          });
-        });
-      }
+  _ccVersion = (version) => {
+    const octokit = new Octokit();
+    return octokit.repos
+      .listReleases({ owner: 'adobe', repo: 'aem-core-wcm-components' })
+      .then((response) => {
+        return _.map(response.data, (release) => release.tag_name.replace(/^.*(\d+\.\d+\.\d+)$/, '$1'));
+      })
+      .then((releases) => {
+        return _.remove(releases, (r) => {
+          const regex = new RegExp(`(${version}\\.\\d+)`);
+          return r.match(regex);
+        })[0];
+      });
+  };
 
-      for (const f of files) {
-        this.fs.copyTpl(f.src, f.dest, tplProperties);
-      }
+  _writePom() {
+    const builder = new XMLBuilder(PomUtils.xmlOptions);
+    const pomFile = this.destinationPath('pom.xml');
 
-      resolve();
-    });
+
+    const pom = PomUtils.readPom(this);
+    const pomProperties = PomUtils.findPomNodeArray(pom, 'project', 'properties');
+
+    const ccProp = _.find(pomProperties, (item) => _.has(item, versionProperty));
+    if (ccProp) {
+      ccProp[0]['#text'] = this.props.version;
+    } else {
+      const prop = {};
+      prop[versionProperty] = [{ '#text': this.props.version }];
+      pomProperties.push(prop);
+    }
+
+    const pomDeps = PomUtils.findPomNodeArray(pom, 'project', 'dependencyManagement', 'dependencies');
+    const bundle = { dependency: _.cloneDeep(bundleGav) };
+    bundle.dependency.push(versionStruct);
+    const content = { dependency: _.cloneDeep(contentGav) };
+    content.dependency.splice(2, 0, versionStruct);
+    const config = { dependency: _.cloneDeep(configGav) };
+    config.dependency.splice(2, 0, versionStruct);
+    const test = { dependency: _.cloneDeep(testGav) };
+    test.dependency.splice(2, 0, versionStruct);
+
+    // Just remove the CC dependencies, and re-add them - easier than trying to merge, esp if upgrading.
+    PomUtils.removeDependencies(pomDeps, [bundle, content, config, test]);
+
+    const depsToAdd = [bundle];
+    if (this.props.aemVersion !== 'cloud') {
+      depsToAdd.push(content);
+      depsToAdd.push(config);
+    }
+    PomUtils.addDependencies(pomDeps, depsToAdd, apiCoordinates(this.props.aemVersion));
+    PomUtils.addDependencies(pomDeps, [test], { groupId: 'org.apache.sling', artifactId: 'org.apache.sling.testing.caconfig-mock-plugin' });
+    this.fs.write(pomFile, PomUtils.fixXml(builder.build(pom)));
   }
 }
-
-export { CoreComponentMixinGenerator, CoreComponentMixinModuleType };
 
 export default CoreComponentMixinGenerator;

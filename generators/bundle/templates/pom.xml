@@ -111,5 +111,17 @@
       <artifactId>io.wcm.testing.aem-mock.junit5</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.sling</groupId>
+      <artifactId>org.apache.sling.testing.caconfig-mock-plugin</artifactId>
+    </dependency>
+
+    <!-- Required to be able to support injection with @Self and @Via -->
+    <dependency>
+      <groupId>org.apache.sling</groupId>
+      <artifactId>org.apache.sling.models.impl</artifactId>
+      <version>1.4.4</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

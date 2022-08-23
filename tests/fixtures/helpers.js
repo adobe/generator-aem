@@ -62,13 +62,34 @@ export function addModulesToPom(temporaryDir, toAdd = []) {
 }
 
 
+export function addDependenciesToPom(temporaryDir, toAdd = []) {
+  const parser = new XMLParser(PomUtils.xmlOptions);
+  const builder = new XMLBuilder(PomUtils.xmlOptions);
+  const pom = path.join(temporaryDir, 'pom.xml');
+  const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
+  const proj = PomUtils.findPomNodeArray(pomData, 'project');
+
+  let dependencies = PomUtils.findPomNodeArray(proj, 'dependencies');
+  if (dependencies) {
+    dependencies.push(...toAdd);
+  }
+  dependencies = PomUtils.findPomNodeArray(proj, 'dependencyManagement', 'dependencies');
+  if (dependencies) {
+    dependencies.push(...toAdd);
+  }
+  fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+}
+
+
+
 const helpers = {
   cloudSdkApiMetadata,
   aem65ApiMetadata,
   projectRoot,
   generatorPath,
   fixturePath,
-  addModulesToPom
+  addModulesToPom,
+  addDependenciesToPom
 };
 
 export default helpers;
