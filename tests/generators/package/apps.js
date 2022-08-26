@@ -465,6 +465,8 @@ test('writing/installing - bundle & frontend references', async (t) => {
 
       const contentPath = path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test');
 
+      result.assertFile(path.join('src', 'main', 'bnd', 'test.ui.apps.bnd'));
+
       result.assertFile(path.join(contentPath, 'clientlibs', '.content.xml'));
       result.assertFile(path.join(contentPath, 'components', '.content.xml'));
       result.assertFile(path.join(contentPath, 'i18n', '.content.xml'));

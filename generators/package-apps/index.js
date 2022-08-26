@@ -167,6 +167,10 @@ class AppsPackageGenerator extends Generator {
       files.push(...this._listTemplates('examples'));
     }
 
+    if (this.props.precompileScripts) {
+      files.push(...this._listTemplates('precompiled'))
+    }
+
     const tplProps = {
       ..._.pick(this.props, ['name', 'artifactId', 'appId', 'precompileScripts']),
       parent: this.parentProps,
