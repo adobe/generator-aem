@@ -26,14 +26,14 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import PomUtils from '../../lib/pom-utils.js';
 import BundleGenerator from '../../generators/bundle/index.js';
-import { Init, Prompt, Config, WriteInstall } from '../fixtures/generators/wrappers.js';
+import { init, prompt, config, writeInstall } from '../fixtures/generators/wrappers.js';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
 
 const resolved = generatorPath('bundle', 'index.js');
-const BundleInit = Init(BundleGenerator, resolved);
-const BundlePrompt = Prompt(BundleGenerator, resolved);
-const BundleConfig = Config(BundleGenerator, resolved);
-const BundleWriteInstall = WriteInstall(BundleGenerator, resolved);
+const BundleInit = init(BundleGenerator, resolved);
+const BundlePrompt = prompt(BundleGenerator, resolved);
+const BundleConfig = config(BundleGenerator, resolved);
+const BundleWriteInstall = writeInstall(BundleGenerator, resolved);
 
 test('initialize - no options', async (t) => {
   t.plan(1);
@@ -372,7 +372,7 @@ test('writing/installing - cloud - second', async (t) => {
     });
 });
 
-test('writing/installing - merges existing pom', async(t) => {
+test('writing/installing - merges existing pom', async (t) => {
   t.plan(5);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -438,4 +438,4 @@ test('writing/installing - merges existing pom', async(t) => {
       result.assertFile(path.join('src', 'main', 'bnd', `test.core.bnd`));
       result.assertFile(path.join('target', `test.core-1.0.0-SNAPSHOT.jar`));
     });
-})
+});

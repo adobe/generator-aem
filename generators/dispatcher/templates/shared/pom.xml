@@ -11,7 +11,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId><%= artifactId %></artifactId>
+  <artifactId><%= appId %>.dispatcher</artifactId>
   <name><%= name %></name>
   <packaging>pom</packaging>
 

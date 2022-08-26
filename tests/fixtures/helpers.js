@@ -16,9 +16,9 @@
 
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import fs from 'node:fs';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import PomUtils from '../../lib/pom-utils.js';
-import fs from 'node:fs';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -58,9 +58,9 @@ export function addModulesToPom(temporaryDir, toAdd = []) {
     modules = { modules: toAdd };
     proj.splice(7, 0, modules);
   }
+
   fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
 }
-
 
 export function addDependenciesToPom(temporaryDir, toAdd = []) {
   const parser = new XMLParser(PomUtils.xmlOptions);
@@ -73,14 +73,14 @@ export function addDependenciesToPom(temporaryDir, toAdd = []) {
   if (dependencies) {
     dependencies.push(...toAdd);
   }
+
   dependencies = PomUtils.findPomNodeArray(proj, 'dependencyManagement', 'dependencies');
   if (dependencies) {
     dependencies.push(...toAdd);
   }
+
   fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
 }
-
-
 
 const helpers = {
   cloudSdkApiMetadata,
@@ -89,7 +89,7 @@ const helpers = {
   generatorPath,
   fixturePath,
   addModulesToPom,
-  addDependenciesToPom
+  addDependenciesToPom,
 };
 
 export default helpers;

@@ -14,7 +14,6 @@
  limitations under the License.
 */
 
-import fs from 'node:fs';
 import path from 'node:path';
 
 import _ from 'lodash';
@@ -25,7 +24,7 @@ import Generator from 'yeoman-generator';
 import ModuleMixins from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
 import { generatorName as bundleGeneratorName } from '../bundle/index.js';
-import { generatorName as contentGeneratorName } from '../package-content/index.js';
+// Import { generatorName as contentGeneratorName } from '../package-content/index.js';
 import { generatorName as structureGeneratorName } from '../package-structure/index.js';
 
 export const generatorName = '@adobe/generator-aem:package-config';
@@ -40,7 +39,7 @@ class ConfigPackageGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -65,7 +64,7 @@ class ConfigPackageGenerator extends Generator {
     const bundles = [];
     const contents = [];
 
-    // if (this.props.parent.aemVersion !== 'cloud' && this.props.loggerPackages) {
+    // If (this.props.parent.aemVersion !== 'cloud' && this.props.loggerPackages) {
     //   files.push(...this._listTemplates('loggers'));
     // }
 
@@ -77,15 +76,15 @@ class ConfigPackageGenerator extends Generator {
         const yorc = this.fs.readJSON(path.join(yorcFile));
         if (yorc[bundleGeneratorName] !== undefined) {
           bundles.push({ appId: yorc[bundleGeneratorName].appId, package: yorc[bundleGeneratorName].package });
-        } else if (yorc[contentGeneratorName] !== undefined) {
-          contents.push({ appId: yorc[contentGeneratorName].appId });
+          // } else if (yorc[contentGeneratorName] !== undefined) {
+          //   contents.push({ appId: yorc[contentGeneratorName].appId });
         }
       }
     });
 
     const appIds = new Set([this.props.appId]);
-    _.map(bundles, 'appId').forEach(item => appIds.add(item));
-    _.map(contents, 'appId').forEach(item => appIds.add(item));
+    for (const item of _.map(bundles, 'appId')) appIds.add(item);
+    for (const item of _.map(contents, 'appId')) appIds.add(item);
     const mappings = _.map(contents, (item) => {
       return `/content/${item.appId}/</`;
     });
@@ -105,7 +104,6 @@ class ConfigPackageGenerator extends Generator {
       this._writing(this._listTemplates('loggers'), { appId: b.appId, loggerPackage: b.package });
     });
 
-
     this._writePom();
     if (this.env.rootGenerator() === this) {
       PomUtils.addModuleToParent(this);
@@ -119,9 +117,7 @@ class ConfigPackageGenerator extends Generator {
     }
   }
 
-
   _writePom() {
-
     const tplProps = _.pick(this.props, ['name', 'artifactId', 'appId']);
     tplProps.parent = this.parentProps;
     const structures = this._findModules(structureGeneratorName);
@@ -130,7 +126,7 @@ class ConfigPackageGenerator extends Generator {
     }
 
     // Read the template and parse w/ properties.
-    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+    const genPom = ejs.render(this.fs.read(this.templatePath('pom.xml')), tplProps);
     const pomFile = this.destinationPath('pom.xml');
     this.fs.write(pomFile, genPom);
   }

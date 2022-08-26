@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import _ from 'lodash';
 import chalk from 'chalk';
 import { Octokit } from '@octokit/rest';
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import { XMLBuilder } from 'fast-xml-parser';
 
 import Generator from 'yeoman-generator';
 
@@ -57,7 +57,7 @@ class CoreComponentMixinGenerator extends Generator {
     features.customInstallTask = true;
     super(args, options, features);
 
-    const opts = {
+    const options_ = {
       defaults: {
         desc: 'Use all defaults for user input.',
       },
@@ -72,14 +72,14 @@ class CoreComponentMixinGenerator extends Generator {
       version: {
         type: String,
         desc: 'Version of the Core Components to use, use `latest` for always using latest release.',
-      }
+      },
     };
 
-    _.forOwn(opts, (v, k) => {
+    _.forOwn(options_, (v, k) => {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -94,10 +94,9 @@ class CoreComponentMixinGenerator extends Generator {
     this.availableBundles = ModuleMixins._findModules.bind(this, bundleGeneratorName)();
     this.availableApps = ModuleMixins._findModules.bind(this, appsGeneratorName)();
 
-    if (this.availableApps.length === 0) {
+    if (this.options.parent === undefined && this.availableApps.length === 0) {
       throw new Error('Project must have at least one UI Apps module to use Core Component mixin.');
     }
-
 
     let module = _.find(this.availableBundles, ['path', this.options.bundleRef]);
     if (module) {
@@ -125,7 +124,6 @@ class CoreComponentMixinGenerator extends Generator {
     if (config.apps) {
       this.props.apps = _.union(this.props.apps, config.apps);
     }
-
   }
 
   prompting() {
@@ -140,13 +138,15 @@ class CoreComponentMixinGenerator extends Generator {
               resolve(false);
               return;
             }
+
             resolve(this.props.version === undefined);
           });
         },
         default: true,
       },
       {
-        name: 'version',
+        // Needs to be different than 'version' due to overlap with root generator.
+        name: 'ccVersion',
         message: 'Select version of Core Components to use:',
         type: 'list',
         when: (answers) => {
@@ -167,14 +167,15 @@ class CoreComponentMixinGenerator extends Generator {
               resolve(false);
               return;
             }
-            resolve(this.props.bundles.length === 0 && this.availableBundles.length !== 0);
+
+            resolve(this.props.bundles.length === 0 && this.availableBundles.length > 0);
           });
         },
         choices: () => {
           return new Promise((resolve) => {
             resolve(_.map(this.availableBundles, 'path'));
           });
-        }
+        },
       },
       {
         name: 'apps',
@@ -186,6 +187,7 @@ class CoreComponentMixinGenerator extends Generator {
               resolve(false);
               return;
             }
+
             resolve(this.props.apps.length === 0);
           });
         },
@@ -194,22 +196,25 @@ class CoreComponentMixinGenerator extends Generator {
             resolve(_.map(this.availableApps, 'path'));
           });
         },
-        validate: (chosen) => {
+        validate(chosen) {
           return new Promise((resolve) => {
             if (chosen && chosen.length > 0) {
               resolve(true);
               return;
             }
+
             resolve('At least one Apps module reference must be provided.');
           });
-        }
+        },
       },
     ];
 
     return this.prompt(prompts).then((answers) => {
-      _.merge(this.props, _.pick(answers, ['version', 'bundles', 'apps']));
+      _.merge(this.props, _.pick(answers, ['bundles', 'apps']));
       if (answers.latest) {
         this.props.version = 'latest';
+      } else {
+        this.props.version = answers.ccVersion;
       }
     });
   }
@@ -221,38 +226,44 @@ class CoreComponentMixinGenerator extends Generator {
   default() {
     this.props.aemVersion = this.fs.readJSON(this.destinationPath('.yo-rc.json'))[rootGeneratorName].aemVersion;
     return this._resolveVersion().then((ccVersion) => {
-      this.props.version = ccVersion;
+      this.props.resolvedVersion = ccVersion;
       // Run the specific mixin for each module.
       _.each(this.props.bundles, (module) => {
-        this.composeWith({
+        this.composeWith(
+          {
             Generator: BundleModuleCoreComponentMixin,
-            path: path.join('bundle', 'index.js'),
+            path: path.join(dirname, 'bundle', 'index.js'),
           },
           {
             generateInto: module,
             aemVersion: this.props.aemVersion,
-          });
+          }
+        );
       });
       _.each(this.props.apps, (module) => {
-        this.composeWith({
+        this.composeWith(
+          {
             Generator: AppsPackageModuleCoreComponentMixin,
-            path: path.join('apps', 'index.js'),
+            path: path.join(dirname, 'apps', 'index.js'),
           },
           {
             generateInto: module,
             aemVersion: this.props.aemVersion,
-            version: ccVersion
-          });
+            version: ccVersion,
+          }
+        );
       });
       if (this.props.aemVersion !== 'cloud') {
         const allModule = ModuleMixins._findModules.call(this, allGeneratorName);
-        this.composeWith({
+        this.composeWith(
+          {
             Generator: AllPackageModuleCoreComponentMixin,
-            path: path.join('all', 'index.js'),
+            path: path.join(dirname, 'all', 'index.js'),
           },
           {
-            generateInto: allModule.path
-          });
+            generateInto: allModule.path,
+          }
+        );
       }
     });
   }
@@ -279,26 +290,26 @@ class CoreComponentMixinGenerator extends Generator {
     if (!this.fs.exists(yorcFile) || this.fs.readJSON(yorcFile)[rootGeneratorName] === undefined) {
       throw new Error(
         chalk.red(`${this.moduleName} Generator cannot be use outside existing project context.`) +
-        '\n\n' +
-        `You are trying to use the ${this.moduleName} Generator without the context of a parent project.\n` +
-        'This is not a supported feature. Please either: \n\n' +
-        '\t * Run in the context of a project previously created using: ' +
-        chalk.yellow('yo @adobe/aem') +
-        ', or\n' +
-        `\t * Run ${this.moduleName} Generator from existing AEM project root, by using: ` +
-        chalk.yellow('yo @adobe/aem --modules <<module type>>') +
-        '.'
+          '\n\n' +
+          `You are trying to use the ${this.moduleName} Generator without the context of a parent project.\n` +
+          'This is not a supported feature. Please either: \n\n' +
+          '\t * Run in the context of a project previously created using: ' +
+          chalk.yellow('yo @adobe/aem') +
+          ', or\n' +
+          `\t * Run ${this.moduleName} Generator from existing AEM project root, by using: ` +
+          chalk.yellow('yo @adobe/aem --modules <<module type>>') +
+          '.'
       );
     }
   }
 
   _listVersions() {
-    return readdir(path.join(dirname, 'apps', 'versions'), { withFileTypes: true })
-      .then((dirent) => {
-        return dirent.filter((dirent) => dirent.isDirectory())
-          .map(dirent => dirent.name)
-          .sort((l, r) => parseFloat(r) - parseFloat(l));
-      });
+    return readdir(path.join(dirname, 'apps', 'versions'), { withFileTypes: true }).then((dirent) => {
+      return dirent
+        .filter((dirent) => dirent.isDirectory())
+        .map((dirent) => dirent.name)
+        .sort((l, r) => Number.parseFloat(r) - Number.parseFloat(l));
+    });
   }
 
   _resolveVersion() {
@@ -307,6 +318,7 @@ class CoreComponentMixinGenerator extends Generator {
         return this._ccVersion(versions[0]);
       });
     }
+
     return this._ccVersion(this.props.version);
   }
 
@@ -329,16 +341,15 @@ class CoreComponentMixinGenerator extends Generator {
     const builder = new XMLBuilder(PomUtils.xmlOptions);
     const pomFile = this.destinationPath('pom.xml');
 
-
     const pom = PomUtils.readPom(this);
     const pomProperties = PomUtils.findPomNodeArray(pom, 'project', 'properties');
 
     const ccProp = _.find(pomProperties, (item) => _.has(item, versionProperty));
     if (ccProp) {
-      ccProp[0]['#text'] = this.props.version;
+      ccProp[0]['#text'] = this.props.resolvedVersion;
     } else {
       const prop = {};
-      prop[versionProperty] = [{ '#text': this.props.version }];
+      prop[versionProperty] = [{ '#text': this.props.resolvedVersion }];
       pomProperties.push(prop);
     }
 
@@ -357,9 +368,9 @@ class CoreComponentMixinGenerator extends Generator {
 
     const depsToAdd = [bundle];
     if (this.props.aemVersion !== 'cloud') {
-      depsToAdd.push(content);
-      depsToAdd.push(config);
+      depsToAdd.push(content, config);
     }
+
     PomUtils.addDependencies(pomDeps, depsToAdd, apiCoordinates(this.props.aemVersion));
     PomUtils.addDependencies(pomDeps, [test], { groupId: 'org.apache.sling', artifactId: 'org.apache.sling.testing.caconfig-mock-plugin' });
     this.fs.write(pomFile, PomUtils.fixXml(builder.build(pom)));

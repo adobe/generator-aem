@@ -1,4 +1,19 @@
-import fs from 'node:fs';
+/*
+ Copyright 2022 Adobe Inc.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,22 +23,21 @@ import { globbySync } from 'globby';
 
 import Generator from 'yeoman-generator';
 
+import { XMLBuilder } from 'fast-xml-parser';
 import PomUtils, { filevaultPlugin } from '../../../lib/pom-utils.js';
 import { generatorName as rootGeneratorName, apiCoordinates } from '../../app/index.js';
 import { generatorName as appsGeneratorName } from '../../package-apps/index.js';
 import { bundleGav, contentGav, configGav } from '../index.js';
-import { XMLBuilder } from 'fast-xml-parser';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 const generatorName = '@adobe/generator-aem:mixin-cc:apps';
 
-
 class AppsPackageModuleCoreComponentMixin extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
-    const opts = {
+    const options_ = {
       generateInto: {
         type: String,
         required: true,
@@ -37,14 +51,14 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
       version: {
         type: String,
         desc: 'Version of the Core Components to use.',
-      }
+      },
     };
 
-    _.forOwn(opts, (v, k) => {
+    _.forOwn(options_, (v, k) => {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -53,6 +67,7 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
     this.destinationRoot(this.destinationPath(this.options.generateInto));
     this.props = {
       aemVersion: this.options.aemVersion,
+      version: this.options.version,
     };
   }
 
@@ -82,6 +97,7 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
         if (!plugin.plugin) {
           return false;
         }
+
         return _.find(plugin.plugin, (def) => {
           return def.artifactId && def.artifactId[0]['#text'] === filevaultPlugin;
         });
@@ -95,14 +111,15 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
         // Can't have 'type' in the filevault list. need to remove it from content/config dependencies
 
         const fvToAdd = [bundle];
-        let tmp = _.cloneDeep(content);
-        tmp.dependency.pop();
-        fvToAdd.push(tmp);
-        tmp = _.cloneDeep(config);
-        tmp.dependency.pop();
-        fvToAdd.push(tmp);
+        let temporary = _.cloneDeep(content);
+        temporary.dependency.pop();
+        fvToAdd.push(temporary);
+        temporary = _.cloneDeep(config);
+        temporary.dependency.pop();
+        fvToAdd.push(temporary);
         PomUtils.addDependencies(fvPluginDeps, fvToAdd);
       }
+
       const builder = new XMLBuilder(PomUtils.xmlOptions);
       this.fs.write(this.destinationPath('pom.xml'), PomUtils.fixXml(builder.build(pomData)));
       resolve();
@@ -114,7 +131,7 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
     const appsYorc = this.fs.readJSON(this.destinationPath('.yo-rc.json'))[appsGeneratorName];
     const appId = appsYorc.appId;
     const tplProps = {
-      appId: appId,
+      appId,
       projName: rootYorc.name,
     };
 
@@ -123,6 +140,7 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
     if (!this.fs.exists(componentFile)) {
       throw new Error(`Unable to find Core Component list for version '${fileVersion}'`);
     }
+
     const componentGroups = this.fs.readJSON(componentFile);
     const outputRoot = path.join(this.destinationPath('src', 'main', 'content', 'jcr_root', 'apps', appId, 'components'));
     const promises = [];
@@ -136,9 +154,6 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
 
   _buildCompPromises = (properties, outputRoot, components, folderQualifier) => {
     const promises = [];
-    if (!fs.existsSync(path.join(outputRoot))) {
-      fs.mkdirSync(path.join(outputRoot));
-    }
     _.each(components, (comp) => {
       const transformed = _.transform(
         comp,
@@ -169,7 +184,6 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
   _buildCompPromise = (config, tplProperties, outputRoot) => {
     return new Promise((resolve) => {
       const outputDir = path.join(outputRoot, config.name);
-      fs.mkdirSync(outputDir);
       const files = [];
       let templates = globbySync([this.templatePath('shared', '**/*'), this.templatePath('shared', '**/.*')], { onlyFiles: true });
       _.each(templates, (t) => {

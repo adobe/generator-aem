@@ -1,3 +1,19 @@
+/*
+ Copyright 2022 Adobe Inc.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 import path from 'node:path';
 
 import _ from 'lodash';
@@ -17,7 +33,7 @@ class BundleModuleCoreComponentMixin extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
-    const opts = {
+    const options_ = {
       generateInto: {
         type: String,
         required: true,
@@ -30,11 +46,11 @@ class BundleModuleCoreComponentMixin extends Generator {
       },
     };
 
-    _.forOwn(opts, (v, k) => {
+    _.forOwn(options_, (v, k) => {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -60,14 +76,13 @@ class BundleModuleCoreComponentMixin extends Generator {
 
     const templates = ModuleMixins._listTemplates.call(this);
     ModuleMixins._writing.call(this, templates, tplProps);
-
   }
 
   _writePom() {
     const pomData = PomUtils.readPom(this);
     const deps = PomUtils.findPomNodeArray(pomData, 'project', 'dependencies');
     const bundle = { dependency: _.cloneDeep(bundleGav) };
-    const test = { dependency: _.clone(testGav) }
+    const test = { dependency: _.clone(testGav) };
 
     if (this.props.aemVersion === 'cloud') {
       bundle.dependency.splice(2, 0, { scope: [{ '#text': 'test' }] });
@@ -80,7 +95,6 @@ class BundleModuleCoreComponentMixin extends Generator {
     const builder = new XMLBuilder(PomUtils.xmlOptions);
     this.fs.write(this.destinationPath('pom.xml'), PomUtils.fixXml(builder.build(pomData)));
   }
-
 }
 
 export default BundleModuleCoreComponentMixin;

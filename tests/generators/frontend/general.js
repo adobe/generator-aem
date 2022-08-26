@@ -26,11 +26,11 @@ import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 
 import GeneralFEGenerator from '../../../generators/frontend-general/index.js';
-import { Config, WriteInstall } from '../../fixtures/generators/wrappers.js';
+import { config, writeInstall } from '../../fixtures/generators/wrappers.js';
 
 const resolved = generatorPath('frontend-general', 'index.js');
-const GeneralConfig = Config(GeneralFEGenerator, resolved);
-const GeneralWriteInstall = WriteInstall(GeneralFEGenerator, resolved);
+const GeneralConfig = config(GeneralFEGenerator, resolved);
+const GeneralWriteInstall = writeInstall(GeneralFEGenerator, resolved);
 
 test('configuring', async (t) => {
   t.plan(1);

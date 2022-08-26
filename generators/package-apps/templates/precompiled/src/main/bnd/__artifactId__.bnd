@@ -1,0 +1,6 @@
+Bundle-Name: ${project.name} - precompiled scripts
+Bundle-SymbolicName: ${project.groupId}.${project.artifactId}.precompiled-scripts
+-plugin:  org.apache.sling.scriptingbundle.plugin.bnd.BundledScriptsScannerPlugin; \
+          sourceDirectories="src/main/content/jcr_root"; \
+          includes="**/.content.xml,**/*.html"
+Require-Capability: osgi.extender;filter:="(&(osgi.extender=sling.scripting)(version>=1.0.0)(!(version>=2.0.0)))"

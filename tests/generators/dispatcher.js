@@ -21,17 +21,16 @@ import tempDirectory from 'temp-dir';
 
 import test from 'ava';
 import helpers from 'yeoman-test';
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 
-import PomUtils from '../../lib/pom-utils.js';
 import DispatcherGenerator from '../../generators/dispatcher/index.js';
-import { Prompt, Config, Default, WriteInstall } from '../fixtures/generators/wrappers.js';
+import { prompt, config, writeInstall } from '../fixtures/generators/wrappers.js';
 import { generatorPath, fixturePath, aem65ApiMetadata, cloudSdkApiMetadata } from '../fixtures/helpers.js';
 
 const resolved = generatorPath('dispatcher', 'index.js');
-const DispatcherPrompt = Prompt(DispatcherGenerator, resolved);
-const DispatcherConfig = Config(DispatcherGenerator, resolved);
-const DispatcherWriteInstall = WriteInstall(DispatcherGenerator, resolved);
+const DispatcherPrompt = prompt(DispatcherGenerator, resolved);
+const DispatcherConfig = config(DispatcherGenerator, resolved);
+const DispatcherWriteInstall = writeInstall(DispatcherGenerator, resolved);
 
 test('prompting', async (t) => {
   const expected = { name: 'Name Prompted', appId: 'AppId Prompted' };
@@ -123,7 +122,6 @@ test('writing/install - cloud', async (t) => {
     .withOptions({
       showBuildOutput: false,
       props: {
-        artifactId: 'cloud.dispatcher',
         name: 'Test Project - Dispatcher',
         appId: 'test',
       },
@@ -150,7 +148,7 @@ test('writing/install - cloud', async (t) => {
       t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'cloud.dispatcher', 'ArtifactId set.');
+      t.is(pomData.project.artifactId, 'test.dispatcher', 'ArtifactId set.');
       t.is(pomData.project.name, 'Test Project - Dispatcher', 'Name set.');
 
       result.assertNoFileContent('pom.xml', /src\/conf\/httpd\.conf/);
@@ -163,6 +161,6 @@ test('writing/install - cloud', async (t) => {
 
       result.assertFileContent(path.join('src', 'conf.d', 'variables', 'custom.vars'), /Define CONTENT_FOLDER_NAME test/);
 
-      result.assertFile(path.join('target', `cloud.dispatcher-1.0.0-SNAPSHOT.zip`));
+      result.assertFile(path.join('target', `test.dispatcher-1.0.0-SNAPSHOT.zip`));
     });
 });

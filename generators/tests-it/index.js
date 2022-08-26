@@ -14,7 +14,6 @@
  limitations under the License.
 */
 
-import fs from 'node:fs';
 import path from 'node:path';
 
 import _ from 'lodash';
@@ -27,7 +26,7 @@ import MavenUtils from '../../lib/maven-utils.js';
 import PomUtils from '../../lib/pom-utils.js';
 
 const invalidPackageRegex = /[^a-zA-Z.]/g;
-const generatorName = '@adobe/generator-aem:tests-it';
+export const generatorName = '@adobe/generator-aem:tests-it';
 
 const testClientCoordinates = (version) => {
   if (version === 'cloud') {
@@ -172,7 +171,7 @@ class IntegrationTestsGenerator extends Generator {
     tplProps.parent = this.parentProps;
 
     // Read the template and parse w/ properties.
-    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+    const genPom = ejs.render(this.fs.read(this.templatePath('pom.xml')), tplProps);
 
     const pomFile = this.destinationPath('pom.xml');
     if (this.fs.exists(pomFile)) {

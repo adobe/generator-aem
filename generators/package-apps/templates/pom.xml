@@ -160,4 +160,63 @@
     </dependency>
   </dependencies>
 
+  <%_ if (parent.aemVersion === 'cloud' && locals.precompileScripts && precompileScripts) { _%>
+  <profiles>
+    <profile>
+      <id>precompiledScripts</id>
+      <activation>
+        <property>
+          <name>skipScriptPrecompilation</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bnd-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>bnd-process</id>
+                <goals>
+                  <goal>bnd-process</goal>
+                </goals>
+                <configuration>
+                  <packagingTypes>content-package</packagingTypes>
+                  <bndfile>src/main/bnd/${project.artifactId}.bnd</bndfile>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <classifier>precompiled-scripts</classifier>
+                  <archive>
+                    <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                  </archive>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>sling-maven-plugin</artifactId>
+            <configuration>
+              <bundleFileName>${project.build.directory}/${project.build.finalName}-${project.version}.precompiled-scripts.jar</bundleFileName>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+  <%_ } %>
+
 </project>

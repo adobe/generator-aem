@@ -26,7 +26,7 @@ import Generator from 'yeoman-generator';
 import ModuleMixins from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
 
-const generatorName = '@adobe/generator-aem:dispatcher';
+export const generatorName = '@adobe/generator-aem:dispatcher';
 
 const docLink = (aemVersion) => {
   if (aemVersion === 'cloud') {
@@ -89,7 +89,7 @@ class DispatcherGenerator extends Generator {
     files.push(...this._listTemplates(context));
     const rootPath = this.templatePath(context);
 
-    const immutableFileList = fs.readFileSync(this.templatePath(context, 'immutable.files'), 'utf-8').split(/\r?\n/);
+    const immutableFileList = this.fs.read(this.templatePath(context, 'immutable.files')).split(/\r?\n/);
 
     return Promise.all(this._buildImmutablePromises(rootPath, immutableFileList, tplProps)).then(() => {
       this._writing(files, tplProps);
@@ -159,7 +159,7 @@ class DispatcherGenerator extends Generator {
       const src = path.join('..', path.basename(path.dirname(dest)), path.basename(dest)).replaceAll('enabled', 'available');
       fs.mkdirSync(this.destinationPath(path.dirname(dest)), { recursive: true });
       fs.mkdirSync(this.destinationPath(path.dirname(temporaryAvailable)), { recursive: true });
-      if (!fs.existsSync(this.destinationPath(temporaryAvailable))) {
+      if (!this.fs.exists(this.destinationPath(temporaryAvailable))) {
         fs.cpSync(entry, this.destinationPath(temporaryAvailable));
       }
 

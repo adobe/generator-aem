@@ -16,7 +16,6 @@
 
 import path from 'node:path';
 
-import fs from 'node:fs';
 import _ from 'lodash';
 import Generator from 'yeoman-generator';
 
@@ -134,7 +133,7 @@ class BundleGenerator extends Generator {
     const builder = new XMLBuilder(PomUtils.xmlOptions);
 
     // Read the template and parse w/ properties.
-    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+    const genPom = ejs.render(this.fs.read(this.templatePath('pom.xml')), tplProps);
     const parsedGenPom = parser.parse(genPom);
     const genProject = PomUtils.findPomNodeArray(parsedGenPom, 'project');
     const genDependencies = PomUtils.findPomNodeArray(genProject, 'dependencies');
@@ -150,17 +149,19 @@ class BundleGenerator extends Generator {
         const insert = _.findIndex(genProject, (item) => _.has(item, 'build'));
         genProject.splice(insert, 0, { properties: existing });
       }
+
       PomUtils.mergePomSection(PomUtils.findPomNodeArray(genProject, 'build', 'plugins'), PomUtils.findPomNodeArray(existingPom, 'build', 'plugins'), PomUtils.pluginPredicate);
 
       existing = PomUtils.findPomNodeArray(existingPom, 'profiles');
       if (existing) {
-        const insert =_.findIndex(genProject, (item) => _.has(item, 'dependencies')) + 1;
+        const insert = _.findIndex(genProject, (item) => _.has(item, 'dependencies')) + 1;
         genProject.splice(insert, 0, { profiles: existing });
       }
+
       PomUtils.mergePomSection(genDependencies, PomUtils.findPomNodeArray(existingPom, 'dependencies'), PomUtils.dependencyPredicate);
     }
 
-    const addlDeps = parser.parse(fs.readFileSync(this.templatePath('partials', 'v6.5', 'dependencies.xml'), { encoding: 'utf8' }))[0].dependencies;
+    const addlDeps = parser.parse(this.fs.read(this.templatePath('partials', 'v6.5', 'dependencies.xml')))[0].dependencies;
     if (this.parentProps.aemVersion === 'cloud') {
       addlDeps.push({
         dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'uber-jar' }] }],

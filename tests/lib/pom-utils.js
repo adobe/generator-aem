@@ -16,14 +16,11 @@
 
 import fs from 'node:fs';
 
-import path from 'node:path';
-import crypto from 'node:crypto';
 import _ from 'lodash';
 
 import test from 'ava';
 import { XMLBuilder } from 'fast-xml-parser';
 
-import tempDirectory from 'temp-dir';
 import PomUtils from '../../lib/pom-utils.js';
 import { fixturePath } from '../fixtures/helpers.js';
 
@@ -114,7 +111,7 @@ test('readPom - does not exist', (t) => {
 test('listParentPomModules - no node', (t) => {
   t.plan(1);
   const generator = {
-    destinationRoot()  {
+    destinationRoot() {
       return fixturePath('projects', 'cloud', 'module');
     },
     fs: {
@@ -123,16 +120,16 @@ test('listParentPomModules - no node', (t) => {
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
+      },
     },
-  }
+  };
   t.deepEqual(PomUtils.listParentPomModules(generator, fixturePath('projects', 'cloud')), [], 'Empty list returned.');
 });
 
 test('listParentPomModules - none', (t) => {
   t.plan(1);
   const generator = {
-    destinationRoot()  {
+    destinationRoot() {
       return fixturePath('projects', 'v6.5', 'module');
     },
     fs: {
@@ -141,16 +138,16 @@ test('listParentPomModules - none', (t) => {
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
+      },
     },
-  }
+  };
   t.deepEqual(PomUtils.listParentPomModules(generator, fixturePath('projects', 'v6.5')), [], 'Empty list returned.');
 });
 
 test('listParentPomModules - list', (t) => {
   t.plan(1);
   const generator = {
-    destinationRoot()  {
+    destinationRoot() {
       return fixturePath('pom', 'modules', 'module');
     },
     fs: {
@@ -159,9 +156,9 @@ test('listParentPomModules - list', (t) => {
       },
       read(path) {
         return fs.readFileSync(path, { encoding: 'utf8' });
-      }
+      },
     },
-  }
+  };
   const expected = ['core', 'ui.apps', 'ui.apps.structure', 'unknown'];
   t.deepEqual(PomUtils.listParentPomModules(generator, fixturePath('pom', 'modules')), expected, 'List returned.');
 });

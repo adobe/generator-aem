@@ -14,7 +14,6 @@
  limitations under the License.
 */
 
-import fs from 'node:fs';
 import path from 'node:path';
 
 import _ from 'lodash';
@@ -22,11 +21,11 @@ import ejs from 'ejs';
 
 import Generator from 'yeoman-generator';
 
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import ModuleMixins from '../../lib/module-mixins.js';
 import { generatorName as bundleGeneratorName } from '../bundle/index.js';
 import { generatorName as frontendGeneratorName } from '../frontend-general/index.js';
 import { generatorName as structureGeneratorName } from '../package-structure/index.js';
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import PomUtils from '../../lib/pom-utils.js';
 
 export const generatorName = '@adobe/generator-aem:package-apps';
@@ -62,65 +61,34 @@ class AppsPackageGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
 
   initializing() {
     this._initializing();
+
+    if (this.options.defaults) {
+      this.props.precompileScripts =  true;
+    }
+
     if (this.options.precompileScripts !== undefined) {
       this.props.precompileScripts = this.options.precompileScripts;
     }
 
-    _.defaults(this.props, _.pick(this.options, ['bundleRef', 'frontendRef', 'structureRef', 'precompileScripts']));
-
-    if (this.options.defaults) {
-      this.props.bundle = {
-        path: 'core',
-        artifactId: `${this.props.appId}.core`,
-      };
-      this.props.frontend = {
-        path: 'ui.frontend',
-        artifactId: `${this.props.appId}.ui.frontend`,
-      };
-      this.props.structure = {
-        path: 'ui.apps.structure',
-        artifactId: `${this.props.appId}.ui.apps.structure`,
-      };
-      this.props.precompileScripts = true;
+    if (this.options.bundleRef) {
+      this.props.bundle = this.options.bundleRef
+    }
+    if (this.options.frontendRef) {
+      this.props.frontend = this.options.frontendRef;
+    }
+    if (this.options.structureRef) {
+      this.props.structure = this.options.structureRef;
     }
 
     this.availableBundles = this._findModules(bundleGeneratorName);
     this.availableFrontends = this._findModules(frontendGeneratorName);
-    this.availableStructures = this._findModules(structureGeneratorName);
-
-    if (this.props.bundleRef) {
-      this.props.bundle = _.find(this.availableBundles, ['artifactId', this.props.bundleRef]);
-      if (this.props.bundle === undefined) {
-        // Look up module based on pom
-        this.props.bundle = this._lookupArtifact(this.props.bundleRef);
-      }
-      delete this.props.bundleRef;
-    }
-    if (this.props.frontendRef) {
-      this.props.frontend = _.find(this.availableFrontends, ['artifactId', this.props.frontendRef]);
-      if (this.props.frontend === undefined) {
-        // Look up module based on pom
-        this.props.frontend = this._lookupArtifact(this.props.frontendRef);
-      }
-      delete this.props.frontendRef;
-    }
-    if (this.props.structureRef) {
-      this.props.structure = _.find(this.availableStructures, ['artifactId', this.props.structureRef]);
-      if (this.props.structure === undefined) {
-        // Look up module based on pom
-        this.props.structure = this._lookupArtifact(this.props.structureRef);
-      }
-      delete this.props.structureRef;
-    } else if (this.availableStructures.length > 0) {
-     this.props.structure = this.availableStructures[0];
-    }
   }
 
   prompting() {
@@ -139,12 +107,9 @@ class AppsPackageGenerator extends Generator {
         },
         when: () => {
           return new Promise((resolve) => {
-            if (this.options.defaults && this.props.bundle !== undefined) {
-              resolve(false);
-            }
-            resolve(true);
+            resolve(this.props.bundle === undefined);
           });
-        }
+        },
       },
       {
         name: 'frontendRef',
@@ -160,12 +125,9 @@ class AppsPackageGenerator extends Generator {
         },
         when: () => {
           return new Promise((resolve) => {
-            if (this.options.defaults && this.props.frontend !== undefined) {
-              resolve(false);
-            }
-            resolve(true);
+            resolve(this.props.frontend === undefined);
           });
-        }
+        },
       },
       {
         name: 'precompileScripts',
@@ -179,12 +141,12 @@ class AppsPackageGenerator extends Generator {
     return this._prompting(prompts).then((answers) => {
       delete this.props.bundleRef;
       if (answers.bundleRef !== 'None') {
-        this.props.bundle = _.find(this.availableBundles, ['artifactId', answers.bundleRef]);
+        this.props.bundle = answers.bundleRef;
       }
 
       delete this.props.frontendRef;
       if (answers.frontendRef !== 'None') {
-        this.props.frontend = _.find(this.availableFrontends, ['artifactId', answers.frontendRef]);
+        this.props.frontend = answers.frontendRef;
       }
 
       if (!answers.precompileScripts) {
@@ -206,9 +168,13 @@ class AppsPackageGenerator extends Generator {
     }
 
     const tplProps = {
-      ..._.pick(this.props, ['name', 'artifactId', 'appId', 'bundle', 'frontend', 'structure']),
+      ..._.pick(this.props, ['name', 'artifactId', 'appId', 'precompileScripts']),
       parent: this.parentProps,
     };
+    tplProps.bundle = this._lookupArtifact(this.props.bundle);
+    tplProps.frontend = this._lookupArtifact(this.props.frontend);
+    tplProps.structure = this._lookupArtifact(this.props.structure);
+
     this._writing(files, tplProps);
     this._writePom(tplProps);
 
@@ -224,27 +190,29 @@ class AppsPackageGenerator extends Generator {
     }
   }
 
-  _lookupArtifact(name) {
+  _lookupArtifact(artifactId) {
     const root = path.dirname(this.destinationRoot());
-    const moduleList = PomUtils.listParentPomModules(this, root)
-    let artifact = undefined;
+    const moduleList = PomUtils.listParentPomModules(this, root);
+    let artifact;
     _.each(moduleList, (module) => {
-      const pom = new XMLParser().parse(this.fs.read(path.join(root, module, 'pom.xml')));
-      if (pom.project.artifactId === name) {
-        artifact = { path: module, artifactId: pom.project.artifactId };
-        return false;
+      const pomFile = path.join(root, module, 'pom.xml');
+      if (this.fs.exists(pomFile)) {
+        const pom = new XMLParser().parse(this.fs.read(pomFile));
+        if (pom.project.artifactId === artifactId) {
+          artifact = { path: module, artifactId: pom.project.artifactId };
+          return false;
+        }
       }
     });
     return artifact;
   }
 
   _writePom(tplProps) {
-
     const parser = new XMLParser(PomUtils.xmlOptions);
     const builder = new XMLBuilder(PomUtils.xmlOptions);
 
     // Read the template and parse w/ properties.
-    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+    const genPom = ejs.render(this.fs.read(this.templatePath('pom.xml')), tplProps);
     const parsedGenPom = parser.parse(genPom);
     const genProject = PomUtils.findPomNodeArray(parsedGenPom, 'project');
     const genDependencies = PomUtils.findPomNodeArray(genProject, 'dependencies');
@@ -259,7 +227,7 @@ class AppsPackageGenerator extends Generator {
       PomUtils.mergePomSection(genDependencies, PomUtils.findPomNodeArray(existingPom, 'dependencies'), PomUtils.dependencyPredicate);
     }
 
-    const addlDeps = parser.parse(fs.readFileSync(this.templatePath('partials', 'v6.5', 'dependencies.xml'), { encoding: 'utf8' }))[0].dependencies;
+    const addlDeps = parser.parse(this.fs.read(this.templatePath('partials', 'v6.5', 'dependencies.xml')))[0].dependencies;
     if (this.parentProps.aemVersion === 'cloud') {
       addlDeps.push({
         dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'uber-jar' }] }],
@@ -268,8 +236,8 @@ class AppsPackageGenerator extends Generator {
     } else {
       PomUtils.addDependencies(genDependencies, addlDeps, tplProps.parent.aem);
     }
-    this.fs.write(pomFile, PomUtils.fixXml(builder.build(parsedGenPom)));
 
+    this.fs.write(pomFile, PomUtils.fixXml(builder.build(parsedGenPom)));
   }
 }
 

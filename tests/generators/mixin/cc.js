@@ -31,7 +31,7 @@ import { generatorName as bundleGeneratorName } from '../../../generators/bundle
 import { generatorName as appsGeneratorName } from '../../../generators/package-apps/index.js';
 
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
-import { Init, Config, WriteInstall } from '../../fixtures/generators/wrappers.js';
+import { init, config, writeInstall } from '../../fixtures/generators/wrappers.js';
 
 import CoreComponentMixinGenerator from '../../../generators/mixin-cc/index.js';
 import BundleModuleCoreComponentMixin from '../../../generators/mixin-cc/bundle/index.js';
@@ -39,9 +39,9 @@ import AppsPackageModuleCoreComponentMixin from '../../../generators/mixin-cc/ap
 import AllPackageModuleCoreComponentMixin from '../../../generators/mixin-cc/all/index.js';
 
 const resolved = generatorPath('mixin-cc', 'index.js');
-const CCInit = Init(CoreComponentMixinGenerator, resolved);
-const CCConfig = Config(CoreComponentMixinGenerator, resolved);
-const CCWriteInstall = WriteInstall(CoreComponentMixinGenerator, resolved);
+const CCInit = init(CoreComponentMixinGenerator, resolved);
+const CCConfig = config(CoreComponentMixinGenerator, resolved);
+const CCWriteInstall = writeInstall(CoreComponentMixinGenerator, resolved);
 
 class CCPrompt extends CoreComponentMixinGenerator {
   constructor(args, options, features) {
@@ -51,7 +51,7 @@ class CCPrompt extends CoreComponentMixinGenerator {
     this.availableBundles = this.options.availableBundles || [];
     this.availableApps = this.options.availableApps || [];
 
-    this.prompt = function(prompts) {
+    this.prompt = function (prompts) {
       this.prompts = prompts;
       return new Promise((resolve) => {
         resolve({});
@@ -69,7 +69,6 @@ test('initializing - no yorc found - errors', async (t) => {
 
   const error = await t.throwsAsync(helpers.create(CCInit).run());
   t.regex(error.message, /Generator cannot be use outside existing project context./, 'Error message was correct.');
-
 });
 
 test('initializing - no parent yorc found - errors', async (t) => {
@@ -81,15 +80,11 @@ test('initializing - no parent yorc found - errors', async (t) => {
     helpers
       .create(CCInit)
       .inDir(fullPath, () => {
-        fs.writeFileSync(
-          path.join(fullPath, '.yo-rc.json'),
-          JSON.stringify({ '@adobe/generator-aem:package-apps': { artifactId: 'test.ui.apps' } })
-        );
+        fs.writeFileSync(path.join(fullPath, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { artifactId: 'test.ui.apps' } }));
       })
       .run()
   );
   t.regex(error.message, /Generator cannot be use outside existing project context./, 'Error message was correct.');
-
 });
 
 test('initializing - no apps package - errors', async (t) => {
@@ -99,15 +94,16 @@ test('initializing - no apps package - errors', async (t) => {
   stub.withArgs(bundleGeneratorName).returns([]);
   stub.withArgs(appsGeneratorName).returns([]);
 
-  const error = await t.throwsAsync(helpers
-    .create(CCInit)
-    .inTmpDir((dir) => {
-      fs.writeFileSync(path.join(dir, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem': {} }));
-    })
-    .run()
-    .then(() => {
-      stub.restore();
-    })
+  const error = await t.throwsAsync(
+    helpers
+      .create(CCInit)
+      .inTmpDir((dir) => {
+        fs.writeFileSync(path.join(dir, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem': {} }));
+      })
+      .run()
+      .then(() => {
+        stub.restore();
+      })
   );
 
   t.regex(error.message, /Project must have at least one UI Apps module to use Core Component mixin\./);
@@ -182,7 +178,7 @@ test.serial('initializing - options', async (t) => {
       const expected = {
         bundles: ['core'],
         apps: ['ui.apps'],
-        version: '2.3.22'
+        version: '2.3.22',
       };
       t.deepEqual(result.generator.props, expected, 'Properties Set');
     });
@@ -205,7 +201,7 @@ test.serial('initializing - merges from config - no options/props', async (t) =>
             version: '1.2.33',
             bundles: ['bundle'],
             apps: ['ui.apps.other'],
-          }
+          },
         })
       );
     })
@@ -215,7 +211,7 @@ test.serial('initializing - merges from config - no options/props', async (t) =>
       const expected = {
         bundles: ['bundle'],
         apps: ['ui.apps.other'],
-        version: '1.2.33'
+        version: '1.2.33',
       };
       t.deepEqual(result.generator.props, expected, 'Properties Set');
     });
@@ -239,7 +235,7 @@ test.serial('initializing - merges from config - passed refs', async (t) => {
             version: '1.2.33',
             bundles: ['bundle'],
             apps: ['ui.apps.other'],
-          }
+          },
         })
       );
     })
@@ -249,7 +245,7 @@ test.serial('initializing - merges from config - passed refs', async (t) => {
       const expected = {
         bundles: ['core', 'bundle'],
         apps: ['ui.apps', 'ui.apps.other'],
-        version: '2.3.22'
+        version: '2.3.22',
       };
       t.deepEqual(result.generator.props, expected, 'Properties Set');
     });
@@ -260,8 +256,14 @@ test.serial('initializing - finds all available modules', async (t) => {
 
   sinon.restore();
   const stub = sinon.stub(ModuleMixins, '_findModules');
-  const bundles = [{ path: 'core', artifactId: 'test.core' }, { path: 'bundle', artifactId: 'test.bundle' }];
-  const apps = [{ path: 'ui.apps', artifactId: 'test.ui.apps' }, { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' }];
+  const bundles = [
+    { path: 'core', artifactId: 'test.core' },
+    { path: 'bundle', artifactId: 'test.bundle' },
+  ];
+  const apps = [
+    { path: 'ui.apps', artifactId: 'test.ui.apps' },
+    { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' },
+  ];
 
   stub.withArgs(bundleGeneratorName).returns(bundles);
   stub.withArgs(appsGeneratorName).returns(apps);
@@ -301,6 +303,7 @@ test('prompting - latest - property set', async (t) => {
     .withOptions({ props: { version: '2.1.33' } })
     .run()
     .then(async (result) => {
+      result.generator.props.version = '2.1.33';
       const prompt = _.find(result.generator.prompts, { name: 'latest' });
       t.false(await prompt.when(), 'Latest does not prompt');
       t.true(prompt.default, 'Latest default true');
@@ -328,7 +331,7 @@ test('prompting - version - latest wanted', async (t) => {
     .withOptions({ defaults: true })
     .run()
     .then(async (result) => {
-      const prompt = _.find(result.generator.prompts, { name: 'version' });
+      const prompt = _.find(result.generator.prompts, { name: 'ccVersion' });
       t.false(await prompt.when({ latest: true }), 'Version does not prompt');
     });
 });
@@ -345,7 +348,7 @@ test.serial('prompting - version - specific version wanted', async (t) => {
     .run()
     .then(async (result) => {
       stub.restore();
-      const prompt = _.find(result.generator.prompts, { name: 'version' });
+      const prompt = _.find(result.generator.prompts, { name: 'ccVersion' });
       t.true(await prompt.when({ latest: false }), 'Version prompts');
       t.deepEqual(await prompt.choices(), versions, 'List was correct.');
     });
@@ -392,7 +395,10 @@ test('prompting - bundles - bundles prop populated', async (t) => {
 
 test('prompting - bundles - available modules', async (t) => {
   t.plan(2);
-  const bundles = [{ path: 'core', artifactId: 'test.core' }, { path: 'bundle', artifactId: 'test.bundle' }];
+  const bundles = [
+    { path: 'core', artifactId: 'test.core' },
+    { path: 'bundle', artifactId: 'test.bundle' },
+  ];
   await helpers
     .create(CCPrompt)
     .withOptions({ availableBundles: bundles, props: { bundles: [] } })
@@ -419,7 +425,10 @@ test('prompting - apps - apps prop populated', async (t) => {
 
 test('prompting - apps - available modules', async (t) => {
   t.plan(5);
-  const apps = [{ path: 'ui.apps', artifactId: 'test.ui.apps' }, { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' }];
+  const apps = [
+    { path: 'ui.apps', artifactId: 'test.ui.apps' },
+    { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' },
+  ];
   await helpers
     .create(CCPrompt)
     .withOptions({ availableApps: apps, props: { apps: [] } })
@@ -446,8 +455,14 @@ test('prompting - post process answers', async (t) => {
         apps: [],
       };
       this.options = {};
-      this.availableBundles = [{ path: 'core', artifactId: 'test.core' }, { path: 'bundle', artifactId: 'test.bundle' }];
-      this.availableApps = [{ path: 'ui.apps', artifactId: 'test.ui.apps' }, { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' }];
+      this.availableBundles = [
+        { path: 'core', artifactId: 'test.core' },
+        { path: 'bundle', artifactId: 'test.bundle' },
+      ];
+      this.availableApps = [
+        { path: 'ui.apps', artifactId: 'test.ui.apps' },
+        { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' },
+      ];
     }
 
     prompting() {
@@ -460,14 +475,14 @@ test('prompting - post process answers', async (t) => {
     .withPrompts({
       latest: true,
       bundles: [],
-      apps: ['ui.apps']
+      apps: ['ui.apps'],
     })
     .run()
     .then((result) => {
       const expected = {
         version: 'latest',
         bundles: [],
-        apps: ['ui.apps']
+        apps: ['ui.apps'],
       };
       t.deepEqual(result.generator.props, expected, 'Properties set.');
     });
@@ -490,8 +505,14 @@ test.serial('prompting - post process answers - more selected', async (t) => {
         apps: [],
       };
       this.options = {};
-      this.availableBundles = [{ path: 'core', artifactId: 'test.core' }, { path: 'bundle', artifactId: 'test.bundle' }];
-      this.availableApps = [{ path: 'ui.apps', artifactId: 'test.ui.apps' }, { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' }];
+      this.availableBundles = [
+        { path: 'core', artifactId: 'test.core' },
+        { path: 'bundle', artifactId: 'test.bundle' },
+      ];
+      this.availableApps = [
+        { path: 'ui.apps', artifactId: 'test.ui.apps' },
+        { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' },
+      ];
     }
 
     prompting() {
@@ -503,9 +524,9 @@ test.serial('prompting - post process answers - more selected', async (t) => {
     .create(Mock)
     .withPrompts({
       latest: false,
-      version: '2.20',
+      ccVersion: '2.20',
       bundles: ['core', 'bundle'],
-      apps: ['ui.apps', 'ui.apps.other']
+      apps: ['ui.apps', 'ui.apps.other'],
     })
     .run()
     .then((result) => {
@@ -531,8 +552,9 @@ test('configuring', async (t) => {
         path.join(dir, '.yo-rc.json'),
         JSON.stringify({
           '@adobe/generator-aem': expected,
-          '@adobe/generator-aem:mixin-cc': expected
-        }));
+          '@adobe/generator-aem:mixin-cc': expected,
+        })
+      );
     })
     .run()
     .then((result) => {
@@ -557,10 +579,10 @@ test.serial('default - compose with - no bundles - v6.5', async (t) => {
       super(args, options, features);
       this.props = options.props;
 
-      this.composeWith = function(generator, options) {
+      this.composeWith = function (generator, options) {
         composed.push({
           generator,
-          options
+          options,
         });
       };
     }
@@ -574,8 +596,8 @@ test.serial('default - compose with - no bundles - v6.5', async (t) => {
     .create(Mock)
     .withOptions({
       props: {
-        apps: ['ui.apps', 'ui.apps.other']
-      }
+        apps: ['ui.apps', 'ui.apps.other'],
+      },
     })
     .inTmpDir((dir) => {
       fs.writeFileSync(path.join(dir, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem': { aemVersion: '6.5' } }));
@@ -586,37 +608,49 @@ test.serial('default - compose with - no bundles - v6.5', async (t) => {
   resolveVersion.restore();
 
   t.is(composed.length, 3, 'Correct number of calls');
-  t.deepEqual(composed[0], {
-    generator: {
-      Generator: AppsPackageModuleCoreComponentMixin,
-      path: path.join('apps', 'index.js'),
+  t.deepEqual(
+    composed[0],
+    {
+      generator: {
+        Generator: AppsPackageModuleCoreComponentMixin,
+        path: generatorPath('mixin-cc', 'apps', 'index.js'),
+      },
+      options: {
+        generateInto: 'ui.apps',
+        aemVersion: '6.5',
+        version: '2.20.2',
+      },
     },
-    options: {
-      generateInto: 'ui.apps',
-      aemVersion: '6.5',
-      version: '2.20.2',
-    }
-  }, 'Parameters correct');
-  t.deepEqual(composed[1], {
-    generator: {
-      Generator: AppsPackageModuleCoreComponentMixin,
-      path: path.join('apps', 'index.js'),
+    'Parameters correct'
+  );
+  t.deepEqual(
+    composed[1],
+    {
+      generator: {
+        Generator: AppsPackageModuleCoreComponentMixin,
+        path: generatorPath('mixin-cc', 'apps', 'index.js'),
+      },
+      options: {
+        generateInto: 'ui.apps.other',
+        aemVersion: '6.5',
+        version: '2.20.2',
+      },
     },
-    options: {
-      generateInto: 'ui.apps.other',
-      aemVersion: '6.5',
-      version: '2.20.2',
-    }
-  }, 'Parameters correct');
-  t.deepEqual(composed[2], {
-    generator: {
-      Generator: AllPackageModuleCoreComponentMixin,
-      path: path.join('all', 'index.js'),
+    'Parameters correct'
+  );
+  t.deepEqual(
+    composed[2],
+    {
+      generator: {
+        Generator: AllPackageModuleCoreComponentMixin,
+        path: generatorPath('mixin-cc', 'all', 'index.js'),
+      },
+      options: {
+        generateInto: 'all',
+      },
     },
-    options: {
-      generateInto: 'all',
-    }
-  }, 'Parameters correct');
+    'Parameters correct'
+  );
 });
 
 test.serial('default - compose with - bundles - cloud', async (t) => {
@@ -634,10 +668,10 @@ test.serial('default - compose with - bundles - cloud', async (t) => {
       super(args, options, features);
       this.props = options.props;
 
-      this.composeWith = function(generator, options) {
+      this.composeWith = function (generator, options) {
         composed.push({
           generator,
-          options
+          options,
         });
       };
     }
@@ -652,8 +686,8 @@ test.serial('default - compose with - bundles - cloud', async (t) => {
     .withOptions({
       props: {
         bundles: ['core'],
-        apps: ['ui.apps']
-      }
+        apps: ['ui.apps'],
+      },
     })
     .inTmpDir((dir) => {
       fs.writeFileSync(path.join(dir, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem': { aemVersion: 'cloud' } }));
@@ -663,36 +697,43 @@ test.serial('default - compose with - bundles - cloud', async (t) => {
   resolveVersion.restore();
 
   t.is(composed.length, 2, 'Correct number of calls');
-  t.deepEqual(composed[0], {
-    generator: {
-      Generator: BundleModuleCoreComponentMixin,
-      path: path.join('bundle', 'index.js'),
+  t.deepEqual(
+    composed[0],
+    {
+      generator: {
+        Generator: BundleModuleCoreComponentMixin,
+        path: generatorPath('mixin-cc', 'bundle', 'index.js'),
+      },
+      options: {
+        generateInto: 'core',
+        aemVersion: 'cloud',
+      },
     },
-    options: {
-      generateInto: 'core',
-      aemVersion: 'cloud',
-    }
-  }, 'Parameters correct');
-  t.deepEqual(composed[1], {
-    generator: {
-      Generator: AppsPackageModuleCoreComponentMixin,
-      path: path.join('apps', 'index.js'),
+    'Parameters correct'
+  );
+  t.deepEqual(
+    composed[1],
+    {
+      generator: {
+        Generator: AppsPackageModuleCoreComponentMixin,
+        path: generatorPath('mixin-cc', 'apps', 'index.js'),
+      },
+      options: {
+        generateInto: 'ui.apps',
+        aemVersion: 'cloud',
+        version: '2.20.2',
+      },
     },
-    options: {
-      generateInto: 'ui.apps',
-      aemVersion: 'cloud',
-      version: '2.20.2',
-    }
-  }, 'Parameters correct');
+    'Parameters correct'
+  );
 });
 
-test('writing/installing - cloud - latest', async (t) => {
-
+test('writing/installing - cloud - latest', async () => {
   await helpers
     .create(CCWriteInstall)
     .withOptions({
       showBuildOutput: false,
-      props: { aemVersion: 'cloud', version: '2.20.2' }
+      props: { aemVersion: 'cloud', resolvedVersion: '2.20.2' },
     })
     .inTmpDir((dir) => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(dir, 'pom.xml'));
@@ -706,16 +747,14 @@ test('writing/installing - cloud - latest', async (t) => {
       result.assertNoFileContent('pom.xml', /core\.wcm\.components\.content<\/artifactId>\s+<\/dependency>/);
       result.assertNoFileContent('pom.xml', /core\.wcm\.components\.config<\/artifactId>\s+<\/dependency>/);
     });
-  sinon.restore();
 });
 
-test('writing/installing - 6.5 - older cc version', async (t) => {
-
+test('writing/installing - 6.5 - older cc version', async () => {
   await helpers
     .create(CCWriteInstall)
     .withOptions({
       showBuildOutput: false,
-      props: { aemVersion: '6.5', version: '2.18.6' }
+      props: { aemVersion: '6.5', resolvedVersion: '2.18.6' },
     })
     .inTmpDir((dir) => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(dir, 'pom.xml'));
@@ -729,9 +768,7 @@ test('writing/installing - 6.5 - older cc version', async (t) => {
       result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.config<\/artifactId>/);
       result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.testing\.aem-mock-plugin<\/artifactId>/);
     });
-  sinon.restore();
 });
-
 
 test('_listVersions', async (t) => {
   t.plan(1);
@@ -747,39 +784,39 @@ test('_listVersions', async (t) => {
     }
   }
 
-  await helpers.create(Mock).run().then(async (result) => {
-    const versions = await result.generator._listVersions();
-    t.deepEqual(versions, ['2.20', '2.19', '2.18'], 'List was correct');
-  });
+  await helpers
+    .create(Mock)
+    .run()
+    .then(async (result) => {
+      const versions = await result.generator._listVersions();
+      t.deepEqual(versions, ['2.20', '2.19', '2.18'], 'List was correct');
+    });
 });
 
 test.serial('_resolveVersion - latest', async (t) => {
-
   /* eslint-disable camelcase */
   nock('https://api.github.com')
     .get('/repos/adobe/aem-core-wcm-components/releases')
-    .reply(200,
-      [
-        { tag_name: 'core-wcm-components-reactor-2.20.8' },
-        { tag_name: 'core-wcm-components-reactor-2.20.6' },
-        { tag_name: 'core-wcm-components-reactor-2.20.4' },
-        { tag_name: 'core-wcm-components-reactor-2.20.2' },
-        { tag_name: 'core-wcm-components-reactor-2.20.0' },
-        { tag_name: 'core-wcm-components-reactor-2.19.2' },
-        { tag_name: 'core-wcm-components-reactor-2.19.0' },
-        { tag_name: 'core-wcm-components-reactor-2.18.6' },
-        { tag_name: 'core-wcm-components-reactor-2.18.4' },
-        { tag_name: 'core-wcm-components-reactor-2.18.2' },
-        { tag_name: 'core-wcm-components-reactor-2.18.0' }
-      ]
-    );
+    .reply(200, [
+      { tag_name: 'core-wcm-components-reactor-2.20.8' },
+      { tag_name: 'core-wcm-components-reactor-2.20.6' },
+      { tag_name: 'core-wcm-components-reactor-2.20.4' },
+      { tag_name: 'core-wcm-components-reactor-2.20.2' },
+      { tag_name: 'core-wcm-components-reactor-2.20.0' },
+      { tag_name: 'core-wcm-components-reactor-2.19.2' },
+      { tag_name: 'core-wcm-components-reactor-2.19.0' },
+      { tag_name: 'core-wcm-components-reactor-2.18.6' },
+      { tag_name: 'core-wcm-components-reactor-2.18.4' },
+      { tag_name: 'core-wcm-components-reactor-2.18.2' },
+      { tag_name: 'core-wcm-components-reactor-2.18.0' },
+    ]);
 
   /* eslint-enable camelcase */
   class Mock extends CoreComponentMixinGenerator {
     constructor(args, options, features) {
       super(args, options, features);
       this.props = {
-        version: 'latest'
+        version: 'latest',
       };
     }
 
@@ -788,7 +825,9 @@ test.serial('_resolveVersion - latest', async (t) => {
     }
 
     _listVersions() {
-      return new Promise((resolve) => resolve(['2.20']));
+      return new Promise((resolve) => {
+        resolve(['2.20']);
+      });
     }
   }
 
@@ -797,7 +836,7 @@ test.serial('_resolveVersion - latest', async (t) => {
     .run()
     .then(async (result) => {
       const version = await result.generator._resolveVersion();
-      t.deepEqual(version, '2.20.8', 'Version was correct');
+      t.is(version, '2.20.8', 'Version was correct');
     });
 
   nock.cleanAll();
@@ -805,39 +844,35 @@ test.serial('_resolveVersion - latest', async (t) => {
 });
 
 test.serial('_resolveVersion - specific version', async (t) => {
-
   /* eslint-disable camelcase */
   nock('https://api.github.com')
     .get('/repos/adobe/aem-core-wcm-components/releases')
-    .reply(200,
-      [
-        { tag_name: 'core-wcm-components-reactor-2.20.8' },
-        { tag_name: 'core-wcm-components-reactor-2.20.6' },
-        { tag_name: 'core-wcm-components-reactor-2.20.4' },
-        { tag_name: 'core-wcm-components-reactor-2.20.2' },
-        { tag_name: 'core-wcm-components-reactor-2.20.0' },
-        { tag_name: 'core-wcm-components-reactor-2.19.2' },
-        { tag_name: 'core-wcm-components-reactor-2.19.0' },
-        { tag_name: 'core-wcm-components-reactor-2.18.6' },
-        { tag_name: 'core-wcm-components-reactor-2.18.4' },
-        { tag_name: 'core-wcm-components-reactor-2.18.2' },
-        { tag_name: 'core-wcm-components-reactor-2.18.0' }
-      ]
-    );
+    .reply(200, [
+      { tag_name: 'core-wcm-components-reactor-2.20.8' },
+      { tag_name: 'core-wcm-components-reactor-2.20.6' },
+      { tag_name: 'core-wcm-components-reactor-2.20.4' },
+      { tag_name: 'core-wcm-components-reactor-2.20.2' },
+      { tag_name: 'core-wcm-components-reactor-2.20.0' },
+      { tag_name: 'core-wcm-components-reactor-2.19.2' },
+      { tag_name: 'core-wcm-components-reactor-2.19.0' },
+      { tag_name: 'core-wcm-components-reactor-2.18.6' },
+      { tag_name: 'core-wcm-components-reactor-2.18.4' },
+      { tag_name: 'core-wcm-components-reactor-2.18.2' },
+      { tag_name: 'core-wcm-components-reactor-2.18.0' },
+    ]);
 
   /* eslint-enable camelcase */
   class Mock extends CoreComponentMixinGenerator {
     constructor(args, options, features) {
       super(args, options, features);
       this.props = {
-        version: '2.18'
+        version: '2.18',
       };
     }
 
     default() {
       // Does nothing
     }
-
   }
 
   await helpers
@@ -845,7 +880,7 @@ test.serial('_resolveVersion - specific version', async (t) => {
     .run()
     .then(async (result) => {
       const version = await result.generator._resolveVersion();
-      t.deepEqual(version, '2.18.6', 'Version was correct');
+      t.is(version, '2.18.6', 'Version was correct');
     });
 
   nock.cleanAll();

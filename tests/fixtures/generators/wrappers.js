@@ -16,7 +16,7 @@
 
 import _ from 'lodash';
 
-export function Init(clazz, resolved) {
+export function init(clazz, resolved) {
   return class extends clazz {
     constructor(args, options, features) {
       options.resolved = resolved;
@@ -29,12 +29,11 @@ export function Init(clazz, resolved) {
       return super.initializing();
     }
 
-    _initializing() {
-    }
+    _initializing() {}
   };
 }
 
-export function Prompt(clazz, resolved) {
+export function prompt(clazz, resolved) {
   return class extends clazz {
     constructor(args, options, features) {
       options.resolved = resolved;
@@ -56,7 +55,7 @@ export function Prompt(clazz, resolved) {
   };
 }
 
-export function Config(clazz, resolved) {
+export function config(clazz, resolved) {
   return class extends clazz {
     constructor(args, options, features) {
       options.resolved = resolved;
@@ -86,7 +85,7 @@ export function Default(clazz, resolved) {
   };
 }
 
-export function WriteInstall(clazz, resolved) {
+export function writeInstall(clazz, resolved) {
   return class extends clazz {
     constructor(args, options, features) {
       options.resolved = resolved;
@@ -112,11 +111,11 @@ export function WriteInstall(clazz, resolved) {
 }
 
 const wrappers = {
-  Init,
-  Prompt,
-  Config,
+  Init: init,
+  Prompt: prompt,
+  Config: config,
   Default,
-  WriteInstall,
+  WriteInstall: writeInstall,
 };
 
 export default wrappers;

@@ -14,7 +14,6 @@
  limitations under the License.
 */
 
-import fs from 'node:fs';
 import path from 'node:path';
 
 import _ from 'lodash';
@@ -29,12 +28,11 @@ import PomUtils, { filevaultPlugin } from '../../lib/pom-utils.js';
 import { generatorName as bundleGeneratorName } from '../bundle/index.js';
 import { generatorName as configGeneratorName } from '../package-config/index.js';
 import { generatorName as appsGeneratorName } from '../package-apps/index.js';
-import { generatorName as contentGeneratorName } from '../package-content/index.js';
 
 export const generatorName = '@adobe/generator-aem:package-all';
 const analyserCoordinates = {
   groupId: 'com.adobe.aem',
-  artifactId: 'aemanalyser-maven-plugin'
+  artifactId: 'aemanalyser-maven-plugin',
 };
 
 class AllPackageGenerator extends Generator {
@@ -46,7 +44,7 @@ class AllPackageGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -98,16 +96,16 @@ class AllPackageGenerator extends Generator {
   }
 
   _writePom() {
-
     // Read the template and parse w/ properties.
     const tplProps = _.pick(this.props, ['name', 'artifactId', 'appId']);
     tplProps.parent = this.parentProps;
     if (this.parentProps.aemVersion === 'cloud') {
       tplProps.analyserVersion = this.props.analyserVersion;
     }
-    tplProps.embeddeds = this._buildEmbeddeds()
 
-    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+    tplProps.embeddeds = this._buildEmbeddeds();
+
+    const genPom = ejs.render(this.fs.read(this.templatePath('pom.xml')), tplProps);
 
     const pomFile = this.destinationPath('pom.xml');
     if (this.fs.exists(pomFile)) {
@@ -118,7 +116,6 @@ class AllPackageGenerator extends Generator {
   }
 
   _buildEmbeddeds() {
-
     const embeddeds = [...this._findModules(bundleGeneratorName)];
 
     const apps = this._findModules(appsGeneratorName);
@@ -128,12 +125,12 @@ class AllPackageGenerator extends Generator {
         embeddeds.push({ artifactId: module.artifactId, classifier: 'precompiled-scripts' });
       }
     });
-    _.each([configGeneratorName, contentGeneratorName], (type) => {
+    _.each([configGeneratorName], (type) => {
       const modules = this._findModules(type);
       _.each(modules, (module) => {
         embeddeds.push({ artifactId: module.artifactId, type: 'zip' });
-      })
-    })
+      });
+    });
     return embeddeds;
   }
 
@@ -162,9 +159,11 @@ class AllPackageGenerator extends Generator {
       }
 
       return (
+        /* eslint-disable unicorn/prefer-array-some */
         _.find(plugin.plugin, (item) => {
           return item.artifactId && item.artifactId[0]['#text'] === filevaultPlugin;
         }) !== undefined
+        /* eslint-enable unicorn/prefer-array-some */
       );
     }).plugin;
 
@@ -184,13 +183,13 @@ const embeddedPredicate = (target, embedded) => {
     if (!item.embedded) {
       return false;
     }
+
     const findGroupId = PomUtils.findPomNodeArray(item.embedded, 'groupId');
     const findArtifactId = PomUtils.findPomNodeArray(item.embedded, 'artifactId');
 
     return groupId === findGroupId[0]['#text'] && artifactId === findArtifactId[0]['#text'];
   });
-}
-
+};
 
 _.extendWith(AllPackageGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);

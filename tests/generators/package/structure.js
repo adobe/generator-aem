@@ -24,12 +24,12 @@ import helpers from 'yeoman-test';
 
 import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath, aem65ApiMetadata, cloudSdkApiMetadata, addModulesToPom } from '../../fixtures/helpers.js';
-import { WriteInstall } from '../../fixtures/generators/wrappers.js';
+import { writeInstall } from '../../fixtures/generators/wrappers.js';
 
 import StructurePackageGenerator from '../../../generators/package-structure/index.js';
 
 const resolved = generatorPath('package-structure', 'index.js');
-const StructureWriteInstall = WriteInstall(StructurePackageGenerator, resolved);
+const StructureWriteInstall = writeInstall(StructurePackageGenerator, resolved);
 
 test('writing/installing', async (t) => {
   t.plan(5);
@@ -64,7 +64,7 @@ test('writing/installing', async (t) => {
       fs.copyFileSync(
         fixturePath('projects', 'cloud', 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
         path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
-      )
+      );
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
@@ -76,7 +76,7 @@ test('writing/installing', async (t) => {
       fs.copyFileSync(
         fixturePath('projects', 'cloud', 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
         path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
-      )
+      );
     })
     .run()
     .then((result) => {
@@ -139,7 +139,7 @@ test('writing/installing - merges existing filters', async (t) => {
       fs.copyFileSync(
         fixturePath('projects', 'cloud', 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
         path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
-      )
+      );
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
@@ -151,7 +151,7 @@ test('writing/installing - merges existing filters', async (t) => {
       fs.copyFileSync(
         fixturePath('projects', 'cloud', 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
         path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
-      )
+      );
     })
     .run()
     .then((result) => {

@@ -25,18 +25,18 @@ import test from 'ava';
 import helpers from 'yeoman-test';
 import sinon from 'sinon/pkg/sinon-esm.js';
 
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
 
 import IntegrationTestsGenerator from '../../../generators/tests-it/index.js';
-import { Init, Prompt, Config, WriteInstall } from '../../fixtures/generators/wrappers.js';
+import { init, prompt, config, writeInstall } from '../../fixtures/generators/wrappers.js';
 import MavenUtils from '../../../lib/maven-utils.js';
 
 const resolved = generatorPath('tests-it', 'index.js');
-const ITInit = Init(IntegrationTestsGenerator, resolved);
-const ITPrompt = Prompt(IntegrationTestsGenerator, resolved);
-const ITConfig = Config(IntegrationTestsGenerator, resolved);
-const ITWriteInstall = WriteInstall(IntegrationTestsGenerator, resolved);
+const ITInit = init(IntegrationTestsGenerator, resolved);
+const ITPrompt = prompt(IntegrationTestsGenerator, resolved);
+const ITConfig = config(IntegrationTestsGenerator, resolved);
+const ITWriteInstall = writeInstall(IntegrationTestsGenerator, resolved);
 
 test('initialize - no options', async (t) => {
   t.plan(1);
@@ -364,7 +364,7 @@ test('writing/installing - no publish', async (t) => {
     });
 });
 
-test('writing/installing - merges existing pom', async(t) => {
+test('writing/installing - merges existing pom', async (t) => {
   t.plan(5);
 
   const testingClient = {
@@ -426,4 +426,4 @@ test('writing/installing - merges existing pom', async(t) => {
       result.assertNoFile(path.join(testsRoot, 'PublishPageValidationIT.java'));
       result.assertFile(path.join('target', 'test.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
     });
-})
+});

@@ -14,7 +14,6 @@
  limitations under the License.
 */
 
-import fs from 'node:fs';
 import { versions } from 'node:process';
 import { execFileSync } from 'node:child_process';
 
@@ -49,131 +48,175 @@ export const apiCoordinates = (version) => {
 };
 
 const ModuleOptions = Object.freeze({
-  '@adobe/aem:bundle'(parentProps) {
-    return {
-      generateInto: 'core',
-      ...(parentProps.defaults
-        ? {
-            appId: parentProps.appId,
-            package: parentProps.groupId,
-            name: `${parentProps.name} - Core Bundle`,
-            artifactId: `${parentProps.artifactId}.core`,
-          }
-        : {}),
+  'bundle'(moduleName, parentProps) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - Core Bundle`,
+      artifactId: `${parentProps.appId}.${moduleName}`
     };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        package: parentProps.groupId,
+        artifactId: `${parentProps.artifactId}.core`,
+      });
+    }
+    return options;
   },
-  '@adobe/aem:frontend-general'(parentProps) {
-    return {
-      generateInto: 'ui.frontend',
-      ...(parentProps.defaults
-        ? {
-            appId: parentProps.appId,
-            name: `${parentProps.name} - UI Frontend`,
-            artifactId: `${parentProps.artifactId}.ui.frontend`,
-          }
-        : {}),
+  'frontend-general'(moduleName, parentProps) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - UI Frontend`,
+      artifactId: `${parentProps.appId}.${moduleName}`
     };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        artifactId: `${parentProps.artifactId}.ui.frontend`,
+      });
+    }
+    return options;
   },
-  '@adobe/aem:package-structure'(parentProps) {
-    return {
-      generateInto: 'ui.apps.structure',
-      ...(parentProps.defaults
-        ? {
-            appId: parentProps.appId,
-            name: `${parentProps.name} - Repository Structure Package`,
-            artifactId: `${parentProps.artifactId}.ui.apps.structure`,
-          }
-        : {}),
+  'package-structure'(moduleName, parentProps) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - Repository Structure Package`,
+      artifactId: `${parentProps.appId}.${moduleName}`
     };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        artifactId: `${parentProps.artifactId}.ui.apps.structure`,
+      });
+    }
+    return options;
   },
-  '@adobe/aem:package-apps'(parentProps) {
-    return {
-      generateInto: 'ui.apps',
-      ...(parentProps.defaults
-        ? {
-            appId: parentProps.appId,
-            name: `${parentProps.name} - UI Apps Package`,
-            artifactId: `${parentProps.artifactId}.ui.apps`,
-            bundleRef: 'core',
-            frontendRef: 'ui.frontend',
-          }
-        : {}),
+  'package-apps'(moduleName, parentProps, modules) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - UI Apps Package`,
+      artifactId: `${parentProps.appId}.${moduleName}`
     };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        artifactId: `${parentProps.artifactId}.ui.apps`,
+        bundleRef: 'core',
+        frontendRef: 'ui.frontend',
+        structureRef: 'ui.apps.structure',
+      });
+    } else {
+      if (modules['bundle'] && _.keys(modules['bundle']).length === 1) {
+        options.bundleRef = modules['bundle'][_.keys(modules['bundle'])[0]].artifactId;
+      }
+      if (modules['frontend-general'] && _.keys(modules['frontend-general']).length === 1) {
+        options.frontendRef = modules['frontend-general'][_.keys(modules['frontend-general'])[0]].artifactId;
+      } //TODO: add other frontend lookups only add if there's one.
+      if (modules['package-structure'] && _.keys(modules['package-structure']).length > 0) {
+        options.structureRef = modules['package-structure'][_.keys(modules['package-structure'])[0]].artifactId;
+      }
+    }
+    return options;
   },
-  '@adobe/aem:package-config'(parentProps) {
-    return {
-      generateInto: 'ui.config',
-      ...(parentProps.defaults
-        ? {
-            appId: parentProps.appId,
-            name: `${parentProps.name} - UI Config Package`,
-            artifactId: `${parentProps.artifactId}.ui.config`,
-          }
-        : {}),
+  'package-config'(moduleName, parentProps) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - UI Config Package`,
+      artifactId: `${parentProps.artifactId}.${moduleName}`,
     };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        artifactId: `${parentProps.artifactId}.ui.config`,
+      });
+    }
+    return options;
   },
-  '@adobe/aem:package-content'(parentProps) {
-    return {
-      generateInto: 'ui.content',
-      ...(parentProps.defaults
-        ? {
-            appId: parentProps.appId,
-            name: `${parentProps.name} - UI Content Package`,
-            artifactId: `${parentProps.artifactId}.ui.content`,
-            appsRef: 'ui.apps',
-            configRef: 'ui.config',
-          }
-        : {}),
+  'package-content'(moduleName, parentProps, modules) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - UI Content Package`,
+      artifactId: `${parentProps.artifactId}.${moduleName}`,
+
     };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        artifactId: `${parentProps.artifactId}.ui.content`,
+        appsRef: 'ui.apps',
+        configRef: 'ui.config',
+      });
+    } else {
+      if (modules['package-apps'] && _.keys(modules['package-apps']).length === 1) {
+        options.appsRef = modules['package-apps'][_.keys(modules['package-apps'])[0]].artifactId;
+      }
+      if (modules['package-config'] && _.keys(modules['package-config']).length === 1) {
+        options.configRef = modules['package-config'][_.keys(modules['package-config'])[0]].artifactId;
+      }
+      if (modules['package-structure'] && _.keys(modules['package-structure']).length > 0) {
+        options.structureRef = modules['package-structure'][_.keys(modules['package-structure'])[0]].artifactId;
+      }
+    }
+    return options;
   },
-  '@adobe/aem:package-all'(parentProps) {
-    return {
-      generateInto: 'all',
-      ...(parentProps.defaults
-        ? {
-            appId: parentProps.appId,
-            name: `${parentProps.name} - All`,
-            artifactId: `${parentProps.artifactId}.all`,
-          }
-        : {}),
+  'package-all'(moduleName, parentProps) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - All Package`,
+      artifactId: `${parentProps.artifactId}.${moduleName}`,
     };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        artifactId: `${parentProps.artifactId}.all`,
+      });
+    }
+    return options;
   },
-  '@adobe/aem:tests-it'(parentProps) {
-    return {
-      generateInto: 'it.tests',
-      ...(parentProps.defaults
-        ? {
-            appId: parentProps.appId,
-            name: `${parentProps.name} - Integration Tests`,
-            artifactId: `${parentProps.artifactId}.it.tests`,
-          }
-        : {}),
+  'tests-it'(moduleName, parentProps) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - Integration Tests`,
+      artifactId: `${parentProps.artifactId}.${moduleName}`,
     };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        artifactId: `${parentProps.artifactId}.it.tests`,
+      });
+    }
+    return options;
   },
-  '@adobe/aem:dispatcher'(parentProps) {
-    return {
-      generateInto: 'dispatcher',
-      ...(parentProps.defaults
-        ? {
-            appId: parentProps.appId,
-            name: `${parentProps.name} - Dispatcher`,
-            artifactId: `${parentProps.artifactId}.dispatcher`,
-          }
-        : {}),
+  'dispatcher'(moduleName, parentProps) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - Dispatcher`,
+      artifactId: `${parentProps.artifactId}.${moduleName}`,
     };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        artifactId: `${parentProps.artifactId}.dispatcher`,
+      });
+    }
+    return options;
   },
 });
 
 const ModuleOrder = Object.freeze([
-  '@adobe/aem:bundle',
-  '@adobe/aem:frontend-general',
-  '@adobe/aem:package-structure',
-  '@adobe/aem:package-apps',
-  '@adobe/aem:package-config',
-  '@adobe/aem:package-content',
-  '@adobe/aem:package-all',
-  '@adobe/aem:tests-it',
-  '@adobe/aem:dispatcher',
+  'bundle',
+  'frontend-general',
+  'package-structure',
+  'package-apps',
+  'package-config',
+  'package-content',
+  'package-all',
+  'tests-it',
+  'dispatcher',
+]);
+
+const MixinOrder = Object.freeze([
+  'cc',
 ]);
 
 const npmVersion = execFileSync('npm', ['--version'])
@@ -190,20 +233,19 @@ const propsDefault = Object.freeze({
 });
 
 const modulesDefault = Object.freeze({
-  bundle: new Set(['core']),
-  'frontend-general': new Set(['ui.frontend']),
-  'package-structure': new Set(['ui.apps.structure']),
-  'package-apps': new Set(['ui.apps']),
-  'package-config': new Set(['ui.config']),
-  'package-all': new Set(['all']),
-  'tests-it': new Set(['it.tests']),
-  dispatcher: new Set(['dispatcher']),
-  unknown: new Set(),
+  bundle: { core: {} },
+  'frontend-general': { 'ui.frontend': {} },
+  'package-structure': { 'ui.apps.structure': {} },
+  'package-apps': { 'ui.apps': {} },
+  'package-config': { 'ui.config': {} },
+  'package-all': { 'all': {} },
+  'tests-it': { 'it.tests': {} },
+  dispatcher: { 'dispatcher': {} },
+  unknown: {},
 });
 
-const mixinsDefault = Object.freeze({
-  cc: new Set(['.', 'core', 'ui.apps', 'all']),
-});
+const mixinPrefix = '@adobe/generator-aem:mixin-';
+const mixinsDefault = ['cc'];
 
 class AEMGenerator extends Generator {
   constructor(args, options, features) {
@@ -248,13 +290,19 @@ class AEMGenerator extends Generator {
         },
         desc: 'List of modules to generate.',
       },
+      mixins: {
+        type(arg) {
+          return arg ? arg.split(',') : [];
+        },
+        desc: 'List of mixins to include.',
+      },
     });
 
     _.forOwn(this.moduleOptions, (v, k) => {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function () {
+    this.rootGeneratorName = function() {
       return generatorName;
     };
   }
@@ -273,7 +321,11 @@ class AEMGenerator extends Generator {
     const unique = ['groupId', 'version', 'javaVersion', 'aemVersion', 'nodeVersion', 'npmVersion'];
     this.props = {};
     this.modules = {};
-    this.mixins = {};
+    _.each(this.options.modules, (m) => {
+      this.modules[m] = {};
+    });
+
+    this.mixins = this.options.mixins || [];
 
     _.defaults(this.props, _.pick(this.options, unique));
     _.defaults(this.props, _.pick(this.options, SharedOptions));
@@ -291,18 +343,22 @@ class AEMGenerator extends Generator {
     _.defaults(this.props, _.pick(config, SharedOptions));
 
     const pomProject = PomUtils.findPomNodeArray(PomUtils.readPom(this), 'project');
-    const pomProperties = PomUtils.findPomNodeArray(pomProject, 'properties');
-    this._initPomProperties(pomProperties);
+    if (pomProject) {
+      const pomProperties = PomUtils.findPomNodeArray(pomProject, 'properties');
+      this._initPomProperties(pomProperties);
 
-    _.each(['groupId', 'artifactId', 'version', 'name'], (option) => {
-      const opt = PomUtils.findPomNodeArray(pomProject, option);
-      if (opt) {
-        this.props[option] = this.props[option] || opt[0]['#text'];
-      }
-    });
+      _.each(['groupId', 'artifactId', 'version', 'name'], (option) => {
+        const opt = PomUtils.findPomNodeArray(pomProject, option);
+        if (opt) {
+          this.props[option] = this.props[option] || opt[0]['#text'];
+        }
+      });
 
-    // Load modules & mixins from Yo configs
-    this._initModules(PomUtils.findPomNodeArray(pomProject, 'modules'));
+      // Load modules & mixins from Yo configs
+      this._initModules(PomUtils.findPomNodeArray(pomProject, 'modules'));
+    }
+
+    this._initMixins();
 
     // Fall back to defaults
     if (this.options.defaults) {
@@ -314,26 +370,14 @@ class AEMGenerator extends Generator {
 
       if (this.options.modules) {
         _.each(this.options.modules, (module) => {
-          const defaultName = modulesDefault[module].values().next().value;
-          if (!this.modules[module]) {
-            this.modules[module] = new Set();
-          }
-
-          this.modules[module].add(defaultName);
+          this.modules[module] = this.modules[module] || {};
+          _.defaults(this.modules[module], _.cloneDeep(modulesDefault[module]));
         });
       } else {
         this.modules = _.cloneDeep(modulesDefault);
       }
 
-      if (this.options.mixins) {
-        _.each(this.options.mixins, (mixin) => {
-          if (!this.mixins[mixin]) {
-            this.mixins[mixin] = mixinsDefault[mixin];
-          }
-        });
-      } else {
-        this.mixins = _.cloneDeep(mixinsDefault);
-      }
+      this.mixins = _.union(this.options.mixins, mixinsDefault);
     }
   }
 
@@ -417,7 +461,7 @@ class AEMGenerator extends Generator {
         default: () => {
           return new Promise((resolve) => {
             if (this.modules) {
-              resolve(Object.getOwnPropertyNames(this.modules));
+              resolve(_.keys(this.modules));
             } else {
               resolve(['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-all', 'test-it', 'dispatcher']);
             }
@@ -442,14 +486,25 @@ class AEMGenerator extends Generator {
         loop: false,
         choices: [{ name: 'General', value: 'frontend-general' }],
         default: ['frontend-general'],
-        when(answers) {
+        when: (answers) => {
           return new Promise((resolve) => {
-            if (!answers.moduleSelection) {
+            if (this.options.defaults) {
+              resolve(false);
+              return;
+            }
+            if (this.options.modules &&
+              (this.options.modules.includes('frontend-general') ||
+                this.options.modules.includes('frontend-react') ||
+                this.options.modules.includes('frontend-angular'))) {
               resolve(false);
               return;
             }
 
-            resolve(answers.moduleSelection.includes('frontend'));
+            if (answers.moduleSelection && answers.moduleSelection.includes('frontend')) {
+              resolve(true);
+              return;
+            }
+            resolve(false);
           });
         },
       },
@@ -466,8 +521,16 @@ class AEMGenerator extends Generator {
         name: 'frontend-general',
         message: 'What do you want to name the general Front End module?',
         default: 'ui.frontend',
-        when(answers) {
+        when: (answers) => {
           return new Promise((resolve) => {
+            if (this.options.defaults) {
+              resolve(false);
+            }
+
+            if (this.options.modules && this.options.modules.includes('frontend-general')) {
+              resolve(true);
+              return;
+            }
             resolve(answers.frontend === 'frontend-general');
           });
         },
@@ -584,6 +647,14 @@ class AEMGenerator extends Generator {
         this.props.javaVersion = '11';
       }
 
+      _.forOwn(this.modules, (modules, moduleType) => {
+        const name = answers[moduleType];
+        this.modules[moduleType][name] = this.modules[moduleType][name] || {};
+        _.defaults(this.modules[moduleType][name], ModuleOptions[moduleType](name, this.props, this.modules));
+        delete this.props[name];
+
+      });
+
       if (answers.moduleSelection) {
         const idx = answers.moduleSelection.indexOf('frontend');
         if (idx >= 0) {
@@ -592,23 +663,24 @@ class AEMGenerator extends Generator {
 
         delete this.props.frontend;
 
-        _.each(answers.moduleSelection, (module) => {
-          const name = answers[module];
-          this.modules[module] = this.modules[module] || new Set();
-          this.modules[module].add(name);
-          delete this.props[module];
+        _.each(answers.moduleSelection, (moduleType) => {
+          const name = answers[moduleType];
+          this.modules[moduleType] = this.modules[moduleType] || {};
+          this.modules[moduleType][name] = this.modules[moduleType][name] || {};
+          _.defaults(this.modules[moduleType][name], ModuleOptions[moduleType](name, this.props, this.modules));
+          delete this.props[moduleType];
         });
-        if (answers.moduleSelection.includes('dispatcher')) {
-          this.modules.dispatcher = new Set(['dispatcher']);
-        }
-
         delete this.props.moduleSelection;
       }
 
+      // Dispatcher is special case, can't set name.
+      if (this.modules.dispatcher) {
+        this.modules.dispatcher = { dispatcher: ModuleOptions['dispatcher']('dispatcher', this.props, this.modules) };
+      }
+
+
       if (answers.mixins) {
-        _.each(answers.mixins, (mixin) => {
-          this.mixins[mixin] = this.mixins[mixin] || new Set();
-        });
+        this.mixins = _.union(this.mixins, answers.mixins);
         delete this.props.mixins;
       }
 
@@ -638,31 +710,9 @@ class AEMGenerator extends Generator {
       }
     });
 
-    const moduleList = _.keys(this.modules);
-    _.each(ModuleOrder, (moduleType) => {
-      const relative = moduleType.replaceAll('@adobe/aem:', '');
-      if (!this.modules[relative]) {
-        return;
-      }
+    this._composeModules();
+    this._composeMixins();
 
-      _.each(this.modules[relative], (module) => {
-        const options = { parent: this.props, defaults: this.props.defaults, examples: this.props.examples };
-        if (this.fs.exists(this.destinationPath(module, '.yo-rc.json'))) {
-          options.generateInto = module;
-        } else if (ModuleOptions[moduleType]) {
-          _.defaults(options, ModuleOptions[module](this.props));
-        }
-
-        this.composeWith(moduleType, options);
-      });
-      delete moduleList[moduleList.indexOf(moduleType)];
-    });
-
-    // Now do custom plugin modules.
-    _.each(moduleList, (moduleType) => {
-      const options = { parent: this.props };
-      this.composeWith(moduleType, options);
-    });
   }
 
   writing() {
@@ -721,39 +771,49 @@ class AEMGenerator extends Generator {
       const name = module.module[0]['#text'];
       if (this.fs.exists(this.destinationPath(name, '.yo-rc.json'))) {
         const yoData = this.fs.readJSON(this.destinationPath(name, '.yo-rc.json'));
-        _.each(_.keys(yoData), (generator) => {
-          const type = generator.replaceAll('@adobe/generator-aem:', '');
-
-          if (type.startsWith('mixin-')) {
-            const mixin = type.replaceAll('mixin-', '');
-            if (!this.mixins[mixin]) {
-              this.mixins[mixin] = new Set();
-            }
-
-            this.mixins[mixin].add(name);
-          } else {
-            if (!this.modules[type]) {
-              this.modules[type] = new Set();
-            }
-
-            this.modules[type].add(name);
+        _.each(yoData, (v, generator) => {
+          if (generator.startsWith(mixinPrefix)) {
+            return;
           }
+          const type = generator.replaceAll('@adobe/generator-aem:', '');
+          if (!this.modules[type]) {
+            this.modules[type] = {};
+          }
+
+          this.modules[type][name] = v;
         });
       } else {
-        this.modules.unknown = this.modules.unknown || new Set();
-        this.modules.unknown.add(name);
+        this.modules.unknown = this.modules.unknown || {};
+        this.modules.unknown[name] = {};
       }
     });
   }
 
+  _initMixins() {
+
+    const tmp = [];
+    const yorc = this.fs.readJSON(this.destinationPath('.yo-rc.json'));
+    _.each(yorc, (v, k) => {
+      if (k.startsWith(mixinPrefix)) {
+        tmp.push(k.replaceAll(mixinPrefix, ''));
+      }
+    });
+    this.mixins = _.union(this.mixins, tmp);
+  }
+
   _moduleNameWhen = (module, answers) => {
     return new Promise((resolve) => {
-      if (this.options.defaults || !answers.moduleSelection || !answers.moduleSelection.includes(module)) {
+      if (this.options.defaults) {
         resolve(false);
         return;
       }
-
-      resolve(true);
+      if (answers.moduleSelection && answers.moduleSelection.includes(module)) {
+        resolve(true);
+      }
+      if (this.options.modules && this.options.modules.includes(module)) {
+        resolve(true);
+      }
+      resolve(false);
     });
   };
 
@@ -768,8 +828,58 @@ class AEMGenerator extends Generator {
     });
   };
 
+  _composeModules() {
+    const moduleList = _.keys(this.modules);
+    _.each(ModuleOrder, (moduleType) => {
+      if (!this.modules[moduleType]) {
+        return;
+      }
+
+      _.forOwn(this.modules[moduleType], (moduleProps) => {
+        const options = {
+          parent: this.props,
+          defaults: this.props.defaults,
+          examples: this.props.examples,
+        };
+        if (ModuleOptions[moduleType]) {
+          _.defaults(options, moduleProps);
+        }
+
+        this.composeWith(`@adobe/aem:${moduleType}`, options);
+      });
+      moduleList.splice(moduleList.indexOf(moduleType), 1);
+    });
+
+    // Now do custom plugin modules.
+    _.each(moduleList, (moduleType) => {
+      const options = { parent: this.props };
+      this.composeWith(moduleType, options);
+    });
+  }
+
+  _composeMixins() {
+
+    const mixinList = _.cloneDeep(this.mixins);
+    _.each(MixinOrder, (mixinType) => {
+      if (this.mixins.indexOf(mixinType) < 0) {
+        return;
+      }
+
+      const options = { parent: this.props, defaults: this.props.defaults, examples: this.props.examples };
+      this.composeWith(`@adobe/aem:mixin-${mixinType}`, options);
+      mixinList.splice(mixinList.indexOf(mixinType), 1);
+    });
+
+    // Now do custom plugin mixins.
+    _.each(mixinList, (mixin) => {
+      const options = { parent: this.props };
+      this.composeWith(`@adobe/aem:mixin-${mixin}`, options);
+    });
+
+  }
+
   _writeGitignore = () => {
-    const base = fs.readFileSync(this.templatePath('.gitignore'), PomUtils.fileOptions).split('\n');
+    const base = this.fs.read(this.templatePath('.gitignore')).split('\n');
 
     let orig = [];
     const file = this.destinationPath('.gitignore');
@@ -785,11 +895,12 @@ class AEMGenerator extends Generator {
 
   _writePom = () => {
     const tplProps = _.pick(this.props, ['groupId', 'artifactId', 'version', 'name', 'javaVersion', 'nodeVersion', 'npmVersion', 'aem']);
+    tplProps.modules = _.flatMap(this.modules, (moduleType) => _.keys(moduleType));
     const parser = new XMLParser(PomUtils.xmlOptions);
     const builder = new XMLBuilder(PomUtils.xmlOptions);
 
     // Read the template and parse w/ properties.
-    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+    const genPom = ejs.render(this.fs.read(this.templatePath('pom.xml')), tplProps);
     const parsedGenPom = parser.parse(genPom);
     const genProject = PomUtils.findPomNodeArray(parsedGenPom, 'project');
 
@@ -814,7 +925,7 @@ class AEMGenerator extends Generator {
       PomUtils.mergePomSection(genDependencies, PomUtils.findPomNodeArray(existingPom, 'dependencyManagement', 'dependencies'), PomUtils.dependencyPredicate);
     }
 
-    const addlDeps = parser.parse(fs.readFileSync(this.templatePath('partials', 'v6.5', 'dependencies.xml'), { encoding: 'utf8' }))[0].dependencies;
+    const addlDeps = parser.parse(this.fs.read(this.templatePath('partials', 'v6.5', 'dependencies.xml')))[0].dependencies;
     if (this.props.aemVersion === 'cloud') {
       addlDeps.push({
         dependency: [{ groupId: [{ '#text': 'com.adobe.aem' }] }, { artifactId: [{ '#text': 'uber-jar' }] }],

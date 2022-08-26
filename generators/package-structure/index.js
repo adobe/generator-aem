@@ -14,7 +14,6 @@
  limitations under the License.
 */
 
-import fs from 'node:fs';
 import path from 'node:path';
 
 import _ from 'lodash';
@@ -38,7 +37,7 @@ class StructurePackageGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -82,7 +81,6 @@ class StructurePackageGenerator extends Generator {
   }
 
   _writePom() {
-
     // Collect all the AppIds - Should this check only for Apps/Content/Config types?
     const root = path.dirname(this.destinationRoot());
     const modules = PomUtils.listParentPomModules(this, root);
@@ -104,7 +102,7 @@ class StructurePackageGenerator extends Generator {
     tplProps.parent = this.parentProps;
 
     // Read the template and parse w/ properties.
-    const genPom = ejs.render(fs.readFileSync(this.templatePath('pom.xml'), PomUtils.fileOptions), tplProps);
+    const genPom = ejs.render(this.fs.read(this.templatePath('pom.xml')), tplProps);
 
     const pomFile = this.destinationPath('pom.xml');
     if (this.fs.exists(pomFile)) {
@@ -126,7 +124,9 @@ class StructurePackageGenerator extends Generator {
 
     genFilters.push({ '#comment': [{ '#text': ' Filter roots from existing pom. ' }] });
     PomUtils.mergePomSection(genFilters, existingFilters, (target, filter) => {
+      /* eslint-disable unicorn/prefer-array-some */
       return _.find(target, (targetFilter) => _.isEqual(filter, targetFilter)) !== undefined;
+      /* eslint-enable unicorn/prefer-array-some */
     });
     this.fs.write(existingFile, this._flattenFilters(PomUtils.fixXml(builder.build(parsedGenPom))));
   }
@@ -138,9 +138,11 @@ class StructurePackageGenerator extends Generator {
       }
 
       return (
+        /* eslint-disable unicorn/prefer-array-some */
         _.find(plugin.plugin, (item) => {
           return item.artifactId && item.artifactId[0]['#text'] === filevaultPlugin;
         }) !== undefined
+        /* eslint-enable unicorn/prefer-array-some */
       );
     }).plugin;
 

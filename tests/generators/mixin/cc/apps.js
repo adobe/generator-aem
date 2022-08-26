@@ -1,3 +1,19 @@
+/*
+ Copyright 2022 Adobe Inc.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -8,15 +24,15 @@ import helpers from 'yeoman-test';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import { fixturePath, generatorPath, addModulesToPom, addDependenciesToPom } from '../../../fixtures/helpers.js';
-import { Init, WriteInstall } from '../../../fixtures/generators/wrappers.js';
+import { init, writeInstall } from '../../../fixtures/generators/wrappers.js';
 
 import { bundleGav, contentGav, configGav, versionStruct } from '../../../../generators/mixin-cc/index.js';
 import PomUtils from '../../../../lib/pom-utils.js';
 import AppsPackageModuleCoreComponentMixin from '../../../../generators/mixin-cc/apps/index.js';
 
 const resolved = generatorPath('mixin-cc', 'apps', 'index.js');
-const CCAppsInit = Init(AppsPackageModuleCoreComponentMixin, resolved);
-const CCAppsWrite = WriteInstall(AppsPackageModuleCoreComponentMixin, resolved);
+const CCAppsInit = init(AppsPackageModuleCoreComponentMixin, resolved);
+const CCAppsWrite = writeInstall(AppsPackageModuleCoreComponentMixin, resolved);
 
 test('initializing', async (t) => {
   t.plan(1);
@@ -25,10 +41,11 @@ test('initializing', async (t) => {
     .withOptions({
       generateInto: 'core',
       aemVersion: 'cloud',
+      version: '2.20.2',
     })
     .run()
     .then((result) => {
-      t.deepEqual(result.generator.props, { aemVersion: 'cloud' }, 'Properties set.');
+      t.deepEqual(result.generator.props, { aemVersion: 'cloud', version: '2.20.2', }, 'Properties set.');
     });
 });
 
@@ -44,7 +61,7 @@ test('writing - cloud', async (t) => {
       props: {
         aemVersion: 'cloud',
         version: '2.20.2',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
@@ -54,32 +71,32 @@ test('writing - cloud', async (t) => {
       const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
       const proj = PomUtils.findPomNodeArray(pomData, 'project');
 
-      let pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
+      const pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
       pomProperties.push({ 'core.wcm.components.version': [{ '#text': '2.20.2' }] });
       fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
 
-      addModulesToPom(temporaryDir, [
-        { module: [{ '#text': 'ui.apps' }] },
-      ]);
+      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps' }] }]);
 
-      fs.writeFileSync(path.join(temporaryDir, '.yo-rc.json'),
+      fs.writeFileSync(
+        path.join(temporaryDir, '.yo-rc.json'),
         JSON.stringify({
-            '@adobe/generator-aem': {
-              aemVersion: '6.5',
-              name: 'Test Project',
-            }
-          }
-        ));
+          '@adobe/generator-aem': {
+            aemVersion: '6.5',
+            name: 'Test Project',
+          },
+        })
+      );
 
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(fullPath, 'pom.xml'));
       fs.cpSync(fixturePath('projects', 'cloud', 'ui.apps', 'src'), path.join(fullPath, 'src'), { recursive: true });
-      fs.writeFileSync(path.join(fullPath, '.yo-rc.json'),
+      fs.writeFileSync(
+        path.join(fullPath, '.yo-rc.json'),
         JSON.stringify({
-            '@adobe/generator-aem:package-apps': {
-              appId: 'test',
-            }
-          }
-        ));
+          '@adobe/generator-aem:package-apps': {
+            appId: 'test',
+          },
+        })
+      );
     })
     .run()
     .then((result) => {
@@ -92,10 +109,8 @@ test('writing - cloud', async (t) => {
 
       const spawnResult = result.generator.spawnCommandSync('mvn', ['clean', 'verify'], { stdio: 'ignore', cwd: temporaryDir });
       t.is(spawnResult.exitCode, 0, 'Build successful.');
-
     });
 });
-
 
 test('writing - v6.5', async (t) => {
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
@@ -109,7 +124,7 @@ test('writing - v6.5', async (t) => {
       props: {
         aemVersion: '6.5',
         version: '2.20.2',
-      }
+      },
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
@@ -119,37 +134,33 @@ test('writing - v6.5', async (t) => {
       const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
       const proj = PomUtils.findPomNodeArray(pomData, 'project');
 
-      let pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
+      const pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
       pomProperties.push({ 'core.wcm.components.version': [{ '#text': '2.20.2' }] });
       fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
 
-      addModulesToPom(temporaryDir, [
-        { module: [{ '#text': 'ui.apps' }] },
-      ]);
-      addDependenciesToPom(temporaryDir, [
-        { 'dependency': [...bundleGav, versionStruct] },
-        { 'dependency': [...contentGav, versionStruct] },
-        { 'dependency': [...configGav, versionStruct] }
-      ]);
+      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps' }] }]);
+      addDependenciesToPom(temporaryDir, [{ dependency: [...bundleGav, versionStruct] }, { dependency: [...contentGav, versionStruct] }, { dependency: [...configGav, versionStruct] }]);
 
-      fs.writeFileSync(path.join(temporaryDir, '.yo-rc.json'),
+      fs.writeFileSync(
+        path.join(temporaryDir, '.yo-rc.json'),
         JSON.stringify({
-            '@adobe/generator-aem': {
-              aemVersion: '6.5',
-              name: 'Test Project'
-            }
-          }
-        ));
+          '@adobe/generator-aem': {
+            aemVersion: '6.5',
+            name: 'Test Project',
+          },
+        })
+      );
 
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(temporaryDir, 'ui.apps', 'pom.xml'));
       fs.cpSync(fixturePath('projects', 'cloud', 'ui.apps', 'src'), path.join(fullPath, 'src'), { recursive: true });
-      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'),
+      fs.writeFileSync(
+        path.join(temporaryDir, 'ui.apps', '.yo-rc.json'),
         JSON.stringify({
-            '@adobe/generator-aem:package-apps': {
-              appId: 'test',
-            }
-          }
-        ));
+          '@adobe/generator-aem:package-apps': {
+            appId: 'test',
+          },
+        })
+      );
     })
     .run()
     .then((result) => {
@@ -162,7 +173,6 @@ test('writing - v6.5', async (t) => {
 
       const spawnResult = result.generator.spawnCommandSync('mvn', ['clean', 'verify'], { stdio: 'ignore', cwd: temporaryDir });
       t.is(spawnResult.exitCode, 0, 'Build successful.');
-
     });
 });
 

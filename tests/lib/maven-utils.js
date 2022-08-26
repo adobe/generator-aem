@@ -51,11 +51,8 @@ test.serial('Invalid XML', async (t) => {
   const fake = sinon.fake.resolves('Not Parseable XML');
   sinon.replace(got, 'get', fake);
 
-  await t.throwsAsync(() => {
-    return MavenUtils.latestRelease({ groupId: 'test' }).then(() => {
-      sinon.restore();
-    });
-  });
+  await t.throwsAsync(() => MavenUtils.latestRelease({ groupId: 'test' }));
+  sinon.restore();
 });
 
 test.serial('Got Fails', async (t) => {
@@ -64,11 +61,8 @@ test.serial('Got Fails', async (t) => {
   const fake = sinon.fake.throws(new Error('500 error'));
   sinon.replace(got, 'get', fake);
 
-  await t.throwsAsync(() => {
-    return MavenUtils.latestRelease({ groupId: 'test' }).then(() => {
-      sinon.restore();
-    });
-  });
+  await t.throwsAsync(() => MavenUtils.latestRelease({ groupId: 'test' }));
+  sinon.restore();
 });
 
 test.serial('AEM 6.5 - Previous', async (t) => {
