@@ -1085,7 +1085,7 @@ test.serial('integration - defaults', async () => {
       [CoreComponent, ccGeneratorName.replace('generator-', ''), generatorPath('mixin-cc', 'index.js')],
     ])
     .withOptions({
-      showBuildOutput: true,
+      showBuildOutput: false,
       defaults: true,
     })
     .withPrompts({

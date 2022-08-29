@@ -104,9 +104,9 @@ const ModuleOptions = Object.freeze({
     if (parentProps.defaults) {
       _.merge(options, {
         artifactId: `${parentProps.artifactId}.ui.apps`,
-        bundleRef: 'core',
-        frontendRef: 'ui.frontend',
-        structureRef: 'ui.apps.structure',
+        bundleRef: `${parentProps.artifactId}.core`,
+        frontendRef: `${parentProps.artifactId}.ui.frontend`,
+        structureRef: `${parentProps.artifactId}.ui.apps.structure`,
       });
     } else {
       if (modules.bundle && _.keys(modules.bundle).length === 1) {
@@ -375,13 +375,6 @@ class AEMGenerator extends Generator {
       } else {
         this.modules = _.cloneDeep(modulesDefault);
       }
-
-      _.each(this.modules, (module, moduleType) => {
-        const name = _.keys(module)[0];
-        if (ModuleOptions[moduleType]) {
-          _.defaults(module[name], ModuleOptions[moduleType](name, this.props, this.modules));
-        }
-      });
 
       this.mixins = _.union(this.options.mixins, mixinsDefault);
     }
@@ -657,8 +650,6 @@ class AEMGenerator extends Generator {
         const name = answers[moduleType];
         if (name) {
           this.modules[moduleType][name] = this.modules[moduleType][name] || {};
-          _.defaults(this.modules[moduleType][name], ModuleOptions[moduleType](name, this.props, this.modules));
-          delete this.props[name];
         }
       });
 
@@ -674,8 +665,6 @@ class AEMGenerator extends Generator {
           const name = answers[moduleType];
           this.modules[moduleType] = this.modules[moduleType] || {};
           this.modules[moduleType][name] = this.modules[moduleType][name] || {};
-          _.defaults(this.modules[moduleType][name], ModuleOptions[moduleType](name, this.props, this.modules));
-          delete this.props[moduleType];
         });
         delete this.props.moduleSelection;
       }
@@ -840,14 +829,14 @@ class AEMGenerator extends Generator {
         return;
       }
 
-      _.forOwn(this.modules[moduleType], (moduleProps) => {
+      _.forOwn(this.modules[moduleType], (moduleProps, name) => {
         const options = {
           parent: this.props,
           defaults: this.props.defaults,
           examples: this.props.examples,
         };
         if (ModuleOptions[moduleType]) {
-          _.defaults(options, moduleProps);
+          _.defaults(options, moduleProps, ModuleOptions[moduleType](name, this.props, this.modules));
         }
 
         this.composeWith(`@adobe/aem:${moduleType}`, options);

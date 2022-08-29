@@ -148,9 +148,13 @@ class CoreComponentMixinGenerator extends Generator {
         name: 'ccVersion',
         message: 'Select version of Core Components to use:',
         type: 'list',
-        when(answers) {
+        when: (answers) => {
           return new Promise((resolve) => {
-            resolve(!answers.latest);
+            if (this.options.defaults || answers.latest) {
+              resolve(false);
+              return;
+            }
+            resolve(true);
           });
         },
         choices: this._listVersions,
