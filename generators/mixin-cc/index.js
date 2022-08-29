@@ -87,9 +87,8 @@ class CoreComponentMixinGenerator extends Generator {
   initializing() {
     this._setDestinationRoot();
 
-    this.props = {
-      version: this.options.version,
-    };
+    this.props = {};
+    _.defaults(this.props, _.pick(this.options, 'defaults'));
 
     this.availableBundles = ModuleMixins._findModules.bind(this, bundleGeneratorName)();
     this.availableApps = ModuleMixins._findModules.bind(this, appsGeneratorName)();
@@ -149,7 +148,7 @@ class CoreComponentMixinGenerator extends Generator {
         name: 'ccVersion',
         message: 'Select version of Core Components to use:',
         type: 'list',
-        when: (answers) => {
+        when(answers) {
           return new Promise((resolve) => {
             resolve(!answers.latest);
           });
@@ -211,11 +210,7 @@ class CoreComponentMixinGenerator extends Generator {
 
     return this.prompt(prompts).then((answers) => {
       _.merge(this.props, _.pick(answers, ['bundles', 'apps']));
-      if (answers.latest) {
-        this.props.version = 'latest';
-      } else {
-        this.props.version = answers.ccVersion;
-      }
+      this.props.version = answers.latest ? 'latest' : answers.ccVersion;
     });
   }
 

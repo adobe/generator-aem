@@ -45,7 +45,7 @@ test('initializing', async (t) => {
     })
     .run()
     .then((result) => {
-      t.deepEqual(result.generator.props, { aemVersion: 'cloud', version: '2.20.2', }, 'Properties set.');
+      t.deepEqual(result.generator.props, { aemVersion: 'cloud', version: '2.20.2' }, 'Properties set.');
     });
 });
 

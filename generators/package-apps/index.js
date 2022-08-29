@@ -70,7 +70,7 @@ class AppsPackageGenerator extends Generator {
     this._initializing();
 
     if (this.options.defaults) {
-      this.props.precompileScripts =  true;
+      this.props.precompileScripts = true;
     }
 
     if (this.options.precompileScripts !== undefined) {
@@ -78,11 +78,13 @@ class AppsPackageGenerator extends Generator {
     }
 
     if (this.options.bundleRef) {
-      this.props.bundle = this.options.bundleRef
+      this.props.bundle = this.options.bundleRef;
     }
+
     if (this.options.frontendRef) {
       this.props.frontend = this.options.frontendRef;
     }
+
     if (this.options.structureRef) {
       this.props.structure = this.options.structureRef;
     }
@@ -168,7 +170,7 @@ class AppsPackageGenerator extends Generator {
     }
 
     if (this.props.precompileScripts) {
-      files.push(...this._listTemplates('precompiled'))
+      files.push(...this._listTemplates('precompiled'));
     }
 
     const tplProps = {
@@ -177,7 +179,15 @@ class AppsPackageGenerator extends Generator {
     };
     tplProps.bundle = this._lookupArtifact(this.props.bundle);
     tplProps.frontend = this._lookupArtifact(this.props.frontend);
-    tplProps.structure = this._lookupArtifact(this.props.structure);
+
+    if (this.props.structure) {
+      tplProps.structure = this._lookupArtifact(this.props.structure);
+    } else {
+      const list = this._findModules(structureGeneratorName);
+      if (list.length > 0) {
+        tplProps.structure = list[0];
+      }
+    }
 
     this._writing(files, tplProps);
     this._writePom(tplProps);

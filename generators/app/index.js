@@ -48,12 +48,12 @@ export const apiCoordinates = (version) => {
 };
 
 const ModuleOptions = Object.freeze({
-  'bundle'(moduleName, parentProps) {
+  bundle(moduleName, parentProps) {
     const options = {
       generateInto: moduleName,
       appId: parentProps.appId,
       name: `${parentProps.name} - Core Bundle`,
-      artifactId: `${parentProps.appId}.${moduleName}`
+      artifactId: `${parentProps.appId}.${moduleName}`,
     };
     if (parentProps.defaults) {
       _.merge(options, {
@@ -61,6 +61,7 @@ const ModuleOptions = Object.freeze({
         artifactId: `${parentProps.artifactId}.core`,
       });
     }
+
     return options;
   },
   'frontend-general'(moduleName, parentProps) {
@@ -68,13 +69,14 @@ const ModuleOptions = Object.freeze({
       generateInto: moduleName,
       appId: parentProps.appId,
       name: `${parentProps.name} - UI Frontend`,
-      artifactId: `${parentProps.appId}.${moduleName}`
+      artifactId: `${parentProps.appId}.${moduleName}`,
     };
     if (parentProps.defaults) {
       _.merge(options, {
         artifactId: `${parentProps.artifactId}.ui.frontend`,
       });
     }
+
     return options;
   },
   'package-structure'(moduleName, parentProps) {
@@ -82,13 +84,14 @@ const ModuleOptions = Object.freeze({
       generateInto: moduleName,
       appId: parentProps.appId,
       name: `${parentProps.name} - Repository Structure Package`,
-      artifactId: `${parentProps.appId}.${moduleName}`
+      artifactId: `${parentProps.appId}.${moduleName}`,
     };
     if (parentProps.defaults) {
       _.merge(options, {
         artifactId: `${parentProps.artifactId}.ui.apps.structure`,
       });
     }
+
     return options;
   },
   'package-apps'(moduleName, parentProps, modules) {
@@ -96,7 +99,7 @@ const ModuleOptions = Object.freeze({
       generateInto: moduleName,
       appId: parentProps.appId,
       name: `${parentProps.name} - UI Apps Package`,
-      artifactId: `${parentProps.appId}.${moduleName}`
+      artifactId: `${parentProps.appId}.${moduleName}`,
     };
     if (parentProps.defaults) {
       _.merge(options, {
@@ -106,16 +109,19 @@ const ModuleOptions = Object.freeze({
         structureRef: 'ui.apps.structure',
       });
     } else {
-      if (modules['bundle'] && _.keys(modules['bundle']).length === 1) {
-        options.bundleRef = modules['bundle'][_.keys(modules['bundle'])[0]].artifactId;
+      if (modules.bundle && _.keys(modules.bundle).length === 1) {
+        options.bundleRef = modules.bundle[_.keys(modules.bundle)[0]].artifactId;
       }
+
       if (modules['frontend-general'] && _.keys(modules['frontend-general']).length === 1) {
         options.frontendRef = modules['frontend-general'][_.keys(modules['frontend-general'])[0]].artifactId;
-      } //TODO: add other frontend lookups only add if there's one.
+      } // TODO: add other frontend lookups only add if there's one.
+
       if (modules['package-structure'] && _.keys(modules['package-structure']).length > 0) {
         options.structureRef = modules['package-structure'][_.keys(modules['package-structure'])[0]].artifactId;
       }
     }
+
     return options;
   },
   'package-config'(moduleName, parentProps) {
@@ -130,6 +136,7 @@ const ModuleOptions = Object.freeze({
         artifactId: `${parentProps.artifactId}.ui.config`,
       });
     }
+
     return options;
   },
   'package-content'(moduleName, parentProps, modules) {
@@ -138,7 +145,6 @@ const ModuleOptions = Object.freeze({
       appId: parentProps.appId,
       name: `${parentProps.name} - UI Content Package`,
       artifactId: `${parentProps.artifactId}.${moduleName}`,
-
     };
     if (parentProps.defaults) {
       _.merge(options, {
@@ -150,13 +156,16 @@ const ModuleOptions = Object.freeze({
       if (modules['package-apps'] && _.keys(modules['package-apps']).length === 1) {
         options.appsRef = modules['package-apps'][_.keys(modules['package-apps'])[0]].artifactId;
       }
+
       if (modules['package-config'] && _.keys(modules['package-config']).length === 1) {
         options.configRef = modules['package-config'][_.keys(modules['package-config'])[0]].artifactId;
       }
+
       if (modules['package-structure'] && _.keys(modules['package-structure']).length > 0) {
         options.structureRef = modules['package-structure'][_.keys(modules['package-structure'])[0]].artifactId;
       }
     }
+
     return options;
   },
   'package-all'(moduleName, parentProps) {
@@ -171,6 +180,7 @@ const ModuleOptions = Object.freeze({
         artifactId: `${parentProps.artifactId}.all`,
       });
     }
+
     return options;
   },
   'tests-it'(moduleName, parentProps) {
@@ -185,9 +195,10 @@ const ModuleOptions = Object.freeze({
         artifactId: `${parentProps.artifactId}.it.tests`,
       });
     }
+
     return options;
   },
-  'dispatcher'(moduleName, parentProps) {
+  dispatcher(moduleName, parentProps) {
     const options = {
       generateInto: moduleName,
       appId: parentProps.appId,
@@ -199,25 +210,14 @@ const ModuleOptions = Object.freeze({
         artifactId: `${parentProps.artifactId}.dispatcher`,
       });
     }
+
     return options;
   },
 });
 
-const ModuleOrder = Object.freeze([
-  'bundle',
-  'frontend-general',
-  'package-structure',
-  'package-apps',
-  'package-config',
-  'package-content',
-  'package-all',
-  'tests-it',
-  'dispatcher',
-]);
+const ModuleOrder = Object.freeze(['bundle', 'frontend-general', 'package-structure', 'package-apps', 'package-config', 'package-content', 'package-all', 'tests-it', 'dispatcher']);
 
-const MixinOrder = Object.freeze([
-  'cc',
-]);
+const MixinOrder = Object.freeze(['cc']);
 
 const npmVersion = execFileSync('npm', ['--version'])
   .toString()
@@ -238,10 +238,9 @@ const modulesDefault = Object.freeze({
   'package-structure': { 'ui.apps.structure': {} },
   'package-apps': { 'ui.apps': {} },
   'package-config': { 'ui.config': {} },
-  'package-all': { 'all': {} },
+  'package-all': { all: {} },
   'tests-it': { 'it.tests': {} },
-  dispatcher: { 'dispatcher': {} },
-  unknown: {},
+  dispatcher: { dispatcher: {} },
 });
 
 const mixinPrefix = '@adobe/generator-aem:mixin-';
@@ -377,6 +376,13 @@ class AEMGenerator extends Generator {
         this.modules = _.cloneDeep(modulesDefault);
       }
 
+      _.each(this.modules, (module, moduleType) => {
+        const name = _.keys(module)[0];
+        if (ModuleOptions[moduleType]) {
+          _.defaults(module[name], ModuleOptions[moduleType](name, this.props, this.modules));
+        }
+      });
+
       this.mixins = _.union(this.options.mixins, mixinsDefault);
     }
   }
@@ -492,10 +498,8 @@ class AEMGenerator extends Generator {
               resolve(false);
               return;
             }
-            if (this.options.modules &&
-              (this.options.modules.includes('frontend-general') ||
-                this.options.modules.includes('frontend-react') ||
-                this.options.modules.includes('frontend-angular'))) {
+
+            if (this.options.modules && (this.options.modules.includes('frontend-general') || this.options.modules.includes('frontend-react') || this.options.modules.includes('frontend-angular'))) {
               resolve(false);
               return;
             }
@@ -504,6 +508,7 @@ class AEMGenerator extends Generator {
               resolve(true);
               return;
             }
+
             resolve(false);
           });
         },
@@ -531,6 +536,7 @@ class AEMGenerator extends Generator {
               resolve(true);
               return;
             }
+
             resolve(answers.frontend === 'frontend-general');
           });
         },
@@ -649,10 +655,11 @@ class AEMGenerator extends Generator {
 
       _.forOwn(this.modules, (modules, moduleType) => {
         const name = answers[moduleType];
-        this.modules[moduleType][name] = this.modules[moduleType][name] || {};
-        _.defaults(this.modules[moduleType][name], ModuleOptions[moduleType](name, this.props, this.modules));
-        delete this.props[name];
-
+        if (name) {
+          this.modules[moduleType][name] = this.modules[moduleType][name] || {};
+          _.defaults(this.modules[moduleType][name], ModuleOptions[moduleType](name, this.props, this.modules));
+          delete this.props[name];
+        }
       });
 
       if (answers.moduleSelection) {
@@ -675,9 +682,8 @@ class AEMGenerator extends Generator {
 
       // Dispatcher is special case, can't set name.
       if (this.modules.dispatcher) {
-        this.modules.dispatcher = { dispatcher: ModuleOptions['dispatcher']('dispatcher', this.props, this.modules) };
+        this.modules.dispatcher = { dispatcher: ModuleOptions.dispatcher('dispatcher', this.props, this.modules) };
       }
-
 
       if (answers.mixins) {
         this.mixins = _.union(this.mixins, answers.mixins);
@@ -699,12 +705,12 @@ class AEMGenerator extends Generator {
   default() {
     const meta = this.env.getGeneratorsMeta();
 
-    _.forOwn(this.modules, (set, module) => {
-      if (!meta[`@adobe/aem:${module}`] && !meta[module]) {
+    _.forOwn(this.modules, (module, moduleType) => {
+      if (!meta[`@adobe/aem:${moduleType}`] && !meta[moduleType]) {
         throw new Error(
           /* eslint-disable prettier/prettier */
-          chalk.red(`Module '${module}' is not installed.`) +
-          '\n\nInstall it with ' + chalk.yellow(`npm install -g 'generator-${module}'`) + ' then rerun this generator.\n'
+          chalk.red(`Module '${moduleType}' is not installed.`) +
+          '\n\nInstall it with ' + chalk.yellow(`npm install -g 'generator-${moduleType}'`) + ' then rerun this generator.\n'
           /* eslint-enable prettier/prettier */
         );
       }
@@ -712,7 +718,6 @@ class AEMGenerator extends Generator {
 
     this._composeModules();
     this._composeMixins();
-
   }
 
   writing() {
@@ -775,6 +780,7 @@ class AEMGenerator extends Generator {
           if (generator.startsWith(mixinPrefix)) {
             return;
           }
+
           const type = generator.replaceAll('@adobe/generator-aem:', '');
           if (!this.modules[type]) {
             this.modules[type] = {};
@@ -782,23 +788,19 @@ class AEMGenerator extends Generator {
 
           this.modules[type][name] = v;
         });
-      } else {
-        this.modules.unknown = this.modules.unknown || {};
-        this.modules.unknown[name] = {};
       }
     });
   }
 
   _initMixins() {
-
-    const tmp = [];
+    const temporary = [];
     const yorc = this.fs.readJSON(this.destinationPath('.yo-rc.json'));
     _.each(yorc, (v, k) => {
       if (k.startsWith(mixinPrefix)) {
-        tmp.push(k.replaceAll(mixinPrefix, ''));
+        temporary.push(k.replaceAll(mixinPrefix, ''));
       }
     });
-    this.mixins = _.union(this.mixins, tmp);
+    this.mixins = _.union(this.mixins, temporary);
   }
 
   _moduleNameWhen = (module, answers) => {
@@ -807,12 +809,15 @@ class AEMGenerator extends Generator {
         resolve(false);
         return;
       }
+
       if (answers.moduleSelection && answers.moduleSelection.includes(module)) {
         resolve(true);
       }
+
       if (this.options.modules && this.options.modules.includes(module)) {
         resolve(true);
       }
+
       resolve(false);
     });
   };
@@ -858,10 +863,9 @@ class AEMGenerator extends Generator {
   }
 
   _composeMixins() {
-
     const mixinList = _.cloneDeep(this.mixins);
     _.each(MixinOrder, (mixinType) => {
-      if (this.mixins.indexOf(mixinType) < 0) {
+      if (!this.mixins.includes(mixinType)) {
         return;
       }
 
@@ -875,7 +879,6 @@ class AEMGenerator extends Generator {
       const options = { parent: this.props };
       this.composeWith(`@adobe/aem:mixin-${mixin}`, options);
     });
-
   }
 
   _writeGitignore = () => {

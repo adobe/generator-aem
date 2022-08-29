@@ -41,8 +41,6 @@ import CoreComponent, { generatorName as ccGeneratorName } from '../../generator
 import { init, config, writeInstall } from '../fixtures/generators/wrappers.js';
 import AEMGenerator from '../../generators/app/index.js';
 import MavenUtils from '../../lib/maven-utils.js';
-import MixinCc from '../../generators/mixin-cc/index.js';
-import CoreComponentMixinGenerator from '../../generators/mixin-cc/index.js';
 
 const resolved = generatorPath('app', 'index.js');
 const AEMAppInit = init(AEMGenerator, resolved);
@@ -86,14 +84,14 @@ test('initialize - defaults', async (t) => {
       };
 
       const modules = {
-        bundle: { 'core': {} },
+        bundle: { core: {} },
         'frontend-general': { 'ui.frontend': {} },
         'package-structure': { 'ui.apps.structure': {} },
         'package-apps': { 'ui.apps': {} },
         'package-config': { 'ui.config': {} },
-        'package-all': { 'all': {} },
+        'package-all': { all: {} },
         'tests-it': { 'it.tests': {} },
-        dispatcher: { 'dispatcher': {} },
+        dispatcher: { dispatcher: {} },
         unknown: {},
       };
 
@@ -122,14 +120,14 @@ test('initialize - invalid java/aem version', async (t) => {
       };
 
       const modules = {
-        bundle: { 'core': {} },
+        bundle: { core: {} },
         'frontend-general': { 'ui.frontend': {} },
         'package-structure': { 'ui.apps.structure': {} },
         'package-apps': { 'ui.apps': {} },
         'package-config': { 'ui.config': {} },
-        'package-all': { 'all': {} },
+        'package-all': { all: {} },
         'tests-it': { 'it.tests': {} },
-        dispatcher: { 'dispatcher': {} },
+        dispatcher: { dispatcher: {} },
         unknown: {},
       };
       const mixins = ['cc'];
@@ -158,10 +156,10 @@ test('initialize - defaults with module subset', async (t) => {
       };
 
       const modules = {
-        bundle: { 'core': {} },
+        bundle: { core: {} },
         'package-structure': { 'ui.apps.structure': {} },
         'package-apps': { 'ui.apps': {} },
-        'package-all': { 'all': {} },
+        'package-all': { all: {} },
       };
 
       const mixins = ['cc'];
@@ -234,7 +232,6 @@ test('initialize from pom - with modules', async (t) => {
     .inTmpDir((temporary) => {
       fs.cpSync(fixturePath('pom', 'modules'), temporary, { recursive: true });
       fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:mixin-cc': {} }));
-
     })
     .run()
     .then((result) => {
@@ -249,10 +246,10 @@ test('initialize from pom - with modules', async (t) => {
         npmVersion: 'pom',
       };
       const modules = {
-        bundle: { 'core': {} },
+        bundle: { core: {} },
         'package-structure': { 'ui.apps.structure': {} },
         'package-apps': { 'ui.apps': {} },
-        unknown: { 'unknown': {} },
+        unknown: { unknown: {} },
       };
 
       const mixins = ['cc'];
@@ -348,14 +345,14 @@ test('initialize merge', async (t) => {
       };
 
       const modules = {
-        bundle: { 'core': {} },
+        bundle: { core: {} },
         'frontend-general': { 'ui.frontend': {} },
         'package-structure': { 'ui.apps.structure': {} },
         'package-apps': { 'ui.apps': {} },
         'package-config': { 'ui.config': {} },
-        'package-all': { 'all': {} },
+        'package-all': { all: {} },
         'tests-it': { 'it.tests': {} },
-        dispatcher: { 'dispatcher': {} },
+        dispatcher: { dispatcher: {} },
         unknown: {},
       };
 
@@ -520,31 +517,31 @@ test('prompting - asked', async (t) => {
       ]);
       const modules = {
         bundle: {
-          'prompted': {
+          prompted: {
             generateInto: 'prompted',
             appId: 'prompted',
             name: 'prompted - Core Bundle',
             artifactId: 'prompted.prompted',
-          }
+          },
         },
         'frontend-general': {
-          'prompted': {
+          prompted: {
             generateInto: 'prompted',
             appId: 'prompted',
             name: 'prompted - UI Frontend',
             artifactId: 'prompted.prompted',
-          }
+          },
         },
         'package-structure': {
-          'prompted': {
+          prompted: {
             generateInto: 'prompted',
             appId: 'prompted',
             name: 'prompted - Repository Structure Package',
             artifactId: 'prompted.prompted',
-          }
+          },
         },
         'package-apps': {
-          'prompted': {
+          prompted: {
             generateInto: 'prompted',
             appId: 'prompted',
             name: 'prompted - UI Apps Package',
@@ -552,39 +549,39 @@ test('prompting - asked', async (t) => {
             bundleRef: 'prompted.prompted',
             frontendRef: 'prompted.prompted',
             structureRef: 'prompted.prompted',
-          }
+          },
         },
         'package-config': {
-          'prompted': {
+          prompted: {
             generateInto: 'prompted',
             appId: 'prompted',
             name: 'prompted - UI Config Package',
             artifactId: 'prompted.prompted',
-          }
+          },
         },
         'package-all': {
-          'prompted': {
+          prompted: {
             generateInto: 'prompted',
             appId: 'prompted',
             name: 'prompted - All Package',
             artifactId: 'prompted.prompted',
-          }
+          },
         },
         'tests-it': {
-          'prompted': {
+          prompted: {
             generateInto: 'prompted',
             appId: 'prompted',
             name: 'prompted - Integration Tests',
             artifactId: 'prompted.prompted',
-          }
+          },
         },
         dispatcher: {
-          'dispatcher': {
+          dispatcher: {
             generateInto: 'dispatcher',
             appId: 'prompted',
             name: 'prompted - Dispatcher',
             artifactId: 'prompted.dispatcher',
-          }
+          },
         },
       };
       t.deepEqual(result.generator.props, props, 'Properties set');
@@ -673,7 +670,7 @@ test('default - module generator does not exist', async (t) => {
     }
 
     default() {
-      this.modules = { 'test:simple': { 'simple': {} } };
+      this.modules = { 'test:simple': { simple: {} } };
       this.mixins = [];
       super.default();
     }
@@ -696,7 +693,7 @@ test('default - module generator exists', async (t) => {
 
     default() {
       this.props = { parent: 'parent' };
-      this.modules = { 'test:simple': { 'simple': {} } };
+      this.modules = { 'test:simple': { simple: {} } };
       this.mixins = [];
       super.default();
     }
@@ -771,12 +768,10 @@ test('writing/installing - cloud', async (t) => {
       result.assertFileContent(pom, `<npm.version>${npmVersion}</npm.version>`);
       result.assertFileContent(pom, /<artifactId>aem-sdk-api<\/artifactId>/);
       result.assertNoFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
-
     });
 });
 
-test('writing/installing - v6.5', async (t) => {
-
+test('writing/installing - v6.5', async () => {
   await helpers
     .create(AEMAppWriteInstall)
     .withOptions({
@@ -813,12 +808,10 @@ test('writing/installing - v6.5', async (t) => {
       result.assertFileContent(pom, `<npm.version>${npmVersion}</npm.version>`);
       result.assertFileContent(pom, /<artifactId>uber-jar<\/artifactId>/);
       result.assertFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
-
     });
 });
 
-test('writing/installing - cloud - merge/upgrade', async (t) => {
-
+test('writing/installing - cloud - merge/upgrade', async () => {
   await helpers
     .create(AEMAppWriteInstall)
     .withOptions({
@@ -865,11 +858,10 @@ test('writing/installing - cloud - merge/upgrade', async (t) => {
       result.assertFileContent(pom, /<artifactId>maven-gpg-plugin<\/artifactId>\s+<configuration/); // Profile Section
       result.assertNoFileContent(pom, /<artifactId>uber-jar<\/artifactId>/);
       result.assertNoFileContent(pom, /<artifactId>org.osgi.annotation.versioning<\/artifactId>/);
-
     });
 });
 
-test.serial('integration - options', async (t) => {
+test.serial('integration - options', async () => {
   sinon.restore();
 
   const analyserCoordinates = { groupId: 'com.adobe.aem', artifactId: 'aemanalyser-maven-plugin' };
@@ -901,9 +893,8 @@ test.serial('integration - options', async (t) => {
   latestReleaseStub.withArgs(aemCoordinates).resolves(cloudSdkApiMetadata);
   latestReleaseStub.withArgs(testClientCoordinates).resolves(testClientMetadata);
 
-  const resolveVersion = sinon.stub(CoreComponentMixinGenerator.prototype, '_resolveVersion');
+  const resolveVersion = sinon.stub(CoreComponent.prototype, '_resolveVersion');
   resolveVersion.resolves('2.20.2');
-
 
   await helpers
     .create(generatorPath('app'))
@@ -916,7 +907,7 @@ test.serial('integration - options', async (t) => {
       [PackageAll, allGeneratorName.replace('generator-', ''), generatorPath('package-all', 'index.js')],
       [TestsIt, itGeneratorName.replace('generator-', ''), generatorPath('tests-it', 'index.js')],
       [Dispatcher, dispatcherGeneratorName.replace('generator-', ''), generatorPath('dispatcher', 'index.js')],
-      [MixinCc, ccGeneratorName.replace('generator-', ''), generatorPath('mixin-cc', 'index.js')]
+      [CoreComponent, ccGeneratorName.replace('generator-', ''), generatorPath('mixin-cc', 'index.js')],
     ])
     .withOptions({
       showBuildOutput: false,
@@ -955,8 +946,7 @@ test.serial('integration - options', async (t) => {
     });
 });
 
-
-test.serial('integration - prompts', async (t) => {
+test.serial('integration - prompts', async () => {
   sinon.restore();
 
   const analyserCoordinates = { groupId: 'com.adobe.aem', artifactId: 'aemanalyser-maven-plugin' };
@@ -988,9 +978,8 @@ test.serial('integration - prompts', async (t) => {
   latestReleaseStub.withArgs(aemCoordinates).resolves(cloudSdkApiMetadata);
   latestReleaseStub.withArgs(testClientCoordinates).resolves(testClientMetadata);
 
-  const resolveVersion = sinon.stub(CoreComponentMixinGenerator.prototype, '_resolveVersion');
+  const resolveVersion = sinon.stub(CoreComponent.prototype, '_resolveVersion');
   resolveVersion.resolves('2.20.2');
-
 
   await helpers
     .create(generatorPath('app'))
@@ -1003,7 +992,7 @@ test.serial('integration - prompts', async (t) => {
       [PackageAll, allGeneratorName.replace('generator-', ''), generatorPath('package-all', 'index.js')],
       [TestsIt, itGeneratorName.replace('generator-', ''), generatorPath('tests-it', 'index.js')],
       [Dispatcher, dispatcherGeneratorName.replace('generator-', ''), generatorPath('dispatcher', 'index.js')],
-      [MixinCc, ccGeneratorName.replace('generator-', ''), generatorPath('mixin-cc', 'index.js')]
+      [CoreComponent, ccGeneratorName.replace('generator-', ''), generatorPath('mixin-cc', 'index.js')],
     ])
     .withOptions({
       showBuildOutput: false,
@@ -1028,7 +1017,83 @@ test.serial('integration - prompts', async (t) => {
       mixins: 'cc',
       nodeVersion: '16.13.2',
       npmVersion: '8.1.2',
+    })
+    .run()
+    .then((result) => {
+      latestReleaseStub.restore();
+      resolveVersion.restore();
+      const dest = result.generator.destinationPath();
+      result.assertFile(path.join(dest, 'core', 'target', 'mysite.core-1.0.0-SNAPSHOT.jar'));
+      result.assertFile(path.join(dest, 'ui.frontend', 'target', 'mysite.ui.frontend-1.0.0-SNAPSHOT.zip'));
+      result.assertFile(path.join(dest, 'ui.apps.structure', 'target', 'mysite.ui.apps.structure-1.0.0-SNAPSHOT.zip'));
+      result.assertFile(path.join(dest, 'ui.apps', 'target', 'mysite.ui.apps-1.0.0-SNAPSHOT.zip'));
+      result.assertFile(path.join(dest, 'ui.config', 'target', 'mysite.ui.config-1.0.0-SNAPSHOT.zip'));
+      result.assertFile(path.join(dest, 'all', 'target', 'mysite.all-1.0.0-SNAPSHOT.zip'));
+      result.assertFile(path.join(dest, 'it.tests', 'target', 'mysite.it.tests-1.0.0-SNAPSHOT.jar'));
+      result.assertFile(path.join(dest, 'it.tests', 'target', 'mysite.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
+      result.assertFile(path.join(dest, 'dispatcher', 'target', 'mysite.dispatcher-1.0.0-SNAPSHOT.zip'));
+    });
+});
 
+
+test.serial('integration - defaults', async () => {
+  sinon.restore();
+
+  const analyserCoordinates = { groupId: 'com.adobe.aem', artifactId: 'aemanalyser-maven-plugin' };
+
+  const analyserMetadata = {
+    groupId: 'com.adobe.aem',
+    artifactId: 'aemanalyser-maven-plugin',
+    version: '1.4.16',
+  };
+
+  const aemCoordinates = {
+    groupId: 'com.adobe.aem',
+    artifactId: 'aem-sdk-api',
+    path: 'com/adobe/aem/aem-sdk-api',
+  };
+
+  const testClientCoordinates = {
+    groupId: 'com.adobe.cq',
+    artifactId: 'aem-cloud-testing-clients',
+  };
+
+  const testClientMetadata = {
+    ...testClientCoordinates,
+    version: '1.1.0',
+  };
+
+  const latestReleaseStub = sinon.stub(MavenUtils, 'latestRelease');
+  latestReleaseStub.withArgs(analyserCoordinates).resolves(analyserMetadata);
+  latestReleaseStub.withArgs(aemCoordinates).resolves(cloudSdkApiMetadata);
+  latestReleaseStub.withArgs(testClientCoordinates).resolves(testClientMetadata);
+
+  const resolveVersion = sinon.stub(CoreComponent.prototype, '_resolveVersion');
+  resolveVersion.resolves('2.20.2');
+
+  await helpers
+    .create(generatorPath('app'))
+    .withGenerators([
+      [Bundle, bundleGeneratorName.replace('generator-', ''), generatorPath('bundle', 'index.js')],
+      [FrontendGeneral, feGeneratorName.replace('generator-', ''), generatorPath('frontend-general', 'index.js')],
+      [PackageStructure, structureGeneratorName.replace('generator-', ''), generatorPath('package-structure', 'index.js')],
+      [PackageApps, appsGeneratorName.replace('generator-', ''), generatorPath('package-apps', 'index.js')],
+      [PackageConfig, configGeneratorName.replace('generator-', ''), generatorPath('package-config', 'index.js')],
+      [PackageAll, allGeneratorName.replace('generator-', ''), generatorPath('package-all', 'index.js')],
+      [TestsIt, itGeneratorName.replace('generator-', ''), generatorPath('tests-it', 'index.js')],
+      [Dispatcher, dispatcherGeneratorName.replace('generator-', ''), generatorPath('dispatcher', 'index.js')],
+      [CoreComponent, ccGeneratorName.replace('generator-', ''), generatorPath('mixin-cc', 'index.js')],
+    ])
+    .withOptions({
+      showBuildOutput: true,
+      defaults: true,
+    })
+    .withPrompts({
+      name: 'My Site',
+      appId: 'mysite',
+      groupId: 'com.mysite',
+      nodeVersion: '16.13.2',
+      npmVersion: '8.1.2',
     })
     .run()
     .then((result) => {

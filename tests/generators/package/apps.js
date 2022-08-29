@@ -148,7 +148,7 @@ test('prompting - bundleRef - post processing - selected', async (t) => {
     .run()
     .then(async (result) => {
       t.is(result.generator.props.bundleRef, undefined, 'Deletes Bundle Ref');
-      t.deepEqual(result.generator.props.bundle, 'test.core', 'Sets Bundle');
+      t.is(result.generator.props.bundle, 'test.core', 'Sets Bundle');
     });
 });
 
@@ -233,7 +233,7 @@ test('prompting - frontendRef - post processing - selected', async (t) => {
     .run()
     .then(async (result) => {
       t.is(result.generator.props.bundleRef, undefined, 'Deletes Frontend Ref');
-      t.deepEqual(result.generator.props.frontend, 'test.ui.frontend', 'Sets Frontend');
+      t.is(result.generator.props.frontend, 'test.ui.frontend', 'Sets Frontend');
     });
 });
 
@@ -475,7 +475,6 @@ test('writing/installing - bundle & frontend references', async (t) => {
       result.assertFile(path.join('src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'));
       result.assertFile(path.join('target', `test.ui.apps-1.0.0-SNAPSHOT.zip`));
       result.assertFile(path.join('target', 'test.ui.apps-1.0.0-SNAPSHOT-precompiled-scripts.jar'));
-
     });
 });
 
