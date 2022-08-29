@@ -301,7 +301,7 @@ class AEMGenerator extends Generator {
       this.option(k, v);
     });
 
-    this.rootGeneratorName = function() {
+    this.rootGeneratorName = function () {
       return generatorName;
     };
   }
@@ -523,6 +523,7 @@ class AEMGenerator extends Generator {
           return new Promise((resolve) => {
             if (this.options.defaults) {
               resolve(false);
+              return;
             }
 
             if (this.options.modules && this.options.modules.includes('frontend-general')) {
@@ -650,6 +651,7 @@ class AEMGenerator extends Generator {
         const name = answers[moduleType];
         if (name) {
           this.modules[moduleType][name] = this.modules[moduleType][name] || {};
+          delete this.props[moduleType];
         }
       });
 
@@ -665,13 +667,14 @@ class AEMGenerator extends Generator {
           const name = answers[moduleType];
           this.modules[moduleType] = this.modules[moduleType] || {};
           this.modules[moduleType][name] = this.modules[moduleType][name] || {};
+          delete this.props[moduleType];
         });
         delete this.props.moduleSelection;
       }
 
       // Dispatcher is special case, can't set name.
       if (this.modules.dispatcher) {
-        this.modules.dispatcher = { dispatcher: ModuleOptions.dispatcher('dispatcher', this.props, this.modules) };
+        this.modules.dispatcher = { dispatcher: {} };
       }
 
       if (answers.mixins) {
@@ -801,10 +804,12 @@ class AEMGenerator extends Generator {
 
       if (answers.moduleSelection && answers.moduleSelection.includes(module)) {
         resolve(true);
+        return;
       }
 
       if (this.options.modules && this.options.modules.includes(module)) {
         resolve(true);
+        return;
       }
 
       resolve(false);
@@ -813,12 +818,18 @@ class AEMGenerator extends Generator {
 
   _checkName = (name, answers) => {
     return new Promise((resolve) => {
+      let dup = false;
       _.each(answers.moduleSelection, (module) => {
         if (answers[module] === name) {
-          resolve('Module names must be unique.');
+          dup = true;
+          return false;
         }
       });
-      resolve(true);
+      if (dup) {
+        resolve('Module names must be unique.');
+      } else {
+        resolve(true);
+      }
     });
   };
 

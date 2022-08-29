@@ -92,7 +92,6 @@ test('initialize - defaults', async (t) => {
         'package-all': { all: {} },
         'tests-it': { 'it.tests': {} },
         dispatcher: { dispatcher: {} },
-        unknown: {},
       };
 
       t.deepEqual(result.generator.props, props, 'Properties set');
@@ -128,7 +127,6 @@ test('initialize - invalid java/aem version', async (t) => {
         'package-all': { all: {} },
         'tests-it': { 'it.tests': {} },
         dispatcher: { dispatcher: {} },
-        unknown: {},
       };
       const mixins = ['cc'];
       t.deepEqual(result.generator.props, props, 'Properties set');
@@ -249,7 +247,6 @@ test('initialize from pom - with modules', async (t) => {
         bundle: { core: {} },
         'package-structure': { 'ui.apps.structure': {} },
         'package-apps': { 'ui.apps': {} },
-        unknown: { unknown: {} },
       };
 
       const mixins = ['cc'];
@@ -353,7 +350,6 @@ test('initialize merge', async (t) => {
         'package-all': { all: {} },
         'tests-it': { 'it.tests': {} },
         dispatcher: { dispatcher: {} },
-        unknown: {},
       };
 
       const mixins = ['cc'];
@@ -382,7 +378,7 @@ test('prompting - defaults', async (t) => {
       this.props = {};
       this.modules = {};
       this.mixins = [];
-      super.prompting();
+      return super.prompting();
     }
   }
 
@@ -427,14 +423,17 @@ test('prompting - options passed', async (t) => {
       super(args, options, features);
     }
 
+    /* eslint-disable ava/prefer-async-await */
     prompting() {
       this.props = options;
       this.modules = {};
       this.mixins = [];
-      super.prompting().then((answers) => {
+
+      return super.prompting().then((answers) => {
         this.answers = answers;
       });
     }
+    /* eslint-enable ava/prefer-async-await */
   }
 
   const answers = {
@@ -493,7 +492,7 @@ test('prompting - asked', async (t) => {
       this.props = {};
       this.modules = {};
       this.mixins = [];
-      super.prompting();
+      return super.prompting();
     }
   }
 
@@ -517,71 +516,28 @@ test('prompting - asked', async (t) => {
       ]);
       const modules = {
         bundle: {
-          prompted: {
-            generateInto: 'prompted',
-            appId: 'prompted',
-            name: 'prompted - Core Bundle',
-            artifactId: 'prompted.prompted',
-          },
+          prompted: {},
         },
         'frontend-general': {
-          prompted: {
-            generateInto: 'prompted',
-            appId: 'prompted',
-            name: 'prompted - UI Frontend',
-            artifactId: 'prompted.prompted',
-          },
+          prompted: {},
         },
         'package-structure': {
-          prompted: {
-            generateInto: 'prompted',
-            appId: 'prompted',
-            name: 'prompted - Repository Structure Package',
-            artifactId: 'prompted.prompted',
-          },
+          prompted: {},
         },
         'package-apps': {
-          prompted: {
-            generateInto: 'prompted',
-            appId: 'prompted',
-            name: 'prompted - UI Apps Package',
-            artifactId: 'prompted.prompted',
-            bundleRef: 'prompted.prompted',
-            frontendRef: 'prompted.prompted',
-            structureRef: 'prompted.prompted',
-          },
+          prompted: {},
         },
         'package-config': {
-          prompted: {
-            generateInto: 'prompted',
-            appId: 'prompted',
-            name: 'prompted - UI Config Package',
-            artifactId: 'prompted.prompted',
-          },
+          prompted: {},
         },
         'package-all': {
-          prompted: {
-            generateInto: 'prompted',
-            appId: 'prompted',
-            name: 'prompted - All Package',
-            artifactId: 'prompted.prompted',
-          },
+          prompted: {},
         },
         'tests-it': {
-          prompted: {
-            generateInto: 'prompted',
-            appId: 'prompted',
-            name: 'prompted - Integration Tests',
-            artifactId: 'prompted.prompted',
-          },
+          prompted: {},
         },
         dispatcher: {
-          dispatcher: {
-            generateInto: 'dispatcher',
-            appId: 'prompted',
-            name: 'prompted - Dispatcher',
-            artifactId: 'prompted.dispatcher',
-          },
+          dispatcher: {},
         },
       };
       t.deepEqual(result.generator.props, props, 'Properties set');
@@ -1034,7 +990,6 @@ test.serial('integration - prompts', async () => {
       result.assertFile(path.join(dest, 'dispatcher', 'target', 'mysite.dispatcher-1.0.0-SNAPSHOT.zip'));
     });
 });
-
 
 test.serial('integration - defaults', async () => {
   sinon.restore();

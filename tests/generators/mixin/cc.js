@@ -151,8 +151,8 @@ test.serial('initializing - defaults', async (t) => {
     .then((result) => {
       stub.restore();
       const expected = {
-        bundles: ['core'],
-        apps: ['ui.apps'],
+        bundles: [],
+        apps: [],
         version: 'latest',
       };
       t.deepEqual(result.generator.props, expected, 'Properties Set');

@@ -88,8 +88,6 @@ class CoreComponentMixinGenerator extends Generator {
     this._setDestinationRoot();
 
     this.props = {};
-    _.defaults(this.props, _.pick(this.options, 'defaults'));
-
     this.availableBundles = ModuleMixins._findModules.bind(this, bundleGeneratorName)();
     this.availableApps = ModuleMixins._findModules.bind(this, appsGeneratorName)();
 
@@ -97,18 +95,18 @@ class CoreComponentMixinGenerator extends Generator {
       throw new Error('Project must have at least one UI Apps module to use Core Component mixin.');
     }
 
-    let module = _.find(this.availableBundles, ['path', this.options.bundleRef]);
-    if (module) {
-      this.props.bundles = [module.path];
+    this.props.version = this.options.version;
+
+    if (this.options.bundleRef) {
+      this.props.bundles = [this.options.bundleRef];
     }
 
-    module = _.find(this.availableApps, ['path', this.options.appsRef]);
-    if (module) {
-      this.props.apps = [module.path];
+    if (this.options.appsRef) {
+      this.props.apps = [this.options.appsRef];
     }
 
     if (this.options.defaults) {
-      _.defaults(this.props, { version: 'latest', bundles: ['core'], apps: ['ui.apps'] });
+      _.defaults(this.props, { version: 'latest' });
     }
 
     const config = this.config.getAll();
@@ -154,6 +152,7 @@ class CoreComponentMixinGenerator extends Generator {
               resolve(false);
               return;
             }
+
             resolve(true);
           });
         },
