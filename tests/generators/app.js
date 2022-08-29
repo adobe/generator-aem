@@ -554,7 +554,7 @@ test.serial('configuring', async (t) => {
 
   await helpers
     .create(AEMAppConfig)
-    .withOptions({ props: { config: 'config' } })
+    .withOptions({ props: { config: 'config', appId: 'test' } })
     .run()
     .then((result) => {
       sinon.restore();
@@ -562,6 +562,7 @@ test.serial('configuring', async (t) => {
       const expected = {
         '@adobe/generator-aem': {
           config: 'config',
+          appId: 'test',
           aem: cloudSdkApiMetadata,
         },
       };
@@ -596,6 +597,10 @@ test.serial('configuring - generateInto', async (t) => {
     });
 });
 
+test.serial('configuring - sets destinationRoot', (t) => {
+  t.fail('Not Implemented.');
+});
+
 test.serial('configuring - fails on existing different pom', async (t) => {
   t.plan(1);
   sinon.restore();
@@ -626,6 +631,18 @@ test('default - module generator does not exist', async (t) => {
     }
 
     default() {
+      this.props = {
+        groupId: 'com.adobe.test.main',
+        artifactId: 'main',
+        version: '1.0.0-SNAPSHOT',
+        appId: 'main',
+        name: 'Main Title',
+        aemVersion: '6.5',
+        javaVersion: '8',
+        nodeVersion,
+        npmVersion,
+        aem: aem65ApiMetadata,
+      };
       this.modules = { 'test:simple': { simple: {} } };
       this.mixins = [];
       super.default();
@@ -648,7 +665,18 @@ test('default - module generator exists', async (t) => {
     }
 
     default() {
-      this.props = { parent: 'parent' };
+      this.props = {
+        groupId: 'com.adobe.test.main',
+        artifactId: 'main',
+        version: '1.0.0-SNAPSHOT',
+        appId: 'main',
+        name: 'Main Title',
+        aemVersion: '6.5',
+        javaVersion: '8',
+        nodeVersion,
+        npmVersion,
+        aem: aem65ApiMetadata,
+      };
       this.modules = { 'test:simple': { simple: {} } };
       this.mixins = [];
       super.default();
@@ -670,9 +698,18 @@ test('default - module generator exists', async (t) => {
 
 test('writing/installing - cloud', async (t) => {
   t.plan(3);
+  class Mock extends AEMAppWriteInstall {
+    writing() {
+      this._writePom(); // Write Pom is on the default function.
+      return super.writing();
+    }
 
+    install() {
+      return super.install();
+    }
+  }
   await helpers
-    .create(AEMAppWriteInstall)
+    .create(Mock)
     .withOptions({
       props: {
         groupId: 'com.adobe.test.main',
@@ -728,8 +765,18 @@ test('writing/installing - cloud', async (t) => {
 });
 
 test('writing/installing - v6.5', async () => {
+  class Mock extends AEMAppWriteInstall {
+    writing() {
+      this._writePom(); // Write Pom is on the default function.
+      return super.writing();
+    }
+
+    install() {
+      return super.install();
+    }
+  }
   await helpers
-    .create(AEMAppWriteInstall)
+    .create(Mock)
     .withOptions({
       props: {
         groupId: 'com.adobe.test.main',
@@ -768,8 +815,18 @@ test('writing/installing - v6.5', async () => {
 });
 
 test('writing/installing - cloud - merge/upgrade', async () => {
+  class Mock extends AEMAppWriteInstall {
+    writing() {
+      this._writePom(); // Write Pom is on the default function.
+      return super.writing();
+    }
+
+    install() {
+      return super.install();
+    }
+  }
   await helpers
-    .create(AEMAppWriteInstall)
+    .create(Mock)
     .withOptions({
       props: {
         groupId: 'com.adobe.test.main',
@@ -1068,3 +1125,11 @@ test.serial('integration - defaults', async () => {
 });
 // TODO: Tests to update existing project
 // TODO: Test for full build of defaults
+
+test('checkName', (t) => {
+  t.fail('Not Implemented.');
+});
+
+test('validateGAV', (t) => {
+  t.fail('Not Implemented.');
+});

@@ -61,11 +61,11 @@ class CoreComponentMixinGenerator extends Generator {
       defaults: {
         desc: 'Use all defaults for user input.',
       },
-      bundleRef: {
+      bundlePath: {
         type: String,
         desc: 'Optional Bundle module reference, for adding dependency and unit test context.',
       },
-      appsRef: {
+      appsPath: {
         type: String,
         desc: 'Apps Package module reference, for adding proxy components.',
       },
@@ -97,12 +97,12 @@ class CoreComponentMixinGenerator extends Generator {
 
     this.props.version = this.options.version;
 
-    if (this.options.bundleRef) {
-      this.props.bundles = [this.options.bundleRef];
+    if (this.options.bundlePath) {
+      this.props.bundles = [this.options.bundlePath];
     }
 
-    if (this.options.appsRef) {
-      this.props.apps = [this.options.appsRef];
+    if (this.options.appsPath) {
+      this.props.apps = [this.options.appsPath];
     }
 
     if (this.options.defaults) {
@@ -127,7 +127,7 @@ class CoreComponentMixinGenerator extends Generator {
     const prompts = [
       {
         name: 'latest',
-        message: 'Use latest version of Core Components, or select a version?',
+        message: "Use latest version of Core Components? ('n' to select a version)",
         type: 'confirm',
         when: () => {
           return new Promise((resolve) => {

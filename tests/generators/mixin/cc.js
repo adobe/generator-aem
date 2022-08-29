@@ -168,7 +168,7 @@ test.serial('initializing - options', async (t) => {
 
   await helpers
     .create(CCInit)
-    .withOptions({ bundleRef: 'core', appsRef: 'ui.apps', version: '2.3.22' })
+    .withOptions({ bundlePath: 'core', appsPath: 'ui.apps', version: '2.3.22' })
     .inTmpDir((dir) => {
       fs.writeFileSync(path.join(dir, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem': {} }));
     })
@@ -225,7 +225,7 @@ test.serial('initializing - merges from config - passed refs', async (t) => {
   stub.withArgs(appsGeneratorName).returns([{ path: 'ui.apps', artifactId: 'test.ui.apps' }]);
   await helpers
     .create(CCInit)
-    .withOptions({ bundleRef: 'core', appsRef: 'ui.apps', version: '2.3.22' })
+    .withOptions({ bundlePath: 'core', appsPath: 'ui.apps', version: '2.3.22' })
     .inTmpDir((dir) => {
       fs.writeFileSync(
         path.join(dir, '.yo-rc.json'),

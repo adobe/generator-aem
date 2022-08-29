@@ -14,6 +14,8 @@
  limitations under the License.
 */
 
+import path from 'node:path';
+
 import { versions } from 'node:process';
 import { execFileSync } from 'node:child_process';
 
@@ -28,6 +30,8 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import ModuleMixins, { SharedOptions } from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
 import MavenUtils from '../../lib/maven-utils.js';
+import { MixinOptions } from './mixin-options.js';
+import { ModuleOptions } from './module-options.js';
 
 export const generatorName = '@adobe/generator-aem';
 
@@ -46,174 +50,6 @@ export const apiCoordinates = (version) => {
     path: 'com/adobe/aem/uber-jar',
   };
 };
-
-const ModuleOptions = Object.freeze({
-  bundle(moduleName, parentProps) {
-    const options = {
-      generateInto: moduleName,
-      appId: parentProps.appId,
-      name: `${parentProps.name} - Core Bundle`,
-      artifactId: `${parentProps.appId}.${moduleName}`,
-    };
-    if (parentProps.defaults) {
-      _.merge(options, {
-        package: parentProps.groupId,
-        artifactId: `${parentProps.artifactId}.core`,
-      });
-    }
-
-    return options;
-  },
-  'frontend-general'(moduleName, parentProps) {
-    const options = {
-      generateInto: moduleName,
-      appId: parentProps.appId,
-      name: `${parentProps.name} - UI Frontend`,
-      artifactId: `${parentProps.appId}.${moduleName}`,
-    };
-    if (parentProps.defaults) {
-      _.merge(options, {
-        artifactId: `${parentProps.artifactId}.ui.frontend`,
-      });
-    }
-
-    return options;
-  },
-  'package-structure'(moduleName, parentProps) {
-    const options = {
-      generateInto: moduleName,
-      appId: parentProps.appId,
-      name: `${parentProps.name} - Repository Structure Package`,
-      artifactId: `${parentProps.appId}.${moduleName}`,
-    };
-    if (parentProps.defaults) {
-      _.merge(options, {
-        artifactId: `${parentProps.artifactId}.ui.apps.structure`,
-      });
-    }
-
-    return options;
-  },
-  'package-apps'(moduleName, parentProps, modules) {
-    const options = {
-      generateInto: moduleName,
-      appId: parentProps.appId,
-      name: `${parentProps.name} - UI Apps Package`,
-      artifactId: `${parentProps.appId}.${moduleName}`,
-    };
-    if (parentProps.defaults) {
-      _.merge(options, {
-        artifactId: `${parentProps.artifactId}.ui.apps`,
-        bundleRef: `${parentProps.artifactId}.core`,
-        frontendRef: `${parentProps.artifactId}.ui.frontend`,
-        structureRef: `${parentProps.artifactId}.ui.apps.structure`,
-      });
-    } else {
-      if (modules.bundle && _.keys(modules.bundle).length === 1) {
-        options.bundleRef = modules.bundle[_.keys(modules.bundle)[0]].artifactId;
-      }
-
-      if (modules['frontend-general'] && _.keys(modules['frontend-general']).length === 1) {
-        options.frontendRef = modules['frontend-general'][_.keys(modules['frontend-general'])[0]].artifactId;
-      } // TODO: add other frontend lookups only add if there's one.
-
-      if (modules['package-structure'] && _.keys(modules['package-structure']).length > 0) {
-        options.structureRef = modules['package-structure'][_.keys(modules['package-structure'])[0]].artifactId;
-      }
-    }
-
-    return options;
-  },
-  'package-config'(moduleName, parentProps) {
-    const options = {
-      generateInto: moduleName,
-      appId: parentProps.appId,
-      name: `${parentProps.name} - UI Config Package`,
-      artifactId: `${parentProps.artifactId}.${moduleName}`,
-    };
-    if (parentProps.defaults) {
-      _.merge(options, {
-        artifactId: `${parentProps.artifactId}.ui.config`,
-      });
-    }
-
-    return options;
-  },
-  'package-content'(moduleName, parentProps, modules) {
-    const options = {
-      generateInto: moduleName,
-      appId: parentProps.appId,
-      name: `${parentProps.name} - UI Content Package`,
-      artifactId: `${parentProps.artifactId}.${moduleName}`,
-    };
-    if (parentProps.defaults) {
-      _.merge(options, {
-        artifactId: `${parentProps.artifactId}.ui.content`,
-        appsRef: 'ui.apps',
-        configRef: 'ui.config',
-      });
-    } else {
-      if (modules['package-apps'] && _.keys(modules['package-apps']).length === 1) {
-        options.appsRef = modules['package-apps'][_.keys(modules['package-apps'])[0]].artifactId;
-      }
-
-      if (modules['package-config'] && _.keys(modules['package-config']).length === 1) {
-        options.configRef = modules['package-config'][_.keys(modules['package-config'])[0]].artifactId;
-      }
-
-      if (modules['package-structure'] && _.keys(modules['package-structure']).length > 0) {
-        options.structureRef = modules['package-structure'][_.keys(modules['package-structure'])[0]].artifactId;
-      }
-    }
-
-    return options;
-  },
-  'package-all'(moduleName, parentProps) {
-    const options = {
-      generateInto: moduleName,
-      appId: parentProps.appId,
-      name: `${parentProps.name} - All Package`,
-      artifactId: `${parentProps.artifactId}.${moduleName}`,
-    };
-    if (parentProps.defaults) {
-      _.merge(options, {
-        artifactId: `${parentProps.artifactId}.all`,
-      });
-    }
-
-    return options;
-  },
-  'tests-it'(moduleName, parentProps) {
-    const options = {
-      generateInto: moduleName,
-      appId: parentProps.appId,
-      name: `${parentProps.name} - Integration Tests`,
-      artifactId: `${parentProps.artifactId}.${moduleName}`,
-    };
-    if (parentProps.defaults) {
-      _.merge(options, {
-        artifactId: `${parentProps.artifactId}.it.tests`,
-      });
-    }
-
-    return options;
-  },
-  dispatcher(moduleName, parentProps) {
-    const options = {
-      generateInto: moduleName,
-      appId: parentProps.appId,
-      name: `${parentProps.name} - Dispatcher`,
-      artifactId: `${parentProps.artifactId}.${moduleName}`,
-    };
-    if (parentProps.defaults) {
-      _.merge(options, {
-        artifactId: `${parentProps.artifactId}.dispatcher`,
-      });
-    }
-
-    return options;
-  },
-});
 
 const ModuleOrder = Object.freeze(['bundle', 'frontend-general', 'package-structure', 'package-apps', 'package-config', 'package-content', 'package-all', 'tests-it', 'dispatcher']);
 
@@ -453,16 +289,16 @@ class AEMGenerator extends Generator {
           { name: 'All', value: 'package-all' },
           new inquirer.Separator('---- Test Modules ----'),
           // { name: 'UI Test', value: 'test-ui' },
-          { name: 'Integration Test', value: 'test-it' },
+          { name: 'Integration Test', value: 'tests-it' },
           new inquirer.Separator('---- Dispatcher Module ----'),
           { name: 'Dispatcher', value: 'dispatcher' },
         ],
         default: () => {
           return new Promise((resolve) => {
-            if (this.modules) {
+            if (_.keys(this.modules).length > 0) {
               resolve(_.keys(this.modules));
             } else {
-              resolve(['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-all', 'test-it', 'dispatcher']);
+              resolve(['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-all', 'tests-it', 'dispatcher']);
             }
           });
         },
@@ -687,6 +523,12 @@ class AEMGenerator extends Generator {
   }
 
   configuring() {
+    const dir = path.basename(this.destinationRoot());
+
+    if (!this.options.generateInto && dir !== this.props.appId) {
+      this.destinationRoot(this.destinationPath(this.props.appId));
+    }
+
     this._validateGAV();
     return MavenUtils.latestRelease(apiCoordinates(this.props.aemVersion)).then((aemMetadata) => {
       this.props.aem = aemMetadata;
@@ -695,6 +537,9 @@ class AEMGenerator extends Generator {
   }
 
   default() {
+    // Pom needs to be written before modules are composed - so that they are known if needed.
+    this._writePom();
+
     const meta = this.env.getGeneratorsMeta();
 
     _.forOwn(this.modules, (module, moduleType) => {
@@ -726,7 +571,6 @@ class AEMGenerator extends Generator {
 
     this._writeGitignore();
     this._writing(files, this.props);
-    this._writePom();
   }
 
   install() {
@@ -833,6 +677,27 @@ class AEMGenerator extends Generator {
     });
   };
 
+  /**
+   * Validates that this generator's group & artifact ids do not differ from those found in the local pom.
+   *
+   * @private
+   */
+  _validateGAV = () => {
+    const pomProject = PomUtils.findPomNodeArray(PomUtils.readPom(this), 'project');
+    if (pomProject) {
+      const groupId = PomUtils.findPomNodeArray(pomProject, 'groupId')[0]['#text'];
+      const artifactId = PomUtils.findPomNodeArray(pomProject, 'artifactId')[0]['#text'];
+      if (groupId !== this.props.groupId || artifactId !== this.props.artifactId) {
+        throw new Error(
+          chalk.red('Refusing to update existing project with different group/artifact identifiers.') +
+            '\n\n' +
+            'You are trying to run the AEM Generator in a project with different Maven coordinates than provided.\n' +
+            'This is not a supported feature. Please manually update or use the defaults flag.'
+        );
+      }
+    }
+  };
+
   _composeModules() {
     const moduleList = _.keys(this.modules);
     _.each(ModuleOrder, (moduleType) => {
@@ -843,14 +708,14 @@ class AEMGenerator extends Generator {
       _.forOwn(this.modules[moduleType], (moduleProps, name) => {
         const options = {
           parent: this.props,
-          defaults: this.props.defaults,
+          defaults: this.options.defaults,
           examples: this.props.examples,
         };
         if (ModuleOptions[moduleType]) {
-          _.defaults(options, moduleProps, ModuleOptions[moduleType](name, this.props, this.modules));
+          _.defaults(this.modules[moduleType][name], options, ModuleOptions[moduleType](name, this.props, this.modules));
         }
 
-        this.composeWith(`@adobe/aem:${moduleType}`, options);
+        this.composeWith(`@adobe/aem:${moduleType}`, this.modules[moduleType][name]);
       });
       moduleList.splice(moduleList.indexOf(moduleType), 1);
     });
@@ -869,7 +734,15 @@ class AEMGenerator extends Generator {
         return;
       }
 
-      const options = { parent: this.props, defaults: this.props.defaults, examples: this.props.examples };
+      const options = {
+        parent: this.props,
+        defaults: this.options.defaults,
+        examples: this.props.examples,
+      };
+      if (MixinOptions[mixinType]) {
+        _.defaults(options, MixinOptions[mixinType](this.props, this.modules));
+      }
+
       this.composeWith(`@adobe/aem:mixin-${mixinType}`, options);
       mixinList.splice(mixinList.indexOf(mixinType), 1);
     });
@@ -877,7 +750,7 @@ class AEMGenerator extends Generator {
     // Now do custom plugin mixins.
     _.each(mixinList, (mixin) => {
       const options = { parent: this.props };
-      this.composeWith(`@adobe/aem:mixin-${mixin}`, options);
+      this.composeWith(mixin, options);
     });
   }
 

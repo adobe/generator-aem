@@ -40,7 +40,7 @@ test('no duplicate', (t) => {
   const pom = path.join(temporaryDir, 'pom.xml');
   const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
   const proj = PomUtils.findPomNodeArray(pomData, 'project');
-  const modules = { modules: [{ module: [{ '#text': 'someother' }] }] };
+  const modules = { modules: [{ module: [{ '#text': 'someother' }] }, { module: [{ '#text': 'module' }] }] };
   proj.splice(7, 0, modules);
   fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
 
@@ -132,7 +132,7 @@ test('duplicate', (t) => {
   const pom = path.join(temporaryDir, 'pom.xml');
   const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
   const proj = PomUtils.findPomNodeArray(pomData, 'project');
-  const modules = { modules: [{ module: [{ '#text': 'test' }] }] };
+  const modules = { modules: [{ module: [{ '#text': 'test' }] }, { module: [{ '#text': 'module' }] }] };
   proj.splice(7, 0, modules);
   fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
 

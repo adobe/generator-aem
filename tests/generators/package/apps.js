@@ -67,6 +67,33 @@ test('initialize - defaults', async (t) => {
     });
 });
 
+test('initialize - options', async (t) => {
+  t.plan(1);
+
+  await helpers
+    .create(AppsInit)
+    .withOptions({
+      defaults: true,
+      bundleRef: 'core',
+      frontendRef: 'ui.frontend',
+      structureRef: 'ui.apps.structure',
+      props: {
+        appId: 'test',
+      },
+    })
+    .run()
+    .then((result) => {
+      const expected = {
+        appId: 'test',
+        precompileScripts: true,
+        bundle: 'core',
+        frontend: 'ui.frontend',
+        structure: 'ui.apps.structure',
+      };
+      t.deepEqual(result.generator.props, expected, 'Properties set.');
+    });
+});
+
 test('prompting - bundleRef - defaults', async (t) => {
   t.plan(1);
 

@@ -51,7 +51,7 @@ class IntegrationTestsGenerator extends Generator {
     _.defaults(this.moduleOptions, {
       package: {
         type: String,
-        desc: 'Java Source Package (e.g. "com.mysite").',
+        desc: 'Java Test Source Package (e.g. "com.mysite").',
       },
       publish: {
         desc: 'Indicate whether or not there is a Publish tier in the target AEM environments.',
@@ -87,7 +87,7 @@ class IntegrationTestsGenerator extends Generator {
     const prompts = [
       {
         name: 'package',
-        message: 'Java Source Package (e.g. "com.mysite").',
+        message: 'Java Test Source Package (e.g. "com.mysite").',
         validate(pkg) {
           return new Promise((resolve) => {
             if (!pkg || pkg.length === 0) {
@@ -129,10 +129,7 @@ class IntegrationTestsGenerator extends Generator {
   }
 
   configuring() {
-    return MavenUtils.latestRelease(testClientCoordinates(this.parentProps.aemVersion)).then((clientMetadata) => {
-      this.props.testingClient = clientMetadata;
-      this._configuring();
-    });
+    this._configuring();
   }
 
   default() {
@@ -140,23 +137,28 @@ class IntegrationTestsGenerator extends Generator {
   }
 
   writing() {
-    const files = [];
-    files.push(...this._listTemplates('shared'));
+    return MavenUtils.latestRelease(testClientCoordinates(this.parentProps.aemVersion)).then((clientMetadata) => {
+      this.props.testingClient = clientMetadata;
 
-    if (this.props.publish) {
-      files.push(...this._listTemplates('publish'));
-    }
+      const files = [];
+      files.push(...this._listTemplates('shared'));
 
-    const tplProps = {
-      ...this.props,
-      packagePath: this.props.package.replaceAll('.', path.sep),
-    };
-    this._writing(files, tplProps);
-    this._writePom();
+      if (this.props.publish) {
+        files.push(...this._listTemplates('publish'));
+      }
 
-    if (this.env.rootGenerator() === this) {
-      PomUtils.addModuleToParent(this);
-    }
+      const tplProps = {
+        ...this.props,
+        testingClient: clientMetadata,
+        packagePath: this.props.package.replaceAll('.', path.sep),
+      };
+      this._writing(files, tplProps);
+      this._writePom();
+
+      if (this.env.rootGenerator() === this) {
+        PomUtils.addModuleToParent(this);
+      }
+    });
   }
 
   install() {

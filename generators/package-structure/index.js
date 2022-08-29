@@ -51,12 +51,6 @@ class StructurePackageGenerator extends Generator {
   }
 
   configuring() {
-    const appIds = new Set();
-
-    if (this.props.appId) {
-      appIds.add(this.props.appId);
-    }
-
     this._configuring();
   }
 

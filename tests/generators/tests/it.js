@@ -208,16 +208,6 @@ test('prompting - publish - nothing set', async (t) => {
 
 test('configuring', async (t) => {
   t.plan(1);
-  sinon.restore();
-
-  const testingClient = {
-    groupId: 'com.adobe.cq',
-    artifactId: 'cq-testing-clients-65',
-    version: '1.1.1',
-  };
-
-  const fake = sinon.fake.resolves(testingClient);
-  sinon.replace(MavenUtils, 'latestRelease', fake);
 
   await helpers
     .create(ITConfig)
@@ -231,7 +221,6 @@ test('configuring', async (t) => {
       const expected = {
         '@adobe/generator-aem:tests-it': {
           config: 'config',
-          testingClient,
         },
       };
       const yoData = JSON.parse(fs.readFileSync(result.generator.destinationPath('.yo-rc.json')));
@@ -239,14 +228,17 @@ test('configuring', async (t) => {
     });
 });
 
-test('writing/installing - publish', async (t) => {
+test.serial('writing/installing - publish', async (t) => {
   t.plan(5);
+  sinon.restore();
 
   const testingClient = {
     groupId: 'com.adobe.cq',
     artifactId: 'cq-testing-clients-65',
     version: '1.1.1',
   };
+  const fake = sinon.fake.resolves(testingClient);
+  sinon.replace(MavenUtils, 'latestRelease', fake);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'it.tests');
@@ -261,7 +253,6 @@ test('writing/installing - publish', async (t) => {
         name: 'Test Project - Integration Tests',
         appId: 'test',
         publish: true,
-        testingClient,
       },
       parentProps: {
         groupId: 'com.adobe.test',
@@ -276,6 +267,7 @@ test('writing/installing - publish', async (t) => {
     })
     .run()
     .then((result) => {
+      sinon.restore();
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>it\.tests<\/module>/);
 
       const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
@@ -302,14 +294,17 @@ test('writing/installing - publish', async (t) => {
     });
 });
 
-test('writing/installing - no publish', async (t) => {
+test.serial('writing/installing - no publish', async (t) => {
   t.plan(5);
+  sinon.restore();
 
   const testingClient = {
     groupId: 'com.adobe.cq',
     artifactId: 'aem-cloud-testing-clients',
     version: '1.1.0',
   };
+  const fake = sinon.fake.resolves(testingClient);
+  sinon.replace(MavenUtils, 'latestRelease', fake);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'it.tests');
@@ -323,7 +318,6 @@ test('writing/installing - no publish', async (t) => {
         artifactId: 'test.it.tests',
         name: 'Test Project - Integration Tests',
         appId: 'test',
-        testingClient,
       },
       parentProps: {
         groupId: 'com.adobe.test',
@@ -338,6 +332,8 @@ test('writing/installing - no publish', async (t) => {
     })
     .run()
     .then((result) => {
+      sinon.restore();
+
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>it\.tests<\/module>/);
 
       const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
@@ -364,7 +360,7 @@ test('writing/installing - no publish', async (t) => {
     });
 });
 
-test('writing/installing - merges existing pom', async (t) => {
+test.serial('writing/installing - merges existing pom', async (t) => {
   t.plan(5);
 
   const testingClient = {
@@ -372,6 +368,8 @@ test('writing/installing - merges existing pom', async (t) => {
     artifactId: 'aem-cloud-testing-clients',
     version: '1.1.0',
   };
+  const fake = sinon.fake.resolves(testingClient);
+  sinon.replace(MavenUtils, 'latestRelease', fake);
 
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'it.tests');
@@ -385,7 +383,6 @@ test('writing/installing - merges existing pom', async (t) => {
         artifactId: 'test.it.tests',
         name: 'Test Project - Integration Tests',
         appId: 'test',
-        testingClient,
       },
       parentProps: {
         groupId: 'com.adobe.test',
@@ -401,6 +398,7 @@ test('writing/installing - merges existing pom', async (t) => {
     })
     .run()
     .then((result) => {
+      sinon.restore();
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>it\.tests<\/module>/);
 
       const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
