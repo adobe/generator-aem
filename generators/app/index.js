@@ -660,7 +660,7 @@ class AEMGenerator extends Generator {
     });
   };
 
-  _checkName = (name, answers) => {
+  _checkName(name, answers) {
     return new Promise((resolve) => {
       let dup = false;
       _.each(answers.moduleSelection, (module) => {
@@ -675,7 +675,7 @@ class AEMGenerator extends Generator {
         resolve(true);
       }
     });
-  };
+  }
 
   /**
    * Validates that this generator's group & artifact ids do not differ from those found in the local pom.

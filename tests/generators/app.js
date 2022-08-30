@@ -16,6 +16,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { versions } from 'node:process';
 import { execFileSync } from 'node:child_process';
 
@@ -25,6 +26,7 @@ import test from 'ava';
 import sinon from 'sinon/pkg/sinon-esm.js';
 import helpers from 'yeoman-test';
 
+import tempDirectory from 'temp-dir';
 import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
 import TestGenerator from '../fixtures/generators/simple/index.js';
 
@@ -52,7 +54,7 @@ const npmVersion = execFileSync('npm', ['--version'])
   .toString()
   .replaceAll(/\r\n|\n|\r/gm, '');
 
-test('initialize - no options', async (t) => {
+test('initializing - no options', async (t) => {
   t.plan(3);
 
   await helpers
@@ -65,7 +67,7 @@ test('initialize - no options', async (t) => {
     });
 });
 
-test('initialize - defaults', async (t) => {
+test('initializing - defaults', async (t) => {
   t.plan(3);
 
   await helpers
@@ -100,7 +102,7 @@ test('initialize - defaults', async (t) => {
     });
 });
 
-test('initialize - invalid java/aem version', async (t) => {
+test('initializing - invalid java/aem version', async (t) => {
   t.plan(3);
 
   await helpers
@@ -135,7 +137,7 @@ test('initialize - invalid java/aem version', async (t) => {
     });
 });
 
-test('initialize - defaults with module subset', async (t) => {
+test('initializing - defaults with module subset', async (t) => {
   t.plan(3);
 
   await helpers
@@ -433,6 +435,7 @@ test('prompting - options passed', async (t) => {
         this.answers = answers;
       });
     }
+
     /* eslint-enable ava/prefer-async-await */
   }
 
@@ -572,45 +575,56 @@ test.serial('configuring', async (t) => {
     });
 });
 
-test.serial('configuring - generateInto', async (t) => {
-  t.plan(1);
+test.serial('configuring - sets destinationRoot', async (t) => {
+  t.plan(3);
   sinon.restore();
   const fake = sinon.fake.resolves(cloudSdkApiMetadata);
   sinon.replace(MavenUtils, 'latestRelease', fake);
+
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'core');
 
   await helpers
     .create(AEMAppConfig)
-    .withOptions({ generateInto: 'subdir', props: { config: 'config' } })
-    .withPrompts()
+    .withOptions({ props: { appId: 'core' } })
+    .inDir(fullPath)
     .run()
     .then((result) => {
       sinon.restore();
-      const expected = {
-        '@adobe/generator-aem': {
-          config: 'config',
-          aem: cloudSdkApiMetadata,
-        },
-      };
+      t.is(path.basename(result.generator.destinationRoot()), 'core', 'Set destination root.');
+    });
 
-      const yoData = JSON.parse(fs.readFileSync(result.generator.destinationPath('.yo-rc.json')));
-      t.deepEqual(yoData, expected, 'Yeoman Data saved.');
+  await helpers
+    .create(AEMAppConfig)
+    .withOptions({ props: { appId: 'core' } })
+    .inDir(temporaryDir)
+    .run()
+    .then((result) => {
+      sinon.restore();
+      t.is(path.basename(result.generator.destinationRoot()), 'core', 'Set destination root.');
+    });
+
+  await helpers
+    .create(AEMAppConfig)
+    .withOptions({ generateInto: 'notcore', props: { appId: 'core' } })
+    .inDir(path.join(temporaryDir, 'notcore'))
+    .run()
+    .then((result) => {
+      sinon.restore();
+      t.is(path.basename(result.generator.destinationRoot()), 'notcore', 'Ignored appId.');
     });
 });
 
-test.serial('configuring - sets destinationRoot', (t) => {
-  t.fail('Not Implemented.');
-});
-
 test.serial('configuring - fails on existing different pom', async (t) => {
-  t.plan(1);
+  t.plan(2);
   sinon.restore();
   const fake = sinon.fake.resolves(cloudSdkApiMetadata);
   sinon.replace(MavenUtils, 'latestRelease', fake);
 
-  await t.throwsAsync(
+  const error = await t.throwsAsync(
     helpers
       .create(AEMAppConfig)
-      .withOptions({ props: { groupId: 'options', artifactId: 'options' } })
+      .withOptions({ generateInto: 'test', props: { groupId: 'options', artifactId: 'options' } })
       .inTmpDir((temporary) => {
         fs.copyFileSync(fixturePath('pom', 'full', 'pom.xml'), path.join(temporary, 'pom.xml'));
       })
@@ -619,6 +633,7 @@ test.serial('configuring - fails on existing different pom', async (t) => {
         sinon.restore();
       })
   );
+  t.regex(error.message, /Refusing to update existing project with different group\/artifact identifiers\./, 'Error thrown.');
 });
 
 test('default - module generator does not exist', async (t) => {
@@ -698,6 +713,7 @@ test('default - module generator exists', async (t) => {
 
 test('writing/installing - cloud', async (t) => {
   t.plan(3);
+
   class Mock extends AEMAppWriteInstall {
     writing() {
       this._writePom(); // Write Pom is on the default function.
@@ -708,6 +724,7 @@ test('writing/installing - cloud', async (t) => {
       return super.install();
     }
   }
+
   await helpers
     .create(Mock)
     .withOptions({
@@ -775,6 +792,7 @@ test('writing/installing - v6.5', async () => {
       return super.install();
     }
   }
+
   await helpers
     .create(Mock)
     .withOptions({
@@ -825,6 +843,7 @@ test('writing/installing - cloud - merge/upgrade', async () => {
       return super.install();
     }
   }
+
   await helpers
     .create(Mock)
     .withOptions({
@@ -1123,11 +1142,20 @@ test.serial('integration - defaults', async () => {
       result.assertFile(path.join(dest, 'dispatcher', 'target', 'mysite.dispatcher-1.0.0-SNAPSHOT.zip'));
     });
 });
-// TODO: Tests to update existing project
-// TODO: Test for full build of defaults
 
-test('checkName', (t) => {
-  t.fail('Not Implemented.');
+test('checkName', async (t) => {
+  t.plan(2);
+  const checkName = AEMGenerator.prototype._checkName;
+
+  const answers = {
+    moduleSelection: ['bundle', 'package-apps', 'package-all'],
+    bundle: 'core',
+    'package-apps': 'ui.other.apps',
+    'package-all': 'all',
+  };
+
+  t.truthy(await checkName('ui.apps', answers), 'No duplicate.');
+  t.is(await checkName('core', answers), 'Module names must be unique.', 'Duplicate errors.');
 });
 
 test('validateGAV', (t) => {
