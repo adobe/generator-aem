@@ -38,7 +38,7 @@ const ITPrompt = prompt(IntegrationTestsGenerator, resolved);
 const ITConfig = config(IntegrationTestsGenerator, resolved);
 const ITWriteInstall = writeInstall(IntegrationTestsGenerator, resolved);
 
-test('initialize - no options', async (t) => {
+test('initializing - no options', async (t) => {
   t.plan(1);
   await helpers
     .create(ITInit)
@@ -51,7 +51,7 @@ test('initialize - no options', async (t) => {
     });
 });
 
-test('initialize - options', async (t) => {
+test('initializing - options', async (t) => {
   t.plan(1);
 
   await helpers
@@ -67,7 +67,7 @@ test('initialize - options', async (t) => {
     });
 });
 
-test('initialize - invalid package option', async (t) => {
+test('initializing - invalid package option', async (t) => {
   t.plan(1);
 
   await helpers
@@ -82,7 +82,7 @@ test('initialize - invalid package option', async (t) => {
     });
 });
 
-test('initialize - defaults', async (t) => {
+test('initializing - defaults', async (t) => {
   t.plan(1);
 
   await helpers
@@ -98,7 +98,7 @@ test('initialize - defaults', async (t) => {
     });
 });
 
-test('initialize - package defaults to parent groupId', async (t) => {
+test('initializing - package defaults to parent groupId', async (t) => {
   t.plan(1);
 
   await helpers

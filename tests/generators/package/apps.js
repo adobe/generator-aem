@@ -35,7 +35,7 @@ const AppsPrompt = prompt(AppsPackageGenerator, resolved);
 const AppsConfig = config(AppsPackageGenerator, resolved);
 const AppsWriteInstall = writeInstall(AppsPackageGenerator, resolved);
 
-test('initialize - no options', async (t) => {
+test('initializing - no options', async (t) => {
   t.plan(1);
 
   await helpers
@@ -46,7 +46,7 @@ test('initialize - no options', async (t) => {
     });
 });
 
-test('initialize - defaults', async (t) => {
+test('initializing - defaults', async (t) => {
   t.plan(1);
 
   await helpers
@@ -67,7 +67,7 @@ test('initialize - defaults', async (t) => {
     });
 });
 
-test('initialize - options', async (t) => {
+test('initializing - options', async (t) => {
   t.plan(1);
 
   await helpers

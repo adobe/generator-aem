@@ -127,7 +127,7 @@ test('writing - v6.5', async (t) => {
       },
     })
     .inDir(fullPath, () => {
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
       const parser = new XMLParser(PomUtils.xmlOptions);
       const builder = new XMLBuilder(PomUtils.xmlOptions);
       const pom = path.join(temporaryDir, 'pom.xml');
