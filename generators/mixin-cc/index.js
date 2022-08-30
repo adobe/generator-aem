@@ -50,6 +50,9 @@ export const bundleGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }]
 export const testGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.testing.aem-mock-plugin' }] }, { scope: [{ '#text': 'test' }] }]);
 export const contentGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.content' }] }, { type: [{ '#text': 'zip' }] }]);
 export const configGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.config' }] }, { type: [{ '#text': 'zip' }] }]);
+export const exampleContentGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.examples.ui.content' }] }, { type: [{ '#text': 'zip' }] }]);
+export const exampleConfigGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.examples.ui.config' }] }, { type: [{ '#text': 'zip' }] }]);
+export const exampleAppsGav = Object.freeze([{ groupId: [{ '#text': 'com.adobe.cq' }] }, { artifactId: [{ '#text': 'core.wcm.components.examples.ui.apps' }] }, { type: [{ '#text': 'zip' }] }]);
 
 class CoreComponentMixinGenerator extends Generator {
   constructor(args, options, features) {
@@ -60,6 +63,9 @@ class CoreComponentMixinGenerator extends Generator {
     const options_ = {
       defaults: {
         desc: 'Use all defaults for user input.',
+      },
+      examples: {
+        desc: 'Include demo/example code and content.',
       },
       bundlePath: {
         type: String,
@@ -95,7 +101,7 @@ class CoreComponentMixinGenerator extends Generator {
       throw new Error('Project must have at least one UI Apps module to use Core Component mixin.');
     }
 
-    this.props.version = this.options.version;
+    _.defaults(this.props, _.pick(this.options, ['version', 'examples']));
 
     if (this.options.bundlePath) {
       this.props.bundles = [this.options.bundlePath];
@@ -125,6 +131,21 @@ class CoreComponentMixinGenerator extends Generator {
 
   prompting() {
     const prompts = [
+      {
+        name: 'examples',
+        message: 'Include any examples in generated projects?',
+        type: 'confirm',
+        when: () => {
+          return new Promise((resolve) => {
+            if (this.options.defaults) {
+              resolve(false);
+            }
+
+            resolve(this.props.examples === undefined);
+          });
+        },
+        default: false,
+      },
       {
         name: 'latest',
         message: "Use latest version of Core Components? ('n' to select a version)",
@@ -213,7 +234,9 @@ class CoreComponentMixinGenerator extends Generator {
 
     return this.prompt(prompts).then((answers) => {
       _.merge(this.props, _.pick(answers, ['bundles', 'apps']));
-      this.props.version = answers.latest ? 'latest' : answers.ccVersion;
+      if (!this.props.version) {
+        this.props.version = answers.latest ? 'latest' : answers.ccVersion;
+      }
     });
   }
 
@@ -251,16 +274,23 @@ class CoreComponentMixinGenerator extends Generator {
           }
         );
       });
-      if (this.props.aemVersion !== 'cloud') {
-        const allModule = ModuleMixins._findModules.call(this, allGeneratorName);
+      const allModule = ModuleMixins._findModules.call(this, allGeneratorName)[0];
+      if (allModule) {
+        const options = {
+          generateInto: allModule.path,
+          aemVersion: this.props.aemVersion,
+        };
+
+        if (this.props.examples) {
+          options.examples = this.props.examples;
+        }
+
         this.composeWith(
           {
             Generator: AllPackageModuleCoreComponentMixin,
             path: path.join(dirname, 'all', 'index.js'),
           },
-          {
-            generateInto: allModule.path,
-          }
+          options
         );
       }
     });
@@ -352,8 +382,7 @@ class CoreComponentMixinGenerator extends Generator {
     }
 
     const pomDeps = PomUtils.findPomNodeArray(pom, 'project', 'dependencyManagement', 'dependencies');
-    const bundle = { dependency: _.cloneDeep(bundleGav) };
-    bundle.dependency.push(versionStruct);
+    const bundle = { dependency: [..._.cloneDeep(bundleGav), versionStruct] };
     const content = { dependency: _.cloneDeep(contentGav) };
     content.dependency.splice(2, 0, versionStruct);
     const config = { dependency: _.cloneDeep(configGav) };
@@ -371,6 +400,24 @@ class CoreComponentMixinGenerator extends Generator {
 
     PomUtils.addDependencies(pomDeps, depsToAdd, apiCoordinates(this.props.aemVersion));
     PomUtils.addDependencies(pomDeps, [test], { groupId: 'org.apache.sling', artifactId: 'org.apache.sling.testing.caconfig-mock-plugin' });
+
+    if (this.props.examples) {
+      depsToAdd.splice(0, depsToAdd.length);
+      let dep = { dependency: _.cloneDeep(exampleConfigGav) };
+      dep.dependency.splice(2, 0, versionStruct);
+      depsToAdd.push(dep);
+      dep = { dependency: _.cloneDeep(exampleAppsGav) };
+      dep.dependency.splice(2, 0, versionStruct);
+      depsToAdd.push(dep);
+      dep = { dependency: _.cloneDeep(exampleContentGav) };
+      dep.dependency.splice(2, 0, versionStruct);
+      depsToAdd.push(dep);
+      const after = this.props.aemVersion === 'cloud' ? bundleGav : configGav;
+
+      PomUtils.removeDependencies(pomDeps, depsToAdd);
+      PomUtils.addDependencies(pomDeps, depsToAdd, after);
+    }
+
     this.fs.write(pomFile, PomUtils.fixXml(builder.build(pom)));
   }
 }

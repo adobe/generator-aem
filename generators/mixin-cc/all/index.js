@@ -15,6 +15,12 @@
 */
 
 import Generator from 'yeoman-generator';
+import _ from 'lodash';
+import { XMLBuilder } from 'fast-xml-parser';
+import PomUtils, { filevaultPlugin } from '../../../lib/pom-utils.js';
+import { bundleGav, configGav, contentGav, exampleAppsGav, exampleConfigGav, exampleContentGav } from '../index.js';
+import { apiCoordinates } from '../../app/index.js';
+import { generatorName as allGeneratorName } from '../../package-all/index.js';
 
 const generatorName = '@adobe/generator-aem:mixin-cc:all';
 
@@ -22,96 +28,98 @@ class AllPackageModuleCoreComponentMixin extends Generator {
   constructor(args, options, features) {
     super(args, options, features);
 
+    const options_ = {
+      generateInto: {
+        type: String,
+        required: true,
+        desc: 'Relocate the location in which files are generated.',
+      },
+      examples: {
+        desc: 'Include demo/example code and content.',
+      },
+      aemVersion: {
+        type: String,
+        required: true,
+        desc: 'Version of AEM used by this project, (6.5 or cloud).',
+      },
+    };
+
+    _.forOwn(options_, (v, k) => {
+      this.option(k, v);
+    });
+
     this.rootGeneratorName = function () {
       return generatorName;
     };
   }
 
-  //
-  // _processAll = () => {
-  //   return new Promise((resolve) => {
-  //     const pom = this.destinationPath('all', 'pom.xml');
-  //     const parsed = this._readPom(pom);
-  //     const appId = this.config.get('all').appId;
-  //
-  //     const project = _.find(parsed, (item) => _.has(item, 'project')).project;
-  //
-  //     const wrap = (def) => {
-  //       return {
-  //         embedded: _.concat(_.cloneDeep(def), { target: [{ '#text': `/apps/${appId}-vendor-packages/application/install` }] }),
-  //       };
-  //     };
-  //
-  //     this._updateFilevaultPlugin(project, [configDef, contentDef, bundleDef], 'embeddeds', wrap);
-  //
-  //     const dependencies = _.find(project, (item) => _.has(item, 'dependencies')).dependencies;
-  //     this._insert(dependencies, { dependency: configDef });
-  //     this._insert(dependencies, { dependency: contentDef });
-  //     this._insert(dependencies, { dependency: bundleDef });
-  //     this._writePom(pom, parsed);
-  //     resolve();
-  //   });
-  // };
+  initializing() {
+    if (this.options.generateInto) {
+      this.destinationRoot(this.destinationPath(this.options.generateInto));
+    }
 
-  // _updateFilevaultPlugin = (
-  //   project,
-  //   definitions = [],
-  //   wrapperType = 'dependencies',
-  //   wrap = (def) => {
-  //     return { dependency: def };
-  //   }
-  // ) => {
-  //   // Need to find the filevault plugin configuration child of the wrapper type.
-  //   const buildPlugins = _.find(_.find(project, (projectItem) => _.has(projectItem, 'build')).build, (buildItem) => _.has(buildItem, 'plugins')).plugins;
-  //
-  //   const fvPlugin = _.find(buildPlugins, (plugin) => {
-  //     return _.find(plugin.plugin, (def) => {
-  //       return def.artifactId && def.artifactId[0]['#text'] === 'filevault-package-maven-plugin';
-  //     });
-  //   }).plugin;
-  //   const fvConfiguration = _.find(fvPlugin, (item) => {
-  //     return _.has(item, 'configuration');
-  //   }).configuration;
-  //   let fvWrapper = _.find(fvConfiguration, (item) => {
-  //     return _.has(item, wrapperType);
-  //   });
-  //   if (!fvWrapper) {
-  //     fvWrapper = {};
-  //     fvWrapper[wrapperType] = [];
-  //     fvConfiguration.splice(fvConfiguration.length, 0, fvWrapper);
-  //   }
-  //
-  //   _.each(definitions, (def) => {
-  //     this._insert(fvWrapper[wrapperType], wrap(def));
-  //   });
-  // };
-  //
-  // _insert = (list, definition) => {
-  //   const name = _.keys(definition)[0];
-  //
-  //   const found = _.find(list, (item) => {
-  //     if (!item[name]) {
-  //       return false;
-  //     }
-  //
-  //     return _.find(item[name], (gav) => _.isEqual(gav, definition));
-  //   });
-  //   if (found) {
-  //     return;
-  //   }
-  //
-  //   const insertBefore =
-  //     _.findIndex(list, (item) => {
-  //       if (!item[name]) {
-  //         return false;
-  //       }
-  //
-  //       return _.find(item[name], (gav) => {
-  //         return gav.groupId && gav.groupId[0]['#text'] === 'com.adobe.aem';
-  //       });
-  //     }) + 1; // Insert after index of SDK/Uber jar.
-  //   list.splice(insertBefore, 0, definition);
-  // };
+    this.props = {};
+    _.defaults(this.props, _.pick(this.options, ['examples', 'aemVersion']));
+  }
+
+  writing() {
+    return new Promise((resolve) => {
+      const appId = this.fs.readJSON(this.destinationPath('.yo-rc.json'))[allGeneratorName].appId;
+
+      const pomData = PomUtils.readPom(this);
+      const project = PomUtils.findPomNodeArray(pomData, 'project');
+      const deps = PomUtils.findPomNodeArray(project, 'dependencies');
+
+      const bundle = { dependency: _.cloneDeep(bundleGav) };
+      const content = { dependency: _.cloneDeep(contentGav) };
+      const config = { dependency: _.cloneDeep(configGav) };
+      const exampleConfig = { dependency: _.cloneDeep(exampleConfigGav) };
+      const exampleApps = { dependency: _.cloneDeep(exampleAppsGav) };
+      const exampleContent = { dependency: _.cloneDeep(exampleContentGav) };
+
+      // Delete then re-add - always easier;
+      PomUtils.removeDependencies(deps, [bundle, content, config, exampleConfig, exampleApps, exampleContent]);
+
+      // Filevault Plugin Logic
+      const plugins = PomUtils.findPomNodeArray(project, 'build', 'plugins');
+      const fvPlugin = _.find(plugins, (plugin) => {
+        if (!plugin.plugin) {
+          return false;
+        }
+
+        return _.find(plugin.plugin, (def) => {
+          return def.artifactId && def.artifactId[0]['#text'] === filevaultPlugin;
+        });
+      }).plugin;
+      const fvPluginDeps = PomUtils.findPomNodeArray(fvPlugin, 'configuration', 'embeddeds');
+      PomUtils.removeDependencies(fvPluginDeps, [bundle, content, config, exampleConfig, exampleApps, exampleContent]);
+
+      const depsToAdd = [];
+      const embedsToAdd = [];
+
+      const makeEmbed = (dependency) => {
+        return {
+          embedded: [..._.cloneDeep(dependency.dependency), { target: [{ '#text': `/apps/${appId}-vendor-packages/application/install` }] }],
+        };
+      };
+
+      if (this.props.aemVersion !== 'cloud') {
+        depsToAdd.push(bundle, content, config);
+        embedsToAdd.push(makeEmbed(bundle), makeEmbed(content), makeEmbed(config));
+      }
+
+      if (this.props.examples) {
+        depsToAdd.push(exampleConfig, exampleApps, exampleContent);
+        embedsToAdd.push(makeEmbed(exampleConfig), makeEmbed(exampleApps), makeEmbed(exampleContent));
+      }
+
+      PomUtils.addDependencies(deps, depsToAdd, apiCoordinates(this.props.aemVersion));
+      PomUtils.addDependencies(fvPluginDeps, embedsToAdd);
+      const builder = new XMLBuilder(PomUtils.xmlOptions);
+      this.fs.write(this.destinationPath('pom.xml'), PomUtils.fixXml(builder.build(pomData)));
+      resolve();
+    });
+  }
 }
 
 export default AllPackageModuleCoreComponentMixin;

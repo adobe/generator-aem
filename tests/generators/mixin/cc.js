@@ -29,6 +29,7 @@ import nock from 'nock';
 import ModuleMixins from '../../../lib/module-mixins.js';
 import { generatorName as bundleGeneratorName } from '../../../generators/bundle/index.js';
 import { generatorName as appsGeneratorName } from '../../../generators/package-apps/index.js';
+import { generatorName as allGeneratorName } from '../../../generators/package-all/index.js';
 
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
 import { init, config, writeInstall } from '../../fixtures/generators/wrappers.js';
@@ -87,7 +88,7 @@ test('initializing - no parent yorc found - errors', async (t) => {
   t.regex(error.message, /Generator cannot be use outside existing project context./, 'Error message was correct.');
 });
 
-test('initializing - no apps package - errors', async (t) => {
+test.serial('initializing - no apps package - errors', async (t) => {
   t.plan(2);
   sinon.restore();
   const stub = sinon.stub(ModuleMixins, '_findModules');
@@ -168,7 +169,7 @@ test.serial('initializing - options', async (t) => {
 
   await helpers
     .create(CCInit)
-    .withOptions({ bundlePath: 'core', appsPath: 'ui.apps', version: '2.3.22' })
+    .withOptions({ examples: true, bundlePath: 'core', appsPath: 'ui.apps', version: '2.3.22' })
     .inTmpDir((dir) => {
       fs.writeFileSync(path.join(dir, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem': {} }));
     })
@@ -176,6 +177,7 @@ test.serial('initializing - options', async (t) => {
     .then((result) => {
       stub.restore();
       const expected = {
+        examples: true,
         bundles: ['core'],
         apps: ['ui.apps'],
         version: '2.3.22',
@@ -278,6 +280,47 @@ test.serial('initializing - finds all available modules', async (t) => {
       stub.restore();
       t.deepEqual(result.generator.availableBundles, bundles, 'Available Bundles set.');
       t.deepEqual(result.generator.availableApps, apps, 'Available Apps set.');
+    });
+});
+
+test('prompting - examples - default not set', async (t) => {
+  t.plan(2);
+
+  await helpers
+    .create(CCPrompt)
+    .run()
+    .then(async (result) => {
+      const prompt = _.find(result.generator.prompts, { name: 'examples' });
+      t.false(prompt.default, 'Example default false');
+      t.true(await prompt.when(), 'Example prompts');
+    });
+});
+
+test('prompting - examples - defaults set', async (t) => {
+  t.plan(2);
+
+  await helpers
+    .create(CCPrompt)
+    .withOptions({ defaults: true })
+    .run()
+    .then(async (result) => {
+      const prompt = _.find(result.generator.prompts, { name: 'examples' });
+      t.false(prompt.default, 'Example default false');
+      t.false(await prompt.when(), 'Example does not prompt');
+    });
+});
+
+test('prompting - examples - examples set', async (t) => {
+  t.plan(2);
+
+  await helpers
+    .create(CCPrompt)
+    .withOptions({ props: { examples: true } })
+    .run()
+    .then(async (result) => {
+      const prompt = _.find(result.generator.prompts, { name: 'examples' });
+      t.false(prompt.default, 'Example default false');
+      t.false(await prompt.when(), 'Example does not prompt');
     });
 });
 
@@ -565,10 +608,8 @@ test('configuring', async (t) => {
 });
 
 test.serial('default - compose with - no bundles - v6.5', async (t) => {
-  t.plan(4);
+  t.plan(3);
   sinon.restore();
-  const findModules = sinon.stub(ModuleMixins, '_findModules');
-  findModules.returns({ path: 'all', artifactId: 'test.all' });
   const resolveVersion = sinon.stub(CoreComponentMixinGenerator.prototype, '_resolveVersion');
   resolveVersion.resolves('2.20.2');
 
@@ -596,6 +637,7 @@ test.serial('default - compose with - no bundles - v6.5', async (t) => {
     .create(Mock)
     .withOptions({
       props: {
+        examples: true,
         apps: ['ui.apps', 'ui.apps.other'],
       },
     })
@@ -604,10 +646,9 @@ test.serial('default - compose with - no bundles - v6.5', async (t) => {
     })
     .run();
 
-  findModules.restore();
   resolveVersion.restore();
 
-  t.is(composed.length, 3, 'Correct number of calls');
+  t.is(composed.length, 2, 'Correct number of calls');
   t.deepEqual(
     composed[0],
     {
@@ -638,26 +679,13 @@ test.serial('default - compose with - no bundles - v6.5', async (t) => {
     },
     'Parameters correct'
   );
-  t.deepEqual(
-    composed[2],
-    {
-      generator: {
-        Generator: AllPackageModuleCoreComponentMixin,
-        path: generatorPath('mixin-cc', 'all', 'index.js'),
-      },
-      options: {
-        generateInto: 'all',
-      },
-    },
-    'Parameters correct'
-  );
 });
 
 test.serial('default - compose with - bundles - cloud', async (t) => {
-  t.plan(3);
+  t.plan(4);
   sinon.restore();
   const findModules = sinon.stub(ModuleMixins, '_findModules');
-  findModules.returns({ path: 'all.other', artifactId: 'test.all.other' });
+  findModules.withArgs(allGeneratorName).returns([{ path: 'all', artifactId: 'test.all' }]);
   const resolveVersion = sinon.stub(CoreComponentMixinGenerator.prototype, '_resolveVersion');
   resolveVersion.resolves('2.20.2');
 
@@ -696,7 +724,7 @@ test.serial('default - compose with - bundles - cloud', async (t) => {
   findModules.restore();
   resolveVersion.restore();
 
-  t.is(composed.length, 2, 'Correct number of calls');
+  t.is(composed.length, 3, 'Correct number of calls');
   t.deepEqual(
     composed[0],
     {
@@ -726,14 +754,28 @@ test.serial('default - compose with - bundles - cloud', async (t) => {
     },
     'Parameters correct'
   );
+  t.deepEqual(
+    composed[2],
+    {
+      generator: {
+        Generator: AllPackageModuleCoreComponentMixin,
+        path: generatorPath('mixin-cc', 'all', 'index.js'),
+      },
+      options: {
+        generateInto: 'all',
+        aemVersion: 'cloud',
+      },
+    },
+    'Parameters correct'
+  );
 });
 
-test('writing/installing - cloud - latest', async () => {
+test('writing/installing - cloud - latest - examples', async () => {
   await helpers
     .create(CCWriteInstall)
     .withOptions({
       showBuildOutput: false,
-      props: { aemVersion: 'cloud', resolvedVersion: '2.20.2' },
+      props: { examples: true, aemVersion: 'cloud', resolvedVersion: '2.20.2' },
     })
     .inTmpDir((dir) => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(dir, 'pom.xml'));
@@ -744,8 +786,12 @@ test('writing/installing - cloud - latest', async () => {
       result.assertFileContent('pom.xml', /core.wcm.components.version>2\.20\.2/);
       result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.core<\/artifactId>/);
       result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.testing\.aem-mock-plugin<\/artifactId>/);
-      result.assertNoFileContent('pom.xml', /core\.wcm\.components\.content<\/artifactId>\s+<\/dependency>/);
-      result.assertNoFileContent('pom.xml', /core\.wcm\.components\.config<\/artifactId>\s+<\/dependency>/);
+      result.assertNoFileContent('pom.xml', /<artifactId>core\.wcm\.components\.content<\/artifactId>\s+<type>zip<\/type>/);
+      result.assertNoFileContent('pom.xml', /<artifactId>core\.wcm\.components\.config<\/artifactId>\s+<type>zip<\/type>/);
+
+      result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.examples.ui.config<\/artifactId>\s+<version>\${core.wcm.components.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertFileContent('pom.xml', /core\.wcm\.components\.examples.ui.apps<\/artifactId>\s+<version>\${core.wcm.components.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertFileContent('pom.xml', /core\.wcm\.components\.examples.ui.content<\/artifactId>\s+<version>\${core.wcm.components.version}<\/version>\s+<type>zip<\/type>/);
     });
 });
 
@@ -764,9 +810,12 @@ test('writing/installing - 6.5 - older cc version', async () => {
     .then((result) => {
       result.assertFileContent('pom.xml', /core.wcm.components.version>2\.18\.6/);
       result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.core<\/artifactId>/);
-      result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.content<\/artifactId>/);
-      result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.config<\/artifactId>/);
+      result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.content<\/artifactId>\s+<version>\${core.wcm.components.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.config<\/artifactId>\s+<version>\${core.wcm.components.version}<\/version>\s+<type>zip<\/type>/);
       result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.testing\.aem-mock-plugin<\/artifactId>/);
+      result.assertNoFileContent('pom.xml', /<artifactId>core\.wcm\.components\.examples.ui.config<\/artifactId>\s+<version>\${core.wcm.components.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertNoFileContent('pom.xml', /core\.wcm\.components\.examples.ui.apps<\/artifactId>\s+<version>\${core.wcm.components.version}<\/version>\s+<type>zip<\/type>/);
+      result.assertNoFileContent('pom.xml', /core\.wcm\.components\.examples.ui.content<\/artifactId>\s+<version>\${core.wcm.components.version}<\/version>\s+<type>zip<\/type>/);
     });
 });
 
@@ -886,53 +935,3 @@ test.serial('_resolveVersion - specific version', async (t) => {
   nock.cleanAll();
   nock.enableNetConnect();
 });
-
-//
-// test.serial('adds all module content - v6.5', async (t) => {
-//   t.plan(1);
-//
-//   /* eslint-disable camelcase */
-//   nock('https://api.github.com')
-//     .get('/repos/adobe/aem-core-wcm-components/releases')
-//     .reply(200, [{ tag_name: 'core-wcm-components-reactor-2.20.0' }, { tag_name: 'core-wcm-components-reactor-2.19.2' }, { tag_name: 'core-wcm-components-reactor-2.19.0' }, { tag_name: 'core-wcm-components-reactor-2.18.6' }, { tag_name: 'core-wcm-components-reactor-2.18.4' }, { tag_name: 'core-wcm-components-reactor-2.18.2' }, { tag_name: 'core-wcm-components-reactor-2.18.0' }]);
-//   /* eslint-enable camelcase */
-//
-//   await helpers
-//     .create(generatorPath('mixin-cc'))
-//     .inTmpDir((temporary) => {
-//       fs.cpSync(fixturePath('projects', 'v6.5'), temporary, { recursive: true });
-//     })
-//     .withOptions({ version: 'latest' })
-//     .run()
-//     .then(async (result) => {
-//       nock.cleanAll();
-//       nock.enableNetConnect();
-//
-//       result.assertFileContent('pom.xml', /core.wcm.components.version>2\.20\.0/);
-//       result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.core<\/artifactId>/);
-//       result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.content<\/artifactId>/);
-//       result.assertFileContent('pom.xml', /<artifactId>core\.wcm\.components\.config<\/artifactId>/);
-//
-//       verifyAppsFiles(result);
-//       const appsPom = result.generator.destinationPath('ui.apps', 'pom.xml');
-//       result.assertFileContent(appsPom, /core\.wcm\.components\.core<\/artifactId>\s+<\/dependency>/);
-//       result.assertFileContent(appsPom, /core\.wcm\.components\.content<\/artifactId>\s+<type>/);
-//       result.assertFileContent(appsPom, /core\.wcm\.components\.config<\/artifactId>\s+<type>/);
-//
-//       const corePom = result.generator.destinationPath('core', 'pom.xml');
-//       result.assertNoFileContent(corePom, /<artifactId>core\.wcm\.components\.core<\/artifactId>\s+<scope>/);
-//       result.assertFileContent(corePom, /<artifactId>core\.wcm\.components\.core<\/artifactId>\s+<\/dependency>/);
-//
-//       const allPom = result.generator.destinationPath('all', 'pom.xml');
-//       result.assertFileContent(allPom, /<artifactId>core\.wcm\.components\.core<\/artifactId>\s+<target>\/apps\/test-vendor-packages/);
-//       result.assertFileContent(allPom, /<artifactId>core\.wcm\.components\.content<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-vendor-packages/);
-//       result.assertFileContent(allPom, /<artifactId>core\.wcm\.components\.config<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-vendor-packages/);
-//
-//       const spawnResult = result.generator.spawnCommandSync('mvn', ['clean', 'verify'], { stdio: 'ignore' });
-//       t.is(spawnResult.exitCode, 0, 'Build successful.');
-//     });
-//   nock.cleanAll();
-//   nock.enableNetConnect();
-// });
-//
-//
