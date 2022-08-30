@@ -28,7 +28,7 @@ test('examples - default not set', async (t) => {
     props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'examples' });
-      t.false(prompt.default, 'Example default true');
+      t.false(prompt.default, 'example default false');
       t.true(await prompt.when(), 'Example prompts');
       return new Promise((resolve) => {
         resolve({});
@@ -48,7 +48,7 @@ test('examples - defaults set', async (t) => {
     props: {},
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'examples' });
-      t.false(prompt.default, 'Example default true');
+      t.false(prompt.default, 'example default false');
       t.false(await prompt.when(), 'Example does not prompt');
 
       return new Promise((resolve) => {
@@ -68,7 +68,7 @@ test('examples - examples set', async (t) => {
     props: { examples: true },
     async prompt(prompts) {
       const prompt = _.find(prompts, { name: 'examples' });
-      t.false(prompt.default, 'Example default true');
+      t.false(prompt.default, 'example default false');
       t.false(await prompt.when(), 'Example does not prompt');
       return new Promise((resolve) => {
         resolve({});
