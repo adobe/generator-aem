@@ -1157,7 +1157,3 @@ test('checkName', async (t) => {
   t.truthy(await checkName('ui.apps', answers), 'No duplicate.');
   t.is(await checkName('core', answers), 'Module names must be unique.', 'Duplicate errors.');
 });
-
-test('validateGAV', (t) => {
-  t.fail('Not Implemented.');
-});
