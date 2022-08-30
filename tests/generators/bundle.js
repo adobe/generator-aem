@@ -35,7 +35,7 @@ const BundlePrompt = prompt(BundleGenerator, resolved);
 const BundleConfig = config(BundleGenerator, resolved);
 const BundleWriteInstall = writeInstall(BundleGenerator, resolved);
 
-test('initialize - no options', async (t) => {
+test('initializing - no options', async (t) => {
   t.plan(1);
   await helpers
     .create(BundleInit)
@@ -48,7 +48,7 @@ test('initialize - no options', async (t) => {
     });
 });
 
-test('initialize - package option', async (t) => {
+test('initializing - package option', async (t) => {
   t.plan(1);
 
   await helpers
@@ -63,7 +63,7 @@ test('initialize - package option', async (t) => {
     });
 });
 
-test('initialize - invalid package option', async (t) => {
+test('initializing - invalid package option', async (t) => {
   t.plan(1);
 
   await helpers
@@ -78,7 +78,7 @@ test('initialize - invalid package option', async (t) => {
     });
 });
 
-test('initialize - package defaults to parent groupId', async (t) => {
+test('initializing - package defaults to parent groupId', async (t) => {
   t.plan(1);
 
   await helpers
