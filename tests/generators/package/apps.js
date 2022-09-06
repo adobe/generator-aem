@@ -22,12 +22,15 @@ import tempDirectory from 'temp-dir';
 import _ from 'lodash';
 import test from 'ava';
 import helpers from 'yeoman-test';
+import sinon from 'sinon/pkg/sinon-esm.js';
 
 import { XMLParser } from 'fast-xml-parser';
 
 import AppsPackageGenerator from '../../../generators/package-apps/index.js';
 import { init, prompt, config, writeInstall } from '../../fixtures/generators/wrappers.js';
 import { generatorPath, fixturePath, addModulesToPom, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
+import { generatorName as bundleGeneratorName } from '../../../generators/bundle/index.js';
+import { generatorName as frontendGeneratorName } from '../../../generators/frontend-general/index.js';
 
 const resolved = generatorPath('package-apps', 'index.js');
 const AppsInit = init(AppsPackageGenerator, resolved);
@@ -74,27 +77,46 @@ test('initializing - options', async (t) => {
     .create(AppsInit)
     .withOptions({
       defaults: true,
+      appId: 'test',
       bundleRef: 'core',
       frontendRef: 'ui.frontend',
       structureRef: 'ui.apps.structure',
-      props: {
-        appId: 'test',
-      },
+      errorHandler: true,
     })
     .run()
     .then((result) => {
       const expected = {
-        appId: 'test',
         precompileScripts: true,
         bundle: 'core',
         frontend: 'ui.frontend',
         structure: 'ui.apps.structure',
+        errorHandler: true,
       };
       t.deepEqual(result.generator.props, expected, 'Properties set.');
     });
 });
 
-test('prompting - bundleRef - defaults', async (t) => {
+test.serial('initializing - lookups modules', async (t) => {
+  t.plan(2);
+
+  const bundles = [{ path: 'core', artifactId: 'test.core' }];
+  const frontends = [{ path: 'ui.frontend', artifactId: 'test.ui.frontend' }];
+  sinon.restore();
+  const stub = sinon.stub(AppsInit.prototype, '_findModules');
+  stub.withArgs(bundleGeneratorName).returns(bundles);
+  stub.withArgs(frontendGeneratorName).returns(frontends);
+
+  await helpers
+    .create(AppsInit)
+    .run()
+    .then((result) => {
+      stub.restore();
+      t.deepEqual(result.generator.availableBundles, bundles, 'Set bundle list.');
+      t.deepEqual(result.generator.availableFrontends, frontends, 'Set frontend list.');
+    });
+});
+
+test('prompting - bundleRef - bundle set', async (t) => {
   t.plan(1);
 
   await helpers
@@ -281,6 +303,24 @@ test('prompting - precompileScripts', async (t) => {
     });
 });
 
+
+test('prompting - errorHandler', async (t) => {
+  t.plan(2);
+
+  await helpers
+    .create(AppsPrompt)
+    .withOptions({
+      props: { errorHandler: true },
+    })
+    .run()
+    .then((result) => {
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'errorHandler' });
+      t.false(prompt.when, 'Does not prompt.');
+      t.false(prompt.default, 'Default is set');
+    });
+});
+
 test('configuring', async (t) => {
   t.plan(1);
 
@@ -361,7 +401,7 @@ test('writing/installing - v6.5 - examples', async (t) => {
     });
 });
 
-test('writing/installing - cloud - no examples', async (t) => {
+test('writing/installing - cloud - error handler', async (t) => {
   t.plan(5);
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'ui.apps');
@@ -376,6 +416,7 @@ test('writing/installing - cloud - no examples', async (t) => {
         name: 'Name',
         appId: 'test',
         structure: 'test.ui.apps.structure',
+        errorHandler: true,
       },
       parentProps: {
         groupId: 'com.adobe.test',
@@ -415,14 +456,20 @@ test('writing/installing - cloud - no examples', async (t) => {
       result.assertNoFileContent('pom.xml', /<artifactId>test.core<\/artifactId>/);
       result.assertNoFileContent('pom.xml', /<artifactId>test.ui.frontend<\/artifactId>/);
 
-      const contentPath = path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test');
+      const appsRoot = path.join('src', 'main', 'content', 'jcr_root', 'apps');
+      const contentPath =  path.join(appsRoot, 'test');
 
       result.assertFile(path.join(contentPath, 'clientlibs', '.content.xml'));
       result.assertFile(path.join(contentPath, 'components', '.content.xml'));
       result.assertFile(path.join(contentPath, 'i18n', '.content.xml'));
       result.assertNoFile(path.join(contentPath, 'components', 'helloworld', 'helloworld.html'));
 
-      result.assertFile(path.join('src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'));
+      result.assertFile(path.join(appsRoot, 'sling', 'servlet', 'errorhandler', '404.html'));
+      result.assertFile(path.join(appsRoot, 'sling', 'servlet', 'errorhandler', 'ResponseStatus.java'));
+
+      const vault = path.join('src', 'main', 'content', 'META-INF', 'vault');
+      result.assertFile(path.join(vault, 'filter.xml'));
+      result.assertFileContent(path.join(vault, 'filter.xml'), /\/apps\/sling/);
       result.assertFile(path.join('target', 'test.ui.apps-1.0.0-SNAPSHOT.zip'));
     });
 });

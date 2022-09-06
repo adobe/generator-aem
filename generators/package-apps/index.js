@@ -55,6 +55,10 @@ class AppsPackageGenerator extends Generator {
       precompileScripts: {
         desc: 'Whether or not to configure Maven build to precompile HTL scripts.',
       },
+
+      errorHandler: {
+        desc: 'Whether or not to include the global Sling 404 Error Handler Servlet.',
+      }
     });
 
     _.forOwn(this.moduleOptions, (v, k) => {
@@ -68,14 +72,12 @@ class AppsPackageGenerator extends Generator {
 
   initializing() {
     this._initializing();
-
     if (this.options.defaults) {
       this.props.precompileScripts = true;
+
     }
 
-    if (this.options.precompileScripts !== undefined) {
-      this.props.precompileScripts = this.options.precompileScripts;
-    }
+    _.defaults(this.props, _.pick(this.options, ['precompileScripts', 'errorHandler']));
 
     if (this.options.bundleRef) {
       this.props.bundle = this.options.bundleRef;
@@ -97,7 +99,7 @@ class AppsPackageGenerator extends Generator {
     const prompts = [
       {
         name: 'bundleRef',
-        message: 'Module name of optional dependency on OSGi bundle. (e.g. core)',
+        message: 'Which OSGi bundle should be added as a dependency to this package?',
         type: 'list',
         default: 'None',
         choices: () => {
@@ -115,7 +117,7 @@ class AppsPackageGenerator extends Generator {
       },
       {
         name: 'frontendRef',
-        message: 'Module name of optional dependency on a Front End Module containing ClientLibs. (e.g. ui.frontend)',
+        message: 'Which Front End module contains the ClientLibs which should be used by this package?',
         type: 'list',
         default: 'None',
         choices: () => {
@@ -133,11 +135,19 @@ class AppsPackageGenerator extends Generator {
       },
       {
         name: 'precompileScripts',
-        message: 'Whether nor not to precompile HTL scripts.',
+        message: 'Should the HTL scripts be precompiled?',
         type: 'confirm',
         when: this.props.precompileScripts === undefined,
         default: true,
       },
+      {
+        name: 'errorHandler',
+        message: 'Should the global Sling 404 Error Handler servlet be added?',
+        type: 'confirm',
+        when: this.props.errorHandler === undefined,
+        default: false,
+      },
+
     ];
 
     return this._prompting(prompts).then((answers) => {
@@ -173,8 +183,12 @@ class AppsPackageGenerator extends Generator {
       files.push(...this._listTemplates('precompiled'));
     }
 
+    if (this.props.errorHandler) {
+      files.push(...this._listTemplates('errorHandler'));
+    }
+
     const tplProps = {
-      ..._.pick(this.props, ['name', 'artifactId', 'appId', 'precompileScripts']),
+      ..._.pick(this.props, ['name', 'artifactId', 'appId', 'precompileScripts', 'errorHandler']),
       parent: this.parentProps,
     };
     tplProps.bundle = this._lookupArtifact(this.props.bundle);

@@ -754,6 +754,8 @@ test('writing/installing - cloud', async (t) => {
       t.is(content[2], '# This is a custom entry', 'Custom entry found');
       t.is(content[3], '*.hprof', 'Order correct');
 
+      result.assertFile('.gitattributes');
+
       result.assertFile('README.md');
       const resolve = '.yo-resolve';
       result.assertFileContent(resolve, /\.gitignore force/);
