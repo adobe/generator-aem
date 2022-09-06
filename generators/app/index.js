@@ -220,7 +220,7 @@ class AEMGenerator extends Generator {
     const prompts = [
       {
         name: 'groupId',
-        message: 'What is the Maven Group Id? (e.g. "com.mysite").',
+        message: 'What is the Maven Group Id (e.g. "com.mysite")?',
         when: !this.props.groupId,
         /* c8 ignore start */
         validate(groupId) {
@@ -237,7 +237,7 @@ class AEMGenerator extends Generator {
       },
       {
         name: 'version',
-        message: 'What is is the starting version for the project? (e.g. 1.0.0-SNAPSHOT).',
+        message: 'What is is the starting version for the project (e.g. 1.0.0-SNAPSHOT)?',
         when: !this.options.defaults && !this.props.version,
         default: '1.0.0-SNAPSHOT',
       },
@@ -566,6 +566,10 @@ class AEMGenerator extends Generator {
       {
         src: this.templatePath('.yo-resolve'),
         dest: this.destinationPath('.yo-resolve'),
+      },
+      {
+        src: this.templatePath('.gitattributes'),
+        dest: this.destinationPath('.gitattributes'),
       },
     ];
 
