@@ -148,7 +148,7 @@ class CoreComponentMixinGenerator extends Generator {
       },
       {
         name: 'latest',
-        message: "Use latest version of Core Components? ('n' to select a version)",
+        message: "Use latest version of Core Components ('n' to select a version)?",
         type: 'confirm',
         when: () => {
           return new Promise((resolve) => {
@@ -165,7 +165,7 @@ class CoreComponentMixinGenerator extends Generator {
       {
         // Needs to be different than 'version' due to overlap with root generator.
         name: 'ccVersion',
-        message: 'Select version of Core Components to use:',
+        message: 'Which version of Core Components do you want to use?',
         type: 'list',
         when: (answers) => {
           return new Promise((resolve) => {
@@ -182,7 +182,7 @@ class CoreComponentMixinGenerator extends Generator {
 
       {
         name: 'bundles',
-        message: 'Optional Bundle module reference(s), for adding dependency and unit test context.',
+        message: 'Which bundle(s) modules should be updated to reference the dependency and add unit test context?',
         type: 'checkbox',
         when: () => {
           return new Promise((resolve) => {
@@ -202,7 +202,7 @@ class CoreComponentMixinGenerator extends Generator {
       },
       {
         name: 'apps',
-        message: 'App module reference(s), for adding proxy components.',
+        message: 'Which App module(s) should have the proxies added?',
         type: 'checkbox',
         when: () => {
           return new Promise((resolve) => {

@@ -65,7 +65,7 @@ class BundleGenerator extends Generator {
     const prompts = [
       {
         name: 'package',
-        message: 'Java Source Package (e.g. "com.mysite").',
+        message: 'What do you want ot use for the root Java package (e.g. "com.mysite")?',
         validate(pkg) {
           return new Promise((resolve) => {
             if (!pkg || pkg.length === 0) {
