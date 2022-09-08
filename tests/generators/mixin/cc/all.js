@@ -30,7 +30,7 @@ import { bundleGav, contentGav, configGav, versionStruct, exampleConfigGav, exam
 import PomUtils from '../../../../lib/pom-utils.js';
 import AllPackageModuleCoreComponentMixin from '../../../../generators/mixin-cc/all/index.js';
 
-const resolved = generatorPath('mixin-cc', 'apps', 'index.js');
+const resolved = generatorPath('mixin-cc', 'all', 'index.js');
 const CCAllInit = init(AllPackageModuleCoreComponentMixin, resolved);
 const CCAllWrite = writeInstall(AllPackageModuleCoreComponentMixin, resolved);
 

@@ -29,6 +29,7 @@ import nock from 'nock';
 import ModuleMixins from '../../../lib/module-mixins.js';
 import { generatorName as bundleGeneratorName } from '../../../generators/bundle/index.js';
 import { generatorName as appsGeneratorName } from '../../../generators/package-apps/index.js';
+import { generatorName as contentGeneratorName } from '../../../generators/package-content/index.js';
 import { generatorName as allGeneratorName } from '../../../generators/package-all/index.js';
 
 import { generatorPath, fixturePath } from '../../fixtures/helpers.js';
@@ -37,6 +38,7 @@ import { init, config, writeInstall } from '../../fixtures/generators/wrappers.j
 import CoreComponentMixinGenerator from '../../../generators/mixin-cc/index.js';
 import BundleModuleCoreComponentMixin from '../../../generators/mixin-cc/bundle/index.js';
 import AppsPackageModuleCoreComponentMixin from '../../../generators/mixin-cc/apps/index.js';
+import ContentPackageModuleCoreComponentMixin from '../../../generators/mixin-cc/content/index.js';
 import AllPackageModuleCoreComponentMixin from '../../../generators/mixin-cc/all/index.js';
 
 const resolved = generatorPath('mixin-cc', 'index.js');
@@ -51,6 +53,7 @@ class CCPrompt extends CoreComponentMixinGenerator {
     this.options = this.options || {};
     this.availableBundles = this.options.availableBundles || [];
     this.availableApps = this.options.availableApps || [];
+    this.availableContents = this.options.availableContents || [];
 
     this.prompt = function (prompts) {
       this.prompts = prompts;
@@ -94,6 +97,7 @@ test.serial('initializing - no apps package - errors', async (t) => {
   const stub = sinon.stub(ModuleMixins, '_findModules');
   stub.withArgs(bundleGeneratorName).returns([]);
   stub.withArgs(appsGeneratorName).returns([]);
+  stub.withArgs(contentGeneratorName).returns([]);
 
   const error = await t.throwsAsync(
     helpers
@@ -117,6 +121,7 @@ test.serial('initializing - no options', async (t) => {
   const stub = sinon.stub(ModuleMixins, '_findModules');
   stub.withArgs(bundleGeneratorName).returns([{ path: 'core', artifactId: 'test.core' }]);
   stub.withArgs(appsGeneratorName).returns([{ path: 'ui.apps', artifactId: 'test.ui.apps' }]);
+  stub.withArgs(contentGeneratorName).returns([{ path: 'ui.content', artifactId: 'test.ui.content' }]);
 
   await helpers
     .create(CCInit)
@@ -127,9 +132,9 @@ test.serial('initializing - no options', async (t) => {
     .then((result) => {
       stub.restore();
       const expected = {
-        version: undefined,
         bundles: [],
         apps: [],
+        contents: [],
       };
       t.deepEqual(result.generator.props, expected, 'Properties Set');
     });
@@ -141,6 +146,7 @@ test.serial('initializing - defaults', async (t) => {
   const stub = sinon.stub(ModuleMixins, '_findModules');
   stub.withArgs(bundleGeneratorName).returns([{ path: 'core', artifactId: 'test.core' }]);
   stub.withArgs(appsGeneratorName).returns([{ path: 'ui.apps', artifactId: 'test.ui.apps' }]);
+  stub.withArgs(contentGeneratorName).returns([{ path: 'ui.content', artifactId: 'test.ui.content' }]);
 
   await helpers
     .create(CCInit)
@@ -152,9 +158,11 @@ test.serial('initializing - defaults', async (t) => {
     .then((result) => {
       stub.restore();
       const expected = {
+        version: 'latest',
         bundles: [],
         apps: [],
-        version: 'latest',
+        contents: [],
+        dataLayer: true,
       };
       t.deepEqual(result.generator.props, expected, 'Properties Set');
     });
@@ -166,10 +174,11 @@ test.serial('initializing - options', async (t) => {
   const stub = sinon.stub(ModuleMixins, '_findModules');
   stub.withArgs(bundleGeneratorName).returns([{ path: 'core', artifactId: 'test.core' }]);
   stub.withArgs(appsGeneratorName).returns([{ path: 'ui.apps', artifactId: 'test.ui.apps' }]);
+  stub.withArgs(contentGeneratorName).returns([{ path: 'ui.content', artifactId: 'test.ui.content' }]);
 
   await helpers
     .create(CCInit)
-    .withOptions({ examples: true, bundlePath: 'core', appsPath: 'ui.apps', version: '2.3.22' })
+    .withOptions({ examples: true, version: '2.3.22', dataLayer: true, bundlePath: 'core', appsPath: 'ui.apps', contentPath: 'ui.content' })
     .inTmpDir((dir) => {
       fs.writeFileSync(path.join(dir, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem': {} }));
     })
@@ -178,9 +187,11 @@ test.serial('initializing - options', async (t) => {
       stub.restore();
       const expected = {
         examples: true,
+        version: '2.3.22',
+        dataLayer: true,
         bundles: ['core'],
         apps: ['ui.apps'],
-        version: '2.3.22',
+        contents: ['ui.content'],
       };
       t.deepEqual(result.generator.props, expected, 'Properties Set');
     });
@@ -192,6 +203,7 @@ test.serial('initializing - merges from config - no options/props', async (t) =>
   const stub = sinon.stub(ModuleMixins, '_findModules');
   stub.withArgs(bundleGeneratorName).returns([{ path: 'core', artifactId: 'test.core' }]);
   stub.withArgs(appsGeneratorName).returns([{ path: 'ui.apps', artifactId: 'test.ui.apps' }]);
+  stub.withArgs(contentGeneratorName).returns([{ path: 'ui.content', artifactId: 'test.ui.content' }]);
   await helpers
     .create(CCInit)
     .inTmpDir((dir) => {
@@ -203,6 +215,7 @@ test.serial('initializing - merges from config - no options/props', async (t) =>
             version: '1.2.33',
             bundles: ['bundle'],
             apps: ['ui.apps.other'],
+            contents: ['ui.content.other'],
           },
         })
       );
@@ -211,9 +224,10 @@ test.serial('initializing - merges from config - no options/props', async (t) =>
     .then((result) => {
       stub.restore();
       const expected = {
+        version: '1.2.33',
         bundles: ['bundle'],
         apps: ['ui.apps.other'],
-        version: '1.2.33',
+        contents: ['ui.content.other'],
       };
       t.deepEqual(result.generator.props, expected, 'Properties Set');
     });
@@ -225,9 +239,10 @@ test.serial('initializing - merges from config - passed refs', async (t) => {
   const stub = sinon.stub(ModuleMixins, '_findModules');
   stub.withArgs(bundleGeneratorName).returns([{ path: 'core', artifactId: 'test.core' }]);
   stub.withArgs(appsGeneratorName).returns([{ path: 'ui.apps', artifactId: 'test.ui.apps' }]);
+  stub.withArgs(contentGeneratorName).returns([{ path: 'ui.content', artifactId: 'test.ui.content' }]);
   await helpers
     .create(CCInit)
-    .withOptions({ bundlePath: 'core', appsPath: 'ui.apps', version: '2.3.22' })
+    .withOptions({ version: '2.3.22', bundlePath: 'core', appsPath: 'ui.apps', contentPath: 'ui.content' })
     .inTmpDir((dir) => {
       fs.writeFileSync(
         path.join(dir, '.yo-rc.json'),
@@ -235,8 +250,10 @@ test.serial('initializing - merges from config - passed refs', async (t) => {
           '@adobe/generator-aem': {},
           '@adobe/generator-aem:mixin-cc': {
             version: '1.2.33',
+            dataLayer: true,
             bundles: ['bundle'],
             apps: ['ui.apps.other'],
+            contents: ['ui.content.other'],
           },
         })
       );
@@ -245,16 +262,18 @@ test.serial('initializing - merges from config - passed refs', async (t) => {
     .then((result) => {
       stub.restore();
       const expected = {
+        version: '2.3.22',
+        dataLayer: true,
         bundles: ['core', 'bundle'],
         apps: ['ui.apps', 'ui.apps.other'],
-        version: '2.3.22',
+        contents: ['ui.content', 'ui.content.other'],
       };
       t.deepEqual(result.generator.props, expected, 'Properties Set');
     });
 });
 
 test.serial('initializing - finds all available modules', async (t) => {
-  t.plan(2);
+  t.plan(3);
 
   sinon.restore();
   const stub = sinon.stub(ModuleMixins, '_findModules');
@@ -266,9 +285,11 @@ test.serial('initializing - finds all available modules', async (t) => {
     { path: 'ui.apps', artifactId: 'test.ui.apps' },
     { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' },
   ];
+  const contents = [[{ path: 'ui.content', artifactId: 'test.ui.content' }][{ path: 'ui.content.other', artifactId: 'test.ui.content.other' }]];
 
   stub.withArgs(bundleGeneratorName).returns(bundles);
   stub.withArgs(appsGeneratorName).returns(apps);
+  stub.withArgs(contentGeneratorName).returns(contents);
 
   await helpers
     .create(CCInit)
@@ -279,7 +300,8 @@ test.serial('initializing - finds all available modules', async (t) => {
     .then((result) => {
       stub.restore();
       t.deepEqual(result.generator.availableBundles, bundles, 'Available Bundles set.');
-      t.deepEqual(result.generator.availableApps, apps, 'Available Apps set.');
+      t.deepEqual(result.generator.availableApps, apps, 'Available App packages set.');
+      t.deepEqual(result.generator.availableContents, contents, 'Available Content packages set.');
     });
 });
 
@@ -397,7 +419,20 @@ test.serial('prompting - version - specific version wanted', async (t) => {
     });
 });
 
-test('prompting - bundles - defaults set', async (t) => {
+test('prompting - dataLayer - default not set', async (t) => {
+  t.plan(2);
+
+  await helpers
+    .create(CCPrompt)
+    .run()
+    .then(async (result) => {
+      const prompt = _.find(result.generator.prompts, { name: 'dataLayer' });
+      t.true(prompt.default, 'Data Layer default false');
+      t.true(await prompt.when(), 'Data Layer prompts');
+    });
+});
+
+test('prompting - dataLayer - defaults set', async (t) => {
   t.plan(1);
 
   await helpers
@@ -405,13 +440,31 @@ test('prompting - bundles - defaults set', async (t) => {
     .withOptions({ defaults: true })
     .run()
     .then(async (result) => {
-      const prompt = _.find(result.generator.prompts, { name: 'bundles' });
-      t.false(await prompt.when(), 'Bundle does not prompt');
+      const prompt = _.find(result.generator.prompts, { name: 'dataLayer' });
+      t.false(await prompt.when(), 'Data Layer does not prompt');
     });
 });
 
-test('prompting - bundles - no bundle modules', async (t) => {
+test('prompting - dataLayer - dataLayer set', async (t) => {
   t.plan(1);
+
+  await helpers
+    .create(CCPrompt)
+    .withOptions({ props: { dataLayer: false } })
+    .run()
+    .then(async (result) => {
+      const prompt = _.find(result.generator.prompts, { name: 'dataLayer' });
+      t.false(await prompt.when(), 'Data Layer does not prompt');
+    });
+});
+
+test('prompting - bundles', async (t) => {
+  t.plan(7);
+
+  const bundles = [
+    { path: 'core', artifactId: 'test.core' },
+    { path: 'bundle', artifactId: 'test.bundle' },
+  ];
 
   await helpers
     .create(CCPrompt)
@@ -420,69 +473,80 @@ test('prompting - bundles - no bundle modules', async (t) => {
     .then(async (result) => {
       const prompt = _.find(result.generator.prompts, { name: 'bundles' });
       t.false(await prompt.when(), 'Bundles does not prompt');
-    });
-});
 
-test('prompting - bundles - bundles prop populated', async (t) => {
-  t.plan(1);
-
-  await helpers
-    .create(CCPrompt)
-    .withOptions({ props: { bundles: ['core'] } })
-    .run()
-    .then(async (result) => {
-      const prompt = _.find(result.generator.prompts, { name: 'bundles' });
-      t.false(await prompt.when(), 'Bundles does not prompt');
-    });
-});
-
-test('prompting - bundles - available modules', async (t) => {
-  t.plan(2);
-  const bundles = [
-    { path: 'core', artifactId: 'test.core' },
-    { path: 'bundle', artifactId: 'test.bundle' },
-  ];
-  await helpers
-    .create(CCPrompt)
-    .withOptions({ availableBundles: bundles, props: { bundles: [] } })
-    .run()
-    .then(async (result) => {
-      const prompt = _.find(result.generator.prompts, { name: 'bundles' });
+      result.generator.props.bundles = ['core'];
+      result.generator.availableBundles = bundles;
       t.true(await prompt.when(), 'Bundles prompts');
+      t.deepEqual(await prompt.default(), ['core'], 'Correct default list set.');
+      t.deepEqual(await prompt.choices(), ['core', 'bundle'], 'Choices match.');
+
+      result.generator.props.bundles = ['core', 'bundle'];
+      t.false(await prompt.when(), 'Bundles does not prompt');
+      t.deepEqual(await prompt.default(), ['core', 'bundle'], 'Correct default list set.');
       t.deepEqual(await prompt.choices(), ['core', 'bundle'], 'Choices match.');
     });
 });
 
-test('prompting - apps - apps prop populated', async (t) => {
-  t.plan(1);
-
-  await helpers
-    .create(CCPrompt)
-    .withOptions({ props: { apps: ['ui.apps'] } })
-    .run()
-    .then(async (result) => {
-      const prompt = _.find(result.generator.prompts, { name: 'apps' });
-      t.false(await prompt.when(), 'Apps does not prompt');
-    });
-});
-
-test('prompting - apps - available modules', async (t) => {
-  t.plan(5);
+test('prompting - apps', async (t) => {
+  t.plan(10);
   const apps = [
     { path: 'ui.apps', artifactId: 'test.ui.apps' },
     { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' },
   ];
   await helpers
     .create(CCPrompt)
-    .withOptions({ availableApps: apps, props: { apps: [] } })
+    .withOptions({ props: { apps: [] } })
     .run()
     .then(async (result) => {
       const prompt = _.find(result.generator.prompts, { name: 'apps' });
+      t.false(await prompt.when(), 'Apps does not prompt');
+
+      result.generator.props.apps = ['ui.apps'];
+      result.generator.availableApps = apps;
       t.true(await prompt.when(), 'Apps prompts');
+      t.deepEqual(await prompt.default(), ['ui.apps'], 'Correct default list set.');
       t.deepEqual(await prompt.choices(), ['ui.apps', 'ui.apps.other'], 'Choices match.');
+
+      result.generator.props.apps = ['ui.apps', 'ui.apps.other'];
+      t.false(await prompt.when(), 'Apps prompts');
+      t.deepEqual(await prompt.default(), ['ui.apps', 'ui.apps.other'], 'Correct default list set.');
+      t.deepEqual(await prompt.choices(), ['ui.apps', 'ui.apps.other'], 'Choices match.');
+
       t.is(await prompt.validate(), 'At least one Apps module reference must be provided.', 'Message correct.');
       t.is(await prompt.validate([]), 'At least one Apps module reference must be provided.', 'Message correct.');
       t.is(await prompt.validate(['ui.apps']), true);
+    });
+});
+
+test('prompting - contents', async (t) => {
+  t.plan(8);
+  const contents = [
+    { path: 'ui.content', artifactId: 'test.ui.content' },
+    { path: 'ui.content.other', artifactId: 'test.ui.content.other' },
+  ];
+
+  await helpers
+    .create(CCPrompt)
+    .withOptions({ props: { contents: [] } })
+    .run()
+    .then(async (result) => {
+      const prompt = _.find(result.generator.prompts, { name: 'contents' });
+      // Data Layer
+      t.false(await prompt.when({ dataLayer: false }), 'Contents does not prompt');
+      result.generator.props.dataLayer = false;
+      t.false(await prompt.when({}), 'Contents does not prompt');
+
+      result.generator.props.dataLayer = true;
+      result.generator.props.contents = ['ui.content'];
+      result.generator.availableContents = contents;
+      t.true(await prompt.when({}), 'Contents prompts.');
+      t.deepEqual(await prompt.default(), ['ui.content'], 'Correct default list set.');
+      t.deepEqual(await prompt.choices(), ['ui.content', 'ui.content.other'], 'Choices match.');
+
+      result.generator.props.contents = ['ui.content', 'ui.content.other'];
+      t.false(await prompt.when({}), 'Content prompts');
+      t.deepEqual(await prompt.default(), ['ui.content', 'ui.content.other'], 'Correct default list set.');
+      t.deepEqual(await prompt.choices(), ['ui.content', 'ui.content.other'], 'Choices match.');
     });
 });
 
@@ -496,6 +560,7 @@ test('prompting - post process answers', async (t) => {
         version: undefined,
         bundles: [],
         apps: [],
+        contents: [],
       };
       this.options = {};
       this.availableBundles = [
@@ -505,6 +570,10 @@ test('prompting - post process answers', async (t) => {
       this.availableApps = [
         { path: 'ui.apps', artifactId: 'test.ui.apps' },
         { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' },
+      ];
+      this.availableContents = [
+        { path: 'ui.content', artifactId: 'test.ui.content' },
+        { path: 'ui.content.other', artifactId: 'test.ui.content.other' },
       ];
     }
 
@@ -516,16 +585,22 @@ test('prompting - post process answers', async (t) => {
   await helpers
     .create(Mock)
     .withPrompts({
+      examples: true,
+      dataLayer: false,
       latest: true,
       bundles: [],
       apps: ['ui.apps'],
+      contents: [],
     })
     .run()
     .then((result) => {
       const expected = {
+        examples: true,
+        dataLayer: false,
         version: 'latest',
         bundles: [],
         apps: ['ui.apps'],
+        contents: [],
       };
       t.deepEqual(result.generator.props, expected, 'Properties set.');
     });
@@ -546,6 +621,7 @@ test.serial('prompting - post process answers - more selected', async (t) => {
         version: undefined,
         bundles: [],
         apps: [],
+        contents: [],
       };
       this.options = {};
       this.availableBundles = [
@@ -555,6 +631,10 @@ test.serial('prompting - post process answers - more selected', async (t) => {
       this.availableApps = [
         { path: 'ui.apps', artifactId: 'test.ui.apps' },
         { path: 'ui.apps.other', artifactId: 'test.ui.apps.other' },
+      ];
+      this.availableContents = [
+        { path: 'ui.content', artifactId: 'test.ui.content' },
+        { path: 'ui.content.other', artifactId: 'test.ui.content.other' },
       ];
     }
 
@@ -570,14 +650,18 @@ test.serial('prompting - post process answers - more selected', async (t) => {
       ccVersion: '2.20',
       bundles: ['core', 'bundle'],
       apps: ['ui.apps', 'ui.apps.other'],
+      contents: ['ui.content', 'ui.content.other'],
     })
     .run()
     .then((result) => {
       stub.restore();
       const expected = {
+        examples: false,
+        dataLayer: true,
         version: '2.20',
         bundles: ['core', 'bundle'],
         apps: ['ui.apps', 'ui.apps.other'],
+        contents: ['ui.content', 'ui.content.other'],
       };
       t.deepEqual(result.generator.props, expected, 'Properties set.');
     });
@@ -608,7 +692,7 @@ test('configuring', async (t) => {
 });
 
 test.serial('default - compose with - no bundles - v6.5', async (t) => {
-  t.plan(3);
+  t.plan(4);
   sinon.restore();
   const resolveVersion = sinon.stub(CoreComponentMixinGenerator.prototype, '_resolveVersion');
   resolveVersion.resolves('2.20.2');
@@ -638,7 +722,9 @@ test.serial('default - compose with - no bundles - v6.5', async (t) => {
     .withOptions({
       props: {
         examples: true,
+        dataLayer: true,
         apps: ['ui.apps', 'ui.apps.other'],
+        contents: ['ui.content'],
       },
     })
     .inTmpDir((dir) => {
@@ -648,7 +734,7 @@ test.serial('default - compose with - no bundles - v6.5', async (t) => {
 
   resolveVersion.restore();
 
-  t.is(composed.length, 2, 'Correct number of calls');
+  t.is(composed.length, 3, 'Correct number of calls');
   t.deepEqual(
     composed[0],
     {
@@ -675,6 +761,20 @@ test.serial('default - compose with - no bundles - v6.5', async (t) => {
         generateInto: 'ui.apps.other',
         aemVersion: '6.5',
         version: '2.20.2',
+      },
+    },
+    'Parameters correct'
+  );
+  t.deepEqual(
+    composed[2],
+    {
+      generator: {
+        Generator: ContentPackageModuleCoreComponentMixin,
+        path: generatorPath('mixin-cc', 'content', 'index.js'),
+      },
+      options: {
+        generateInto: 'ui.content',
+        dataLayer: true,
       },
     },
     'Parameters correct'

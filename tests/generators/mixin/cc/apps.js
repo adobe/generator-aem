@@ -177,7 +177,21 @@ test('writing - v6.5', async (t) => {
 });
 
 function verifyAppsFiles(result) {
-  const componentsFolder = result.generator.destinationPath('src', 'main', 'content', 'jcr_root', 'apps', 'test', 'components');
+  const appsFolder = path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test');
+  const clientlibFile = path.join(appsFolder, 'clientlibs', 'clientlib-base', '.content.xml');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.accordion');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.carousel');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.image');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.list');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.pdfviewer');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.search');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.tabs');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.text');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.form.container');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.form.text');
+  result.assertFileContent(clientlibFile, 'core.wcm.components.commons.datalayer');
+
+  const componentsFolder = result.generator.destinationPath(appsFolder, 'components');
 
   result.assertFile(path.join(componentsFolder, 'accordion', '.content.xml'));
   result.assertFileContent(path.join(componentsFolder, 'accordion', '.content.xml'), 'cq:isContainer="{Boolean}true"');
@@ -246,7 +260,7 @@ function verifyAppsFiles(result) {
   result.assertFileContent(path.join(componentsFolder, 'remotepage', '.content.xml'), /sling:resourceSuperType="core\/wcm\/components\/page\/v3/);
   result.assertFileContent(path.join(componentsFolder, 'remotepage', '.content.xml'), /.hidden/);
   result.assertFile(path.join(componentsFolder, 'search', '.content.xml'));
-  result.assertFileContent(path.join(componentsFolder, 'search', '.content.xml'), /sling:resourceSuperType="core\/wcm\/components\/search\/v1/);
+  result.assertFileContent(path.join(componentsFolder, 'search', '.content.xml'), /sling:resourceSuperType="core\/wcm\/components\/search\/v2/);
   result.assertFileContent(path.join(componentsFolder, 'search', '.content.xml'), /Test Project - Structure/);
   result.assertFile(path.join(componentsFolder, 'separator', '.content.xml'));
   result.assertFileContent(path.join(componentsFolder, 'separator', '.content.xml'), /sling:resourceSuperType="core\/wcm\/components\/separator\/v1/);

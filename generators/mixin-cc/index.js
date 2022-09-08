@@ -31,10 +31,12 @@ import ModuleMixins from '../../lib/module-mixins.js';
 import { generatorName as rootGeneratorName, apiCoordinates } from '../app/index.js';
 import { generatorName as bundleGeneratorName } from '../bundle/index.js';
 import { generatorName as appsGeneratorName } from '../package-apps/index.js';
+import { generatorName as contentGeneratorName } from '../package-content/index.js';
 import { generatorName as allGeneratorName } from '../package-all/index.js';
 
 import BundleModuleCoreComponentMixin from './bundle/index.js';
 import AppsPackageModuleCoreComponentMixin from './apps/index.js';
+import ContentPackageModuleCoreComponentMixin from './content/index.js';
 import AllPackageModuleCoreComponentMixin from './all/index.js';
 
 const filename = fileURLToPath(import.meta.url);
@@ -67,6 +69,10 @@ class CoreComponentMixinGenerator extends Generator {
       examples: {
         desc: 'Include demo/example code and content.',
       },
+      version: {
+        type: String,
+        desc: 'Version of the Core Components to use, use `latest` for always using latest release.',
+      },
       bundlePath: {
         type: String,
         desc: 'Optional Bundle module reference, for adding dependency and unit test context.',
@@ -75,9 +81,12 @@ class CoreComponentMixinGenerator extends Generator {
         type: String,
         desc: 'Apps Package module reference, for adding proxy components.',
       },
-      version: {
+      dataLayer: {
+        desc: 'Flag to indicate if the Data Layer configuration should be enabled',
+      },
+      contentPath: {
         type: String,
-        desc: 'Version of the Core Components to use, use `latest` for always using latest release.',
+        desc: 'Content Package module reference, for enabling data layer configuration proxy components.',
       },
     };
 
@@ -96,29 +105,27 @@ class CoreComponentMixinGenerator extends Generator {
     this.props = {};
     this.availableBundles = ModuleMixins._findModules.bind(this, bundleGeneratorName)();
     this.availableApps = ModuleMixins._findModules.bind(this, appsGeneratorName)();
+    this.availableContents = ModuleMixins._findModules.bind(this, contentGeneratorName)();
 
     if (this.options.parent === undefined && this.availableApps.length === 0) {
       throw new Error('Project must have at least one UI Apps module to use Core Component mixin.');
     }
 
-    _.defaults(this.props, _.pick(this.options, ['version', 'examples']));
+    _.defaults(this.props, _.pick(this.options, ['examples', 'version', 'dataLayer']));
 
-    if (this.options.bundlePath) {
-      this.props.bundles = [this.options.bundlePath];
-    }
-
-    if (this.options.appsPath) {
-      this.props.apps = [this.options.appsPath];
-    }
+    this.props.bundles = this.options.bundlePath ? [this.options.bundlePath] : [];
+    this.props.apps = this.options.appsPath ? [this.options.appsPath] : [];
+    this.props.contents = this.options.contentPath ? [this.options.contentPath] : [];
 
     if (this.options.defaults) {
-      _.defaults(this.props, { version: 'latest' });
+      _.defaults(this.props, {
+        version: 'latest',
+        dataLayer: true,
+      });
     }
 
     const config = this.config.getAll();
-    this.props.version = this.props.version || config.version;
-    this.props.bundles = this.props.bundles || [];
-    this.props.apps = this.props.apps || [];
+    _.defaults(this.props, _.pick(config, ['examples', 'version', 'dataLayer']));
 
     if (config.bundles) {
       this.props.bundles = _.union(this.props.bundles, config.bundles);
@@ -126,6 +133,10 @@ class CoreComponentMixinGenerator extends Generator {
 
     if (config.apps) {
       this.props.apps = _.union(this.props.apps, config.apps);
+    }
+
+    if (config.contents) {
+      this.props.contents = _.union(this.props.contents, config.contents);
     }
   }
 
@@ -179,24 +190,42 @@ class CoreComponentMixinGenerator extends Generator {
         },
         choices: this._listVersions,
       },
+      {
+        name: 'dataLayer',
+        message: 'Enable the Data Layer configuration in the content package?',
+        type: 'confirm',
+        when: () => {
+          return new Promise((resolve) => {
+            if (this.options.defaults) {
+              resolve(false);
+            }
 
+            resolve(this.props.dataLayer === undefined);
+          });
+        },
+        default: true,
+      },
       {
         name: 'bundles',
         message: 'Which bundle(s) modules should be updated to reference the dependency and add unit test context?',
         type: 'checkbox',
         when: () => {
           return new Promise((resolve) => {
-            if (this.options.defaults) {
-              resolve(false);
-              return;
-            }
-
-            resolve(this.props.bundles.length === 0 && this.availableBundles.length > 0);
+            resolve(this.props.bundles.length !== this.availableBundles.length);
           });
         },
         choices: () => {
           return new Promise((resolve) => {
             resolve(_.map(this.availableBundles, 'path'));
+          });
+        },
+        default: () => {
+          return new Promise((resolve) => {
+            if (this.props.bundles.length > 0) {
+              resolve(this.props.bundles);
+            } else {
+              resolve(_.map(this.availableBundles, 'path'));
+            }
           });
         },
       },
@@ -206,12 +235,7 @@ class CoreComponentMixinGenerator extends Generator {
         type: 'checkbox',
         when: () => {
           return new Promise((resolve) => {
-            if (this.options.defaults) {
-              resolve(false);
-              return;
-            }
-
-            resolve(this.props.apps.length === 0);
+            resolve(this.props.apps.length !== this.availableApps.length);
           });
         },
         choices: () => {
@@ -229,11 +253,49 @@ class CoreComponentMixinGenerator extends Generator {
             resolve('At least one Apps module reference must be provided.');
           });
         },
+        default: () => {
+          return new Promise((resolve) => {
+            if (this.props.apps.length > 0) {
+              resolve(this.props.apps);
+            } else {
+              resolve(_.map(this.availableApps, 'path'));
+            }
+          });
+        },
+      },
+      {
+        name: 'contents',
+        message: 'Which Content module(s) should have the Data Layer configuration added?',
+        type: 'checkbox',
+        when: (answers) => {
+          return new Promise((resolve) => {
+            if (!this.props.dataLayer && !answers.dataLayer) {
+              resolve(false);
+              return;
+            }
+
+            resolve(this.props.contents.length !== this.availableContents.length);
+          });
+        },
+        choices: () => {
+          return new Promise((resolve) => {
+            resolve(_.map(this.availableContents, 'path'));
+          });
+        },
+        default: () => {
+          return new Promise((resolve) => {
+            if (this.props.contents.length > 0) {
+              resolve(this.props.contents);
+            } else {
+              resolve(_.map(this.availableContents, 'path'));
+            }
+          });
+        },
       },
     ];
 
     return this.prompt(prompts).then((answers) => {
-      _.merge(this.props, _.pick(answers, ['bundles', 'apps']));
+      _.merge(this.props, _.pick(answers, ['examples', 'dataLayer', 'bundles', 'apps', 'contents']));
       if (!this.props.version) {
         this.props.version = answers.latest ? 'latest' : answers.ccVersion;
       }
@@ -271,6 +333,19 @@ class CoreComponentMixinGenerator extends Generator {
             generateInto: module,
             aemVersion: this.props.aemVersion,
             version: ccVersion,
+          }
+        );
+      });
+
+      _.each(this.props.contents, (module) => {
+        this.composeWith(
+          {
+            Generator: ContentPackageModuleCoreComponentMixin,
+            path: path.join(dirname, 'content', 'index.js'),
+          },
+          {
+            generateInto: module,
+            dataLayer: this.props.dataLayer,
           }
         );
       });

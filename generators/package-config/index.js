@@ -24,7 +24,7 @@ import Generator from 'yeoman-generator';
 import ModuleMixins from '../../lib/module-mixins.js';
 import PomUtils from '../../lib/pom-utils.js';
 import { generatorName as bundleGeneratorName } from '../bundle/index.js';
-// Import { generatorName as contentGeneratorName } from '../package-content/index.js';
+import { generatorName as contentGeneratorName } from '../package-content/index.js';
 import { generatorName as structureGeneratorName } from '../package-structure/index.js';
 
 export const generatorName = '@adobe/generator-aem:package-config';
@@ -76,8 +76,8 @@ class ConfigPackageGenerator extends Generator {
         const yorc = this.fs.readJSON(path.join(yorcFile));
         if (yorc[bundleGeneratorName] !== undefined) {
           bundles.push({ appId: yorc[bundleGeneratorName].appId, package: yorc[bundleGeneratorName].package });
-          // } else if (yorc[contentGeneratorName] !== undefined) {
-          //   contents.push({ appId: yorc[contentGeneratorName].appId });
+        } else if (yorc[contentGeneratorName] !== undefined) {
+          contents.push({ appId: yorc[contentGeneratorName].appId, name: yorc[contentGeneratorName].name });
         }
       }
     });
@@ -98,7 +98,7 @@ class ConfigPackageGenerator extends Generator {
     this._writing(this._listTemplates('shared'), { appIds: [...appIds] });
 
     _.each(contents, (p) => {
-      this._writing(this._listTemplates('content'), { appId: p.appId, name: this.props.name });
+      this._writing(this._listTemplates('content'), { appId: p.appId, name: p.name });
     });
     _.each(bundles, (b) => {
       this._writing(this._listTemplates('loggers'), { appId: b.appId, loggerPackage: b.package });

@@ -6,7 +6,8 @@
         "title": "Accordion",
         "version": 1,
         "group": "<%= projName %> - Content",
-        "newContainerType": "core/wcm/components/container/v1/container/new"
+        "newContainerType": "core/wcm/components/container/v1/container/new",
+        "clientlib": "v1"
       },
       {
         "name": "breadcrumb",
@@ -26,7 +27,8 @@
         "group": "<%= projName %> - Content",
         "version": 1,
         "newContainerType": "core/wcm/components/container/v1/container/new",
-        "amp": true
+        "amp": true,
+        "clientlib": "v1"
       },
       {
         "name": "container",
@@ -69,7 +71,8 @@
         "name": "image",
         "title": "Image",
         "group": "<%= projName %> - Content",
-        "version": 3
+        "version": 3,
+        "clientlib": "v3"
       },
       {
         "name": "languagenavigation",
@@ -81,7 +84,8 @@
         "name": "list",
         "title": "List",
         "group": "<%= projName %> - Content",
-        "version": 3
+        "version": 3,
+        "clientlib": "v2"
       },
       {
         "name": "navigation",
@@ -101,7 +105,8 @@
         "title": "PDF Viewer",
         "group": "<%= projName %> - Content",
         "version": 1,
-        "amp": true
+        "amp": true,
+        "clientlib": "v1"
       },
       {
         "name": "progressbar",
@@ -125,8 +130,9 @@
         "name": "search",
         "title": "Quick Search",
         "group": "<%= projName %> - Structure",
-        "version": 1,
-        "amp": true
+        "version": 2,
+        "amp": true,
+        "clientlib": "v2"
       },
       {
         "name": "separator",
@@ -140,7 +146,8 @@
         "group": "<%= projName %> - Content",
         "version": 1,
         "newContainerType": "core/wcm/components/container/v1/container/new",
-        "amp": true
+        "amp": true,
+        "clientlib": "v1"
       },
       {
         "name": "teaser",
@@ -152,7 +159,8 @@
         "name": "text",
         "title": "Text",
         "group": "<%= projName %> - Content",
-        "version": 2
+        "version": 2,
+        "clientlib": "v2"
       },
       {
         "name": "title",
@@ -182,7 +190,8 @@
         "title": "Core Form Container",
         "group": "<%= projName %> - Form",
         "version": 2,
-        "newContainerType": "core/wcm/components/form/container/v2/container/new"
+        "newContainerType": "core/wcm/components/form/container/v2/container/new",
+        "clientlib": "v2"
       },
       {
         "name": "hidden",
@@ -200,7 +209,8 @@
         "name": "text",
         "title": "Form Text",
         "group": "<%= projName %> - Form",
-        "version": 2
+        "version": 2,
+        "clientlib": "v2"
       }
     ]
   }

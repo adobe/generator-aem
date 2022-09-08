@@ -14,11 +14,14 @@
  limitations under the License.
 */
 
-import Generator from 'yeoman-generator';
 import _ from 'lodash';
 import { XMLBuilder } from 'fast-xml-parser';
+
+import Generator from 'yeoman-generator';
+
 import PomUtils, { filevaultPlugin } from '../../../lib/pom-utils.js';
 import { bundleGav, configGav, contentGav, exampleAppsGav, exampleConfigGav, exampleContentGav } from '../index.js';
+
 import { apiCoordinates } from '../../app/index.js';
 import { generatorName as allGeneratorName } from '../../package-all/index.js';
 

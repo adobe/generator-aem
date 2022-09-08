@@ -303,7 +303,6 @@ test('prompting - precompileScripts', async (t) => {
     });
 });
 
-
 test('prompting - errorHandler', async (t) => {
   t.plan(2);
 
@@ -457,7 +456,7 @@ test('writing/installing - cloud - error handler', async (t) => {
       result.assertNoFileContent('pom.xml', /<artifactId>test.ui.frontend<\/artifactId>/);
 
       const appsRoot = path.join('src', 'main', 'content', 'jcr_root', 'apps');
-      const contentPath =  path.join(appsRoot, 'test');
+      const contentPath = path.join(appsRoot, 'test');
 
       result.assertFile(path.join(contentPath, 'clientlibs', '.content.xml'));
       result.assertFile(path.join(contentPath, 'components', '.content.xml'));

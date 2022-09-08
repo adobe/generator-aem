@@ -23,7 +23,7 @@ import { globbySync } from 'globby';
 
 import Generator from 'yeoman-generator';
 
-import { XMLBuilder } from 'fast-xml-parser';
+import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import PomUtils, { filevaultPlugin } from '../../../lib/pom-utils.js';
 import { generatorName as rootGeneratorName, apiCoordinates } from '../../app/index.js';
 import { generatorName as appsGeneratorName } from '../../package-apps/index.js';
@@ -72,7 +72,7 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
   }
 
   writing() {
-    const promises = [this._writePom(), ...this._writeProxies()];
+    const promises = [this._writePom(), this._writeClientlibCategories(), ...this._writeProxies()];
     return Promise.all(promises);
   }
 
@@ -122,6 +122,44 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
 
       const builder = new XMLBuilder(PomUtils.xmlOptions);
       this.fs.write(this.destinationPath('pom.xml'), PomUtils.fixXml(builder.build(pomData)));
+      resolve();
+    });
+  }
+
+  _writeClientlibCategories() {
+    return new Promise((resolve) => {
+      const appsYorc = this.fs.readJSON(this.destinationPath('.yo-rc.json'))[appsGeneratorName];
+      const appId = appsYorc.appId;
+      const fileVersion = this.props.version.match(/(\d+\.\d+)\.\d+/)[1];
+      const componentFile = path.join(dirname, 'versions', fileVersion, 'components.json');
+      if (!this.fs.exists(componentFile)) {
+        throw new Error(`Unable to find Core Component list for version '${fileVersion}'`);
+      }
+
+      const componentGroups = this.fs.readJSON(componentFile);
+
+      const categories = [];
+      _.each(componentGroups, (group) => {
+        const relPath = group.relativePath ? `.${group.relativePath}.` : '.';
+        categories.push(
+          ..._.map(_.filter(group.components, 'clientlib'), (value) => {
+            return `core.wcm.components${relPath}${value.name}.${value.clientlib}`;
+          })
+        );
+      });
+
+      const xmlOptions = {
+        ignoreAttributes: false,
+        format: true,
+      };
+
+      const clientlibFile = this.destinationPath('src', 'main', 'content', 'jcr_root', 'apps', appId, 'clientlibs', 'clientlib-base', '.content.xml');
+      const xml = new XMLParser(xmlOptions).parse(this.fs.read(clientlibFile));
+      const embedString = xml['jcr:root']['@_embed'] || '';
+      const embed = embedString.replaceAll(/[[\]]/g, '').split(',');
+      embed.push(...categories, 'core.wcm.components.commons.datalayer.v1');
+      xml['jcr:root']['@_embed'] = `[${embed.join(',')}]`;
+      this.fs.write(clientlibFile, new XMLBuilder(xmlOptions).build(xml));
       resolve();
     });
   }

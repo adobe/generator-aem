@@ -1,7 +1,53 @@
 {
-    "scripts": [
-        "create path (sling:OrderedFolder) /content/dam/<%= appId %>",
-        "create path (nt:unstructured) /content/dam/<%= appId %>/jcr:content",
-        "set properties on /content/dam/<%= appId %>/jcr:content\n  set cq:conf{String} to /conf/<%= appId %>\n  set jcr:title{String} to \"<%= name %>\"\nend"
-    ]
+  "scripts": [
+    "create path /conf/<%= appId %>(sling:Folder)",
+    "set properties on /conf/<%= appId %>\n",
+    "    set jcr:title{String} to \"<%= name %>\"",
+    "end",
+    "create path /conf/<%= appId %>/sling:config(nt:unstructured)",
+
+    "set ACL on /conf/<%= appId %>/sling:config",
+    "    allow jcr:read for everyone",
+    "    allow crx:replicate for content-authors",
+    "    allow jcr:versionManagement, rep:write, crx:replicate, jcr:lockManagement for template-authors",
+    "    allow jcr:versionManagement, rep:write for version-manager-service",
+    "end",
+
+    "create path /conf/<%= appId %>/settings(sling:Folder)",
+    "create path /conf/<%= appId %>/settings/cloundconfigs(sling:Folder)",
+    "create path /conf/<%= appId %>/settings/dam(sling:Folder)/cfm(cq:Page)/models(cq:Page)/jcr:content(nt:unstructured)",
+
+    "create path /conf/<%= appId %>/settings/wcm(cq:Page)",
+    "create path /conf/<%= appId %>/settings/wcm/policies(cq:Page)/<%= appId %>(nt:unstructured)",
+    "set ACL on /conf/<%= appId %>/settings/wcm/policies",
+    "    allow jcr:read for everyone",
+    "    allow crx:replicate for content-authors",
+    "    allow jcr:versionManagement, rep:write, crx:replicate, jcr:lockManagement for template-authors",
+    "    allow jcr:versionManagement, rep:write for version-manager-service",
+    "end",
+
+    "create path /conf/<%= appId %>/settings/wcm/template-types(cq:Page)",
+    "set ACL on /conf/<%= appId %>/settings/wcm/template-types",
+    "    allow jcr:read for template-authors",
+    "end",
+
+    "create path /conf/<%= appId %>/settings/wcm/templates(cq:Page)",
+    "set ACL on /conf/<%= appId %>/settings/wcm/templates",
+    "    allow jcr:read for everyone",
+    "    allow crx:replicate for content-authors",
+    "    allow jcr:versionManagement, rep:write, crx:replicate, jcr:lockManagement for template-authors",
+    "    allow jcr:versionManagement, rep:write for version-manager-service",
+    "end",
+
+
+    "create path /content/dam/<%= appId %>/jcr:content(nt:unstructured)",
+
+    "create path /content/dam/<%= appId %>(sling:OrderedFolder)",
+    "create path /content/dam/<%= appId %>/jcr:content(nt:unstructured)",
+    "set properties on /content/dam/<%= appId %>/jcr:content",
+    "   set cq:conf{String} to /conf/<%= appId %>",
+    "   set jcr:title{String} to \"<%= name %>\"",
+    "end"
+
+  ]
 }

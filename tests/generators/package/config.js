@@ -94,7 +94,14 @@ test('writing/installing - one content package', async (t) => {
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.content', 'pom.xml'), path.join(temporaryDir, 'ui.content', 'pom.xml'));
-      fs.writeFileSync(path.join(temporaryDir, 'ui.content', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-content': { appId: 'test' } }));
+      fs.writeFileSync(
+        path.join(temporaryDir, 'ui.content', '.yo-rc.json'),
+        JSON.stringify({
+          '@adobe/generator-aem:package-content': {
+            appId: 'test',
+          },
+        })
+      );
       fs.copyFileSync(
         fixturePath('projects', 'cloud', 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
         path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
@@ -119,17 +126,14 @@ test('writing/installing - one content package', async (t) => {
 
       const osgiDir = path.join('src', 'main', 'content', 'jcr_root', 'apps', 'config', 'osgiconfig');
       result.assertFile(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'));
-      // Result.assertFileContent(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'), /"\/content\/test\/<\/"/);
+      result.assertFileContent(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'), /"\/content\/test\/<\/"/);
       result.assertFileContent(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'), /"\/:\/"/);
 
-      // Result.assertFileContent(
-      //   path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test', 'osgiconfig', 'config.author', 'com.adobe.granite.cors.impl.CORSPolicyImpl~test.cfg.json'),
-      //   /\/\(content\|conf\)\/test/
-      // );
-      // result.assertFileContent(
-      //   path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test', 'osgiconfig', 'config', 'org.apache.sling.jcr.repoinit.RepositoryInitializer~test.cfg.json'),
-      //   /\/content\/dam\/test/
-      // );
+      result.assertFileContent(
+        path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test', 'osgiconfig', 'config.author', 'com.adobe.granite.cors.impl.CORSPolicyImpl~test.cfg.json'),
+        /\/\(content\|conf\)\/test/
+      );
+      result.assertFile(path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test', 'osgiconfig', 'config', 'org.apache.sling.jcr.repoinit.RepositoryInitializer~test.cfg.json'));
     });
 });
 
@@ -200,7 +204,7 @@ test('writing/installing - multiple content packages', async (t) => {
       const pom = new XMLParser(options).parse(fs.readFileSync(path.join(temporaryDir, 'ui.content', 'pom.xml'), { encoding: 'utf8' }));
       pom.project.artifactId = 'test.ui.content.other';
       fs.writeFileSync(path.join(temporaryDir, 'ui.content.other', 'pom.xml'), new XMLBuilder(options).build(pom));
-      fs.writeFileSync(path.join(temporaryDir, 'ui.content.other', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-content': { appId: 'other' } }));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.content.other', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-content': { appId: 'other', dataLayer: true } }));
       fs.copyFileSync(
         fixturePath('projects', 'cloud', 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'),
         path.join(temporaryDir, 'ui.content.other', 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml')
@@ -223,28 +227,15 @@ test('writing/installing - multiple content packages', async (t) => {
       t.is(pomData.project.artifactId, 'test.ui.config', 'ArtifactId set.');
       t.is(pomData.project.name, 'Test Module - Apps Config Package', 'Name set.');
 
-      const osgiDir = path.join('src', 'main', 'content', 'jcr_root', 'apps', 'other', 'osgiconfig');
+      const appsDir = path.join('src', 'main', 'content', 'jcr_root', 'apps');
+      const osgiDir = path.join(appsDir, 'other', 'osgiconfig');
       result.assertFile(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'));
-      // Result.assertFileContent(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'), /"\/content\/test\/<\/"/);
-      // result.assertFileContent(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'), /"\/content\/other\/<\/"/);
+      result.assertFileContent(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'), /"\/content\/test\/<\/"/);
+      result.assertFileContent(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'), /"\/content\/other\/<\/"/);
       result.assertFileContent(path.join(osgiDir, 'config.publish', 'org.apache.sling.jcr.resource.internal.JcrResourceResolverFactoryImpl.cfg.json'), /"\/:\/"/);
 
-      // Result.assertFileContent(
-      //   path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test', 'osgiconfig', 'config', 'org.apache.sling.jcr.repoinit.RepositoryInitializer~test.cfg.json'),
-      //   /\/content\/dam\/test/
-      // );
-      // result.assertFileContent(
-      //   path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test', 'osgiconfig', 'config.author', 'com.adobe.granite.cors.impl.CORSPolicyImpl~test.cfg.json'),
-      //   /\/\(content\|conf\)\/test/
-      // );
-      // result.assertFileContent(
-      //   path.join('src', 'main', 'content', 'jcr_root', 'apps', 'other', 'osgiconfig', 'config', 'org.apache.sling.jcr.repoinit.RepositoryInitializer~other.cfg.json'),
-      //   /\/content\/dam\/other/
-      // );
-      // result.assertFileContent(
-      //   path.join('src', 'main', 'content', 'jcr_root', 'apps', 'other', 'osgiconfig', 'config.author', 'com.adobe.granite.cors.impl.CORSPolicyImpl~other.cfg.json'),
-      //   /\/\(content\|conf\)\/other/
-      // );
+      result.assertFile(path.join(appsDir, 'test', 'osgiconfig', 'config', 'org.apache.sling.jcr.repoinit.RepositoryInitializer~test.cfg.json'));
+      result.assertFile(path.join(appsDir, 'other', 'osgiconfig', 'config', 'org.apache.sling.jcr.repoinit.RepositoryInitializer~other.cfg.json'));
     });
 });
 

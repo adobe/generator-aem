@@ -58,7 +58,7 @@ class AppsPackageGenerator extends Generator {
 
       errorHandler: {
         desc: 'Whether or not to include the global Sling 404 Error Handler Servlet.',
-      }
+      },
     });
 
     _.forOwn(this.moduleOptions, (v, k) => {
@@ -74,7 +74,6 @@ class AppsPackageGenerator extends Generator {
     this._initializing();
     if (this.options.defaults) {
       this.props.precompileScripts = true;
-
     }
 
     _.defaults(this.props, _.pick(this.options, ['precompileScripts', 'errorHandler']));
@@ -147,7 +146,6 @@ class AppsPackageGenerator extends Generator {
         when: this.props.errorHandler === undefined,
         default: false,
       },
-
     ];
 
     return this._prompting(prompts).then((answers) => {
