@@ -121,7 +121,7 @@ class BundleGenerator extends Generator {
   install() {
     // Make sure build is run with this new/updated module
     if (this.env.rootGenerator() === this) {
-      return this._install({ cwd: path.dirname(this.destinationRoot()) });
+      return this._install({ cwd: path.dirname(this.destinationPath()) });
     }
   }
 

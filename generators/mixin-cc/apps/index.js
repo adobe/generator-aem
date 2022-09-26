@@ -165,7 +165,7 @@ class AppsPackageModuleCoreComponentMixin extends Generator {
   }
 
   _writeProxies() {
-    const rootYorc = this.fs.readJSON(path.join(path.dirname(this.destinationRoot()), '.yo-rc.json'))[rootGeneratorName];
+    const rootYorc = this.fs.readJSON(path.join(path.dirname(this.destinationPath()), '.yo-rc.json'))[rootGeneratorName];
     const appsYorc = this.fs.readJSON(this.destinationPath('.yo-rc.json'))[appsGeneratorName];
     const appId = appsYorc.appId;
     const tplProps = {

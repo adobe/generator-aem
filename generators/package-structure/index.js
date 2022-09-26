@@ -70,13 +70,13 @@ class StructurePackageGenerator extends Generator {
   install() {
     // Make sure build is run with this new/updated module
     if (this.env.rootGenerator() === this) {
-      return this._install({ cwd: path.dirname(this.destinationRoot()) });
+      return this._install({ cwd: path.dirname(this.destinationPath()) });
     }
   }
 
   _writePom() {
     // Collect all the AppIds - Should this check only for Apps/Content/Config types?
-    const root = path.dirname(this.destinationRoot());
+    const root = path.dirname(this.destinationPath());
     const modules = PomUtils.listParentPomModules(this, root);
     const appIds = new Set([this.props.appId]);
     _.each(modules, (module) => {

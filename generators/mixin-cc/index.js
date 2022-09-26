@@ -378,7 +378,7 @@ class CoreComponentMixinGenerator extends Generator {
   install() {
     // Make sure build is run with this new/updated module
     if (this.env.rootGenerator() === this) {
-      return ModuleMixins._install.call(this, { cwd: this.destinationRoot() });
+      return ModuleMixins._install.call(this, { cwd: this.destinationPath() });
     }
   }
 

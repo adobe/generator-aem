@@ -70,7 +70,7 @@ export function config(clazz, resolved) {
   };
 }
 
-export function Default(clazz, resolved) {
+export function wrapDefault(clazz, resolved) {
   return class extends clazz {
     constructor(args, options, features) {
       options.resolved = resolved;
@@ -109,13 +109,3 @@ export function writeInstall(clazz, resolved) {
     }
   };
 }
-
-const wrappers = {
-  Init: init,
-  Prompt: prompt,
-  Config: config,
-  Default,
-  WriteInstall: writeInstall,
-};
-
-export default wrappers;

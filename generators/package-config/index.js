@@ -64,11 +64,7 @@ class ConfigPackageGenerator extends Generator {
     const bundles = [];
     const contents = [];
 
-    // If (this.props.parent.aemVersion !== 'cloud' && this.props.loggerPackages) {
-    //   files.push(...this._listTemplates('loggers'));
-    // }
-
-    const root = path.dirname(this.destinationRoot());
+    const root = path.dirname(this.destinationPath());
     const modules = PomUtils.listParentPomModules(this, root);
     _.each(modules, (module) => {
       const yorcFile = path.join(root, module, '.yo-rc.json');
@@ -113,7 +109,7 @@ class ConfigPackageGenerator extends Generator {
   install() {
     // Make sure build is run with this new/updated module
     if (this.env.rootGenerator() === this) {
-      return this._install({ cwd: path.dirname(this.destinationRoot()) });
+      return this._install({ cwd: path.dirname(this.destinationPath()) });
     }
   }
 

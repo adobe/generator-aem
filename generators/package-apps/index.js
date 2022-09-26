@@ -212,12 +212,12 @@ class AppsPackageGenerator extends Generator {
   install() {
     // Make sure build is run with this new/updated module
     if (this.env.rootGenerator() === this) {
-      return this._install({ cwd: path.dirname(this.destinationRoot()) });
+      return this._install({ cwd: path.dirname(this.destinationPath()) });
     }
   }
 
   _lookupArtifact(artifactId) {
-    const root = path.dirname(this.destinationRoot());
+    const root = path.dirname(this.destinationPath());
     const moduleList = PomUtils.listParentPomModules(this, root);
     let artifact;
     _.each(moduleList, (module) => {

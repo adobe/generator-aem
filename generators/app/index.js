@@ -523,7 +523,7 @@ class AEMGenerator extends Generator {
   }
 
   configuring() {
-    const dir = path.basename(this.destinationRoot());
+    const dir = path.basename(this.destinationPath());
 
     if (!this.options.generateInto && dir !== this.props.appId) {
       this.destinationRoot(this.destinationPath(this.props.appId));
