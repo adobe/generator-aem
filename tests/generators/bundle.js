@@ -22,12 +22,11 @@ import tempDirectory from 'temp-dir';
 import _ from 'lodash';
 import test from 'ava';
 import helpers from 'yeoman-test';
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 
-import PomUtils from '../../lib/pom-utils.js';
 import BundleGenerator from '../../generators/bundle/index.js';
 import { init, prompt, config, writeInstall } from '../fixtures/generators/wrappers.js';
-import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata } from '../fixtures/helpers.js';
+import { generatorPath, fixturePath, cloudSdkApiMetadata, aem65ApiMetadata, addModulesToPom } from '../fixtures/helpers.js';
 
 const resolved = generatorPath('bundle', 'index.js');
 const BundleInit = init(BundleGenerator, resolved);
@@ -199,7 +198,7 @@ test('writing/installing - v6.5 - new', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>core<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -262,7 +261,7 @@ test('writing/installing - cloud - new', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>core<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -324,21 +323,13 @@ test('writing/installing - cloud - second', async (t) => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
       fs.mkdirSync(path.join(temporaryDir, 'core'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'core', 'pom.xml'), path.join(temporaryDir, 'core', 'pom.xml'));
-      const parser = new XMLParser(PomUtils.xmlOptions);
-      const builder = new XMLBuilder(PomUtils.xmlOptions);
-
-      const pom = path.join(temporaryDir, 'pom.xml');
-      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-      const proj = PomUtils.findPomNodeArray(pomData, 'project');
-      const modules = { modules: [{ module: [{ '#text': 'core' }] }] };
-      proj.splice(7, 0, modules);
-      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+      addModulesToPom(temporaryDir, ['core']);
     })
     .run()
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>new<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -403,7 +394,7 @@ test('writing/installing - merges existing pom', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>core<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,

@@ -58,7 +58,7 @@ test('writing - dataLayer set', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.content' }] }]);
+      addModulesToPom(temporaryDir, ['ui.content']);
       fs.cpSync(fixturePath('projects', 'cloud', 'ui.content'), path.join(fullPath), { recursive: true });
       fs.writeFileSync(
         path.join(fullPath, '.yo-rc.json'),
@@ -92,7 +92,7 @@ test('writing - dataLayer not set', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.content' }] }]);
+      addModulesToPom(temporaryDir, ['ui.content']);
       fs.cpSync(fixturePath('projects', 'cloud', 'ui.content'), path.join(fullPath), { recursive: true });
       fs.writeFileSync(
         path.join(fullPath, '.yo-rc.json'),

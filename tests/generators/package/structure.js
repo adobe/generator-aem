@@ -56,7 +56,7 @@ test('writing/installing', async (t) => {
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
 
-      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps' }] }, { module: [{ '#text': 'ui.config' }] }, { module: [{ '#text': 'ui.content' }] }]);
+      addModulesToPom(temporaryDir, ['ui.apps', 'ui.config', 'ui.content']);
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(temporaryDir, 'ui.apps', 'pom.xml'));
@@ -82,7 +82,7 @@ test('writing/installing', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.apps.structure<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -131,7 +131,7 @@ test('writing/installing - merges existing filters', async (t) => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'), path.join(fullPath, 'pom.xml'));
 
-      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps' }] }, { module: [{ '#text': 'ui.config' }] }, { module: [{ '#text': 'ui.content' }] }]);
+      addModulesToPom(temporaryDir, ['ui.apps', 'ui.config', 'ui.content']);
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(temporaryDir, 'ui.apps', 'pom.xml'));
@@ -157,7 +157,7 @@ test('writing/installing - merges existing filters', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.apps.structure<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,

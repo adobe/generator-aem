@@ -594,6 +594,7 @@ test.serial('configuring - sets destinationRoot', async (t) => {
       t.is(path.basename(result.generator.destinationRoot()), 'core', 'Set destination root.');
     });
 
+  sinon.replace(MavenUtils, 'latestRelease', fake);
   await helpers
     .create(AEMAppConfig)
     .withOptions({ props: { appId: 'core' } })
@@ -604,6 +605,7 @@ test.serial('configuring - sets destinationRoot', async (t) => {
       t.is(path.basename(result.generator.destinationRoot()), 'core', 'Set destination root.');
     });
 
+  sinon.replace(MavenUtils, 'latestRelease', fake);
   await helpers
     .create(AEMAppConfig)
     .withOptions({ generateInto: 'notcore', props: { appId: 'core' } })

@@ -23,7 +23,7 @@ import test from 'ava';
 import helpers from 'yeoman-test';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
-import { fixturePath, generatorPath, addDependenciesToPom } from '../../../fixtures/helpers.js';
+import { fixturePath, generatorPath, addDependenciesToPom, addPropertyToPom } from '../../../fixtures/helpers.js';
 import { init, writeInstall } from '../../../fixtures/generators/wrappers.js';
 
 import { bundleGav, testGav, versionStruct } from '../../../../generators/mixin-cc/index.js';
@@ -64,16 +64,7 @@ test('writing - cloud', async (t) => {
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
 
-      const parser = new XMLParser(PomUtils.xmlOptions);
-      const builder = new XMLBuilder(PomUtils.xmlOptions);
-      const pom = path.join(temporaryDir, 'pom.xml');
-      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-      const proj = PomUtils.findPomNodeArray(pomData, 'project');
-
-      const pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
-      pomProperties.push({ 'core.wcm.components.version': [{ '#text': '2.20.2' }] });
-      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
-
+      addPropertyToPom(temporaryDir, 'core.wcm.components.version', '2.20.2');
       addDependenciesToPom(temporaryDir, [{ dependency: [...bundleGav, versionStruct] }, { dependency: [...testGav, versionStruct] }]);
 
       fs.writeFileSync(
@@ -121,17 +112,7 @@ test('writing - v6.5', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'v6.5', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-
-      const parser = new XMLParser(PomUtils.xmlOptions);
-      const builder = new XMLBuilder(PomUtils.xmlOptions);
-      const pom = path.join(temporaryDir, 'pom.xml');
-      const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-      const proj = PomUtils.findPomNodeArray(pomData, 'project');
-
-      const pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
-      pomProperties.push({ 'core.wcm.components.version': [{ '#text': '2.20.2' }] });
-      fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
-
+      addPropertyToPom(temporaryDir, 'core.wcm.components.version', '2.20.2');
       addDependenciesToPom(temporaryDir, [{ dependency: [...bundleGav, versionStruct] }, { dependency: [...testGav, versionStruct] }]);
 
       fs.writeFileSync(

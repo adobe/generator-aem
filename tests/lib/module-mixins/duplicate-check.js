@@ -22,7 +22,7 @@ import tempDirectory from 'temp-dir';
 import test from 'ava';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
-import { fixturePath } from '../../fixtures/helpers.js';
+import { addModulesToPom, fixturePath } from '../../fixtures/helpers.js';
 import PomUtils from '../../../lib/pom-utils.js';
 import ModuleMixins from '../../../lib/module-mixins.js';
 
@@ -34,22 +34,14 @@ test('no duplicate', (t) => {
 
   fs.mkdirSync(fullPath, { recursive: true });
   fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-
-  const parser = new XMLParser(PomUtils.xmlOptions);
-  const builder = new XMLBuilder(PomUtils.xmlOptions);
-  const pom = path.join(temporaryDir, 'pom.xml');
-  const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-  const proj = PomUtils.findPomNodeArray(pomData, 'project');
-  const modules = { modules: [{ module: [{ '#text': 'someother' }] }, { module: [{ '#text': 'module' }] }] };
-  proj.splice(7, 0, modules);
-  fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+  addModulesToPom(temporaryDir, ['someother', 'module'])
 
   fs.mkdirSync(path.join(temporaryDir, 'someother'), { recursive: true });
 
   fs.writeFileSync(path.join(temporaryDir, 'someother', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:someother': {} }));
 
   const generator = {
-    destinationRoot() {
+    destinationPath() {
       return fullPath;
     },
     rootGeneratorName() {
@@ -82,19 +74,12 @@ test('same folder', (t) => {
   fs.mkdirSync(fullPath, { recursive: true });
   fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
 
-  const parser = new XMLParser(PomUtils.xmlOptions);
-  const builder = new XMLBuilder(PomUtils.xmlOptions);
-  const pom = path.join(temporaryDir, 'pom.xml');
-  const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-  const proj = PomUtils.findPomNodeArray(pomData, 'project');
-  const modules = { modules: [{ module: [{ '#text': 'module' }] }] };
-  proj.splice(7, 0, modules);
-  fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+  addModulesToPom(temporaryDir, ['module'])
 
   fs.writeFileSync(path.join(temporaryDir, 'module', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:test': {} }));
 
   const generator = {
-    destinationRoot() {
+    destinationPath() {
       return fullPath;
     },
     rootGeneratorName() {
@@ -126,21 +111,12 @@ test('duplicate', (t) => {
 
   fs.mkdirSync(fullPath, { recursive: true });
   fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-
-  const parser = new XMLParser(PomUtils.xmlOptions);
-  const builder = new XMLBuilder(PomUtils.xmlOptions);
-  const pom = path.join(temporaryDir, 'pom.xml');
-  const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
-  const proj = PomUtils.findPomNodeArray(pomData, 'project');
-  const modules = { modules: [{ module: [{ '#text': 'test' }] }, { module: [{ '#text': 'module' }] }] };
-  proj.splice(7, 0, modules);
-  fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
-
+  addModulesToPom(temporaryDir, ['test', 'module'])
   fs.mkdirSync(path.join(temporaryDir, 'test'));
   fs.writeFileSync(path.join(temporaryDir, 'test', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:test': {} }));
 
   const generator = {
-    destinationRoot() {
+    destinationPath() {
       return fullPath;
     },
     rootGeneratorName() {

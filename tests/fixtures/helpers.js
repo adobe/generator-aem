@@ -14,9 +14,11 @@
  limitations under the License.
 */
 
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import _ from 'lodash';
+
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import PomUtils from '../../lib/pom-utils.js';
 
@@ -53,13 +55,36 @@ export function addModulesToPom(temporaryDir, toAdd = []) {
 
   let modules = PomUtils.findPomNodeArray(proj, 'modules');
   if (modules) {
-    modules.push(...toAdd);
+    modules.push(
+      ..._.map(toAdd, (m) => {
+        return { module: [{ '#text': m }] };
+      })
+    );
   } else {
-    modules = { modules: toAdd };
+    modules = {
+      modules: _.map(toAdd, (m) => {
+        return { module: [{ '#text': m }] };
+      }),
+    };
     proj.splice(7, 0, modules);
   }
 
   fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+}
+
+export function addPropertyToPom(temporaryDir, name, value) {
+  const parser = new XMLParser(PomUtils.xmlOptions);
+  const builder = new XMLBuilder(PomUtils.xmlOptions);
+  const pom = path.join(temporaryDir, 'pom.xml');
+  const pomData = parser.parse(fs.readFileSync(pom, PomUtils.fileOptions));
+  const proj = PomUtils.findPomNodeArray(pomData, 'project');
+
+  const pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
+  const tmp = {};
+  tmp[name] = [{ '#text': value }]
+  pomProperties.push(tmp);
+  fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
+
 }
 
 export function addDependenciesToPom(temporaryDir, toAdd = []) {

@@ -34,7 +34,7 @@ test('no modules in parent', (t) => {
   const fake = sinon.fake.returns([]);
   sinon.replace(PomUtils, 'listParentPomModules', fake);
   const generator = {
-    destinationRoot() {
+    destinationPath() {
       return fixturePath('projects', 'cloud', 'module');
     },
     fs: {
@@ -68,7 +68,7 @@ test('none of type', (t) => {
   fs.writeFileSync(path.join(temporaryDir, 'other', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:bundle': {} }));
 
   const generator = {
-    destinationRoot() {
+    destinationPath() {
       return fullPath;
     },
     fs: {
@@ -105,7 +105,7 @@ test('one of type', (t) => {
   fs.writeFileSync(path.join(temporaryDir, 'found', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:wanted': { artifactId: 'test.found' } }));
 
   const generator = {
-    destinationRoot() {
+    destinationPath() {
       return fullPath;
     },
     fs: {
@@ -145,7 +145,7 @@ test('multiple of type', (t) => {
   fs.writeFileSync(path.join(temporaryDir, 'alsofound', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:wanted': { artifactId: 'test.alsofound' } }));
 
   const generator = {
-    destinationRoot() {
+    destinationPath() {
       return fullPath;
     },
     fs: {
@@ -187,7 +187,7 @@ test('generator is in parent project (mixin)', (t) => {
   fs.writeFileSync(path.join(temporaryDir, 'alsofound', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:wanted': { artifactId: 'test.alsofound' } }));
 
   const generator = {
-    destinationRoot() {
+    destinationPath() {
       return temporaryDir;
     },
     fs: {

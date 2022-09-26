@@ -109,7 +109,7 @@ test('writing/installing - no modules', async (t) => {
     .run()
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>all<\/module>/);
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -152,7 +152,7 @@ test('writing/installing - with modules', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'core' }] }, { module: [{ '#text': 'ui.apps' }] }, { module: [{ '#text': 'ui.config' }] }, { module: [{ '#text': 'ui.content' }] }]);
+      addModulesToPom(temporaryDir, ['core', 'ui.apps', 'ui.config', 'ui.content']);
 
       fs.mkdirSync(path.join(temporaryDir, 'core'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'core', 'pom.xml'), path.join(temporaryDir, 'core', 'pom.xml'));
@@ -181,7 +181,7 @@ test('writing/installing - with modules', async (t) => {
     .run()
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>all<\/module>/);
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -252,7 +252,7 @@ test('writing/installing - merges existing pom', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'core' }] }, { module: [{ '#text': 'ui.apps' }] }, { module: [{ '#text': 'ui.config' }] }, { module: [{ '#text': 'ui.content' }] }]);
+      addModulesToPom(temporaryDir, ['core', 'ui.apps', 'ui.config', 'ui.content']);
 
       fs.copyFileSync(fixturePath('projects', 'cloud', 'all', 'pom.xml'), path.join(fullPath, 'pom.xml'));
 
@@ -283,7 +283,7 @@ test('writing/installing - merges existing pom', async (t) => {
     .run()
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>all<\/module>/);
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,

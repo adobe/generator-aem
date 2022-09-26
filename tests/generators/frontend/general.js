@@ -76,7 +76,7 @@ test('writing/installing - v6.5', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui\.frontend<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,

@@ -84,7 +84,7 @@ test('writing/install - v6.5', async (t) => {
     .run()
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>dispatcher<\/module>/);
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -139,7 +139,7 @@ test('writing/install - cloud', async (t) => {
     .run()
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>dispatcher<\/module>/);
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,

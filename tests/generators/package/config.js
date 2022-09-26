@@ -70,7 +70,7 @@ test('writing/installing - one content package', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'ui.apps' }] }, { module: [{ '#text': 'ui.content' }] }, { module: [{ '#text': 'ui.apps.structure' }] }]);
+      addModulesToPom(temporaryDir, ['ui.apps', 'ui.content', 'ui.apps.structure']);
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(temporaryDir, 'ui.apps', 'pom.xml'));
@@ -111,7 +111,7 @@ test('writing/installing - one content package', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.config<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -134,6 +134,7 @@ test('writing/installing - one content package', async (t) => {
         /\/\(content\|conf\)\/test/
       );
       result.assertFile(path.join('src', 'main', 'content', 'jcr_root', 'apps', 'test', 'osgiconfig', 'config', 'org.apache.sling.jcr.repoinit.RepositoryInitializer~test.cfg.json'));
+      result.assertFile(path.join(fullPath, 'target', 'test.ui.config-1.0.0-SNAPSHOT.zip'));
     });
 });
 
@@ -161,12 +162,7 @@ test('writing/installing - multiple content packages', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, [
-        { module: [{ '#text': 'ui.apps' }] },
-        { module: [{ '#text': 'ui.content' }] },
-        { module: [{ '#text': 'ui.content.other' }] },
-        { module: [{ '#text': 'ui.apps.structure' }] },
-      ]);
+      addModulesToPom(temporaryDir, ['ui.apps', 'ui.content', 'ui.content.other', 'ui.apps.structure']);
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.apps', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps', 'pom.xml'), path.join(temporaryDir, 'ui.apps', 'pom.xml'));
@@ -214,7 +210,7 @@ test('writing/installing - multiple content packages', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.config<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -236,6 +232,8 @@ test('writing/installing - multiple content packages', async (t) => {
 
       result.assertFile(path.join(appsDir, 'test', 'osgiconfig', 'config', 'org.apache.sling.jcr.repoinit.RepositoryInitializer~test.cfg.json'));
       result.assertFile(path.join(appsDir, 'other', 'osgiconfig', 'config', 'org.apache.sling.jcr.repoinit.RepositoryInitializer~other.cfg.json'));
+
+      result.assertFile(path.join(fullPath, 'target', 'test.ui.config-1.0.0-SNAPSHOT.zip'));
     });
 });
 
@@ -263,7 +261,7 @@ test('writing/installing - one bundle', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'core' }] }, { module: [{ '#text': 'ui.apps.structure' }] }]);
+      addModulesToPom(temporaryDir, ['core', 'ui.apps.structure']);
 
       fs.mkdirSync(path.join(temporaryDir, 'core'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'core', 'pom.xml'), path.join(temporaryDir, 'core', 'pom.xml'));
@@ -285,7 +283,7 @@ test('writing/installing - one bundle', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.config<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -311,6 +309,7 @@ test('writing/installing - one bundle', async (t) => {
         path.join(osgiDir, 'test', 'osgiconfig', 'config.prod', 'org.apache.sling.commons.log.LogManager.factory.config~test.cfg.json'),
         /"org.apache.sling.commons.log.names": "\[com.adobe.test]",/
       );
+      result.assertFile(path.join(fullPath, 'target', 'test.ui.config-1.0.0-SNAPSHOT.zip'));
     });
 });
 
@@ -338,7 +337,7 @@ test('writing/installing - multiple bundles', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, [{ module: [{ '#text': 'core' }] }, { module: [{ '#text': 'core.other' }] }, { module: [{ '#text': 'ui.apps.structure' }] }]);
+      addModulesToPom(temporaryDir, ['core', 'core.other', 'ui.apps.structure']);
 
       fs.mkdirSync(path.join(temporaryDir, 'core'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'core', 'pom.xml'), path.join(temporaryDir, 'core', 'pom.xml'));
@@ -370,7 +369,7 @@ test('writing/installing - multiple bundles', async (t) => {
     .then((result) => {
       result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.config<\/module>/);
 
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), 'utf8');
+      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
       const parser = new XMLParser({
         ignoreAttributes: true,
         ignoreDeclaration: true,
@@ -409,5 +408,6 @@ test('writing/installing - multiple bundles', async (t) => {
         path.join(osgiDir, 'other', 'osgiconfig', 'config.prod', 'org.apache.sling.commons.log.LogManager.factory.config~other.cfg.json'),
         /"org.apache.sling.commons.log.names": "\[com.adobe.other]",/
       );
+      result.assertFile(path.join(fullPath, 'target', 'test.ui.config-1.0.0-SNAPSHOT.zip'));
     });
 });
