@@ -167,7 +167,7 @@ test('writing/installing - with modules', async (t) => {
       );
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
+      fs.cpSync(fixturePath('projects', 'cloud', 'ui.config'), path.join(temporaryDir, 'ui.config'), { recursive: true });
       fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { artifactId: 'test.ui.config' } }));
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
@@ -269,7 +269,7 @@ test('writing/installing - merges existing pom', async (t) => {
       );
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
+      fs.cpSync(fixturePath('projects', 'cloud', 'ui.config'), path.join(temporaryDir, 'ui.config'), { recursive: true });
       fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { artifactId: 'test.ui.config' } }));
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
@@ -308,16 +308,18 @@ test('writing/installing - merges existing pom', async (t) => {
         path.join(fullPath, 'pom.xml'),
         /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.config<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-packages\/application\/install<\/target>/
       );
-      // Result.assertFileContent(
-      //   path.join(fullPath, 'pom.xml'),
-      //   /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.content<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-packages\/application\/install<\/target>/
-      // );
+      result.assertFileContent(
+        path.join(fullPath, 'pom.xml'),
+        /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.content<\/artifactId>\s+<type>zip<\/type>\s+<target>\/apps\/test-packages\/application\/install<\/target>/
+      );
       result.assertFileContent(
         path.join(fullPath, 'pom.xml'),
         /<groupId>org.apache.commons<\/groupId>\s+<artifactId>commons-lang3<\/artifactId>\s+<target>\/apps\/test-vendor-packages\/application\/install<\/target>/
       );
-
-      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.core<\/artifactId>\s+<version>\${project.version}<\/version>/);
+      result.assertFileContent(
+        path.join(fullPath, 'pom.xml'),
+        /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.core<\/artifactId>\s+<version>\${project.version}<\/version>/
+      );
       result.assertFileContent(
         path.join(fullPath, 'pom.xml'),
         /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.apps<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/
@@ -326,11 +328,14 @@ test('writing/installing - merges existing pom', async (t) => {
         path.join(fullPath, 'pom.xml'),
         /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.config<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/
       );
-      // Result.assertFileContent(
-      //   path.join(fullPath, 'pom.xml'),
-      //   /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.content<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/
-      // );
-      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>org.apache.commons<\/groupId>\s+<artifactId>commons-lang3<\/artifactId>\s+<version>3.11<\/version>/);
+      result.assertFileContent(
+        path.join(fullPath, 'pom.xml'),
+        /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.content<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/
+      );
+      result.assertFileContent(
+        path.join(fullPath, 'pom.xml'),
+        /<groupId>org.apache.commons<\/groupId>\s+<artifactId>commons-lang3<\/artifactId>\s+<version>3.11<\/version>/
+      );
 
       result.assertFileContent(path.join(fullPath, 'pom.xml'), /<id>precompiledScripts<\/id>/);
     });

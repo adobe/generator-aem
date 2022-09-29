@@ -21,13 +21,11 @@ import tempDirectory from 'temp-dir';
 
 import test from 'ava';
 import helpers from 'yeoman-test';
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import { addDependenciesToPom, addModulesToPom, addPropertyToPom, fixturePath, generatorPath } from '../../../fixtures/helpers.js';
 import { init, writeInstall } from '../../../fixtures/generators/wrappers.js';
 
 import { bundleGav, contentGav, configGav, versionStruct, exampleConfigGav, exampleAppsGav, exampleContentGav } from '../../../../generators/mixin-cc/index.js';
-import PomUtils from '../../../../lib/pom-utils.js';
 import AllPackageModuleCoreComponentMixin from '../../../../generators/mixin-cc/all/index.js';
 
 const resolved = generatorPath('mixin-cc', 'all', 'index.js');

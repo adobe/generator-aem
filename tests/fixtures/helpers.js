@@ -80,11 +80,10 @@ export function addPropertyToPom(temporaryDir, name, value) {
   const proj = PomUtils.findPomNodeArray(pomData, 'project');
 
   const pomProperties = PomUtils.findPomNodeArray(proj, 'properties');
-  const tmp = {};
-  tmp[name] = [{ '#text': value }]
-  pomProperties.push(tmp);
+  const temporary = {};
+  temporary[name] = [{ '#text': value }];
+  pomProperties.push(temporary);
   fs.writeFileSync(pom, PomUtils.fixXml(builder.build(pomData)));
-
 }
 
 export function addDependenciesToPom(temporaryDir, toAdd = []) {

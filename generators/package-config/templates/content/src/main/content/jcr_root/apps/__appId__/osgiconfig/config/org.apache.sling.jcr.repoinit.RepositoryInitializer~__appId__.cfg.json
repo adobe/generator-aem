@@ -37,17 +37,6 @@
     "    allow crx:replicate for content-authors",
     "    allow jcr:versionManagement, rep:write, crx:replicate, jcr:lockManagement for template-authors",
     "    allow jcr:versionManagement, rep:write for version-manager-service",
-    "end",
-
-
-    "create path /content/dam/<%= appId %>/jcr:content(nt:unstructured)",
-
-    "create path /content/dam/<%= appId %>(sling:OrderedFolder)",
-    "create path /content/dam/<%= appId %>/jcr:content(nt:unstructured)",
-    "set properties on /content/dam/<%= appId %>/jcr:content",
-    "   set cq:conf{String} to /conf/<%= appId %>",
-    "   set jcr:title{String} to \"<%= name %>\"",
     "end"
-
   ]
 }

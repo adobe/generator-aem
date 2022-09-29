@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+          xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+          xmlns:cq="http://www.day.com/jcr/cq/1.0"
+          jcr:primaryType="nt:unstructured"
+          jcr:title="Page Title"
+          jcr:description="Allows only H1 and disallows links for the main page title."
+          sling:resourceType="wcm/core/components/policy/policy"
+          allowedTypes="h1"
+          linkDisabled="true"
+          type="h1">
+  <jcr:content jcr:primaryType="nt:unstructured"/>
+</jcr:root>

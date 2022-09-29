@@ -24,14 +24,14 @@ import test from 'ava';
 import helpers from 'yeoman-test';
 import sinon from 'sinon/pkg/sinon-esm.js';
 
-import { XMLParser } from 'fast-xml-parser';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import ContentPackageGenerator from '../../../generators/package-content/index.js';
+import PomUtils, { filevaultPlugin } from '../../../lib/pom-utils.js';
 import { init, prompt, config, wrapDefault, writeInstall } from '../../fixtures/generators/wrappers.js';
-import { generatorPath, fixturePath, addModulesToPom, cloudSdkApiMetadata, aem65ApiMetadata } from '../../fixtures/helpers.js';
+import { generatorPath, fixturePath, addModulesToPom, cloudSdkApiMetadata } from '../../fixtures/helpers.js';
 import { generatorName as bundleGeneratorName } from '../../../generators/bundle/index.js';
 import { generatorName as appsGeneratorName } from '../../../generators/package-apps/index.js';
-import { generatorName as configGeneratorName } from '../../../generators/package-config/index.js';
 
 const resolved = generatorPath('package-content', 'index.js');
 const ContentInit = init(ContentPackageGenerator, resolved);
@@ -314,7 +314,7 @@ test('prompting - country', async (t) => {
 
       result.generator.props.singleCountry = true;
       delete result.generator.props.country;
-      t.false(await prompt.when(), 'Does not prompt.');
+      t.true(await prompt.when(), 'Prompts.');
     });
 });
 
@@ -369,16 +369,12 @@ test('default - no templates', async (t) => {
       .withOptions({ props: { templates: false } })
       .inDir(fullPath, () => {
         fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-        addModulesToPom(temporaryDir, ['ui.config']);
-        fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
-        fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': {} }));
+        addModulesToPom(temporaryDir, ['ui.apps.structure']);
+        fs.mkdirSync(path.join(temporaryDir, 'ui.apps.structure'));
+        fs.writeFileSync(path.join(temporaryDir, 'ui.apps.structure', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': {} }));
       })
       .run()
   );
-});
-
-test('default - examples fails on no bundle module', async (t) => {
-  t.fail('Not Implemented');
 });
 
 test('default - templates fails on no apps module', async (t) => {
@@ -444,6 +440,11 @@ test('writing/installing - cloud - no examples', async (t) => {
         artifactId: 'test.ui.content',
         name: 'Test Module - Content Package',
         appId: 'test',
+        examples: false,
+        templates: false,
+        language: 'en',
+        country: 'us',
+        enableDynamicMedia: false,
       },
       parentProps: {
         groupId: 'com.adobe.test',
@@ -455,11 +456,11 @@ test('writing/installing - cloud - no examples', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, ['ui.config']);
+      addModulesToPom(temporaryDir, ['ui.apps.structure']);
 
-      fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
-      fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { artifactId: 'test.ui.config' } }));
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps.structure'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'), path.join(temporaryDir, 'ui.apps.structure', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps.structure', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { artifactId: 'test.ui.apps.structure' } }));
     })
     .run()
     .then((result) => {
@@ -478,14 +479,16 @@ test('writing/installing - cloud - no examples', async (t) => {
       t.is(pomData.project.name, 'Test Module - Content Package', 'Name set.');
 
       const root = result.generator.destinationPath('src', 'main', 'content', 'jcr_root');
+      const wcm = path.join(root, 'conf', 'test', 'settings', 'wcm');
+
       result.assertFile(path.join(root, 'conf', 'test', '_sling_configs', '.content.xml'));
       result.assertFile(path.join(root, 'conf', 'test', 'settings', 'cloudconfigs', '.content.xml'));
       result.assertFile(path.join(root, 'conf', 'test', 'settings', 'dam', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', 'policies', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', 'segments', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', 'template-types', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', 'templates', '.content.xml'));
+      result.assertFile(path.join(wcm, '.content.xml'));
+      result.assertFile(path.join(wcm, 'policies', '.content.xml'));
+      result.assertFile(path.join(wcm, 'segments', '.content.xml'));
+      result.assertFile(path.join(wcm, 'template-types', '.content.xml'));
+      result.assertFile(path.join(wcm, 'templates', '.content.xml'));
       result.assertFile(path.join(root, 'content', 'test', '.content.xml'));
       result.assertFile(path.join(root, 'content', 'dam', 'test', '.content.xml'));
       result.assertFile(path.join(root, 'content', 'experience-fragments', 'test', '.content.xml'));
@@ -495,10 +498,7 @@ test('writing/installing - cloud - no examples', async (t) => {
     });
 });
 
-
-test('writing/installing - cloud - templates, no examples', async (t) => {
-  t.plan(5);
-
+test('writing/installing - cloud - templates, no examples', async () => {
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'ui.content');
   await helpers
@@ -509,6 +509,12 @@ test('writing/installing - cloud - templates, no examples', async (t) => {
         artifactId: 'test.ui.content',
         name: 'Test Module - Content Package',
         appId: 'test',
+        templates: true,
+        examples: false,
+        singleCountry: true,
+        language: 'en',
+        country: 'us',
+        enableDynamicMedia: false,
       },
       parentProps: {
         groupId: 'com.adobe.test',
@@ -520,49 +526,95 @@ test('writing/installing - cloud - templates, no examples', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, ['ui.config']);
+      addModulesToPom(temporaryDir, ['ui.apps.structure']);
 
-      fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
-      fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { artifactId: 'test.ui.config' } }));
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps.structure'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'), path.join(temporaryDir, 'ui.apps.structure', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps.structure', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-structure': { artifactId: 'test.ui.apps.structure' } }));
     })
     .run()
     .then((result) => {
-      result.assertFileContent(path.join(temporaryDir, 'pom.xml'), /<module>ui.content<\/module>/);
-      const pomString = fs.readFileSync(path.join(fullPath, 'pom.xml'), { encoding: 'utf8' });
-      const parser = new XMLParser({
-        ignoreAttributes: true,
-        ignoreDeclaration: true,
-      });
+      const root = result.generator.destinationPath('src', 'main', 'content', 'jcr_root');
+      const wcm = path.join(root, 'conf', 'test', 'settings', 'wcm');
 
-      const pomData = parser.parse(pomString);
-      t.is(pomData.project.parent.groupId, 'com.adobe.test', 'Parent groupId set.');
-      t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
-      t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-      t.is(pomData.project.artifactId, 'test.ui.content', 'ArtifactId set.');
-      t.is(pomData.project.name, 'Test Module - Content Package', 'Name set.');
+      result.assertFile(path.join(wcm, 'template-types', 'page', '.content.xml'));
+      result.assertFile(path.join(wcm, 'template-types', 'xf', '.content.xml'));
+
+      result.assertFile(path.join(wcm, 'templates', 'page-content', '.content.xml'));
+      result.assertFile(path.join(wcm, 'templates', 'xf-web-variation', '.content.xml'));
+
+      result.assertFileContent(path.join(wcm, 'policies', 'test', 'components', 'image', 'content', '.content.xml'), /enableAssetDelivery="true"/);
+
+      result.assertFile(path.join('target', 'test.ui.content-1.0.0-SNAPSHOT.zip'));
+    });
+});
+
+test('writing/installing - v6.5 - single site', async () => {
+  const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
+  const fullPath = path.join(temporaryDir, 'ui.content');
+  await helpers
+    .create(ContentWriteInstall)
+    .withOptions({
+      showBuildOutput: false,
+      props: {
+        artifactId: 'test.ui.content',
+        name: 'Test Module - Content Package',
+        appId: 'test',
+        templates: true,
+        examples: true,
+        singleCountry: true,
+        language: 'pt',
+        country: 'br',
+        enableDynamicMedia: true,
+      },
+      parentProps: {
+        name: 'Test Project',
+        groupId: 'com.adobe.test',
+        artifactId: 'test',
+        version: '1.0.0-SNAPSHOT',
+        aem: cloudSdkApiMetadata,
+        aemVersion: 'cloud',
+      },
+    })
+    .inDir(fullPath, () => {
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+      addModulesToPom(temporaryDir, ['ui.apps.structure']);
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps.structure'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'), path.join(temporaryDir, 'ui.apps.structure', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps.structure', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-structure': { artifactId: 'test.ui.apps.structure' } }));
+    })
+    .run()
+    .then((result) => {
+      const country = new Intl.DisplayNames(['pt'], { type: 'region' }).of('BR');
+      const language = new Intl.DisplayNames(['pt'], { type: 'language' }).of('pt');
 
       const root = result.generator.destinationPath('src', 'main', 'content', 'jcr_root');
-      result.assertFile(path.join(root, 'conf', 'test', '_sling_configs', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'cloudconfigs', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'dam', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', 'policies', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', 'segments', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', 'template-types', '.content.xml'));
-      result.assertFile(path.join(root, 'conf', 'test', 'settings', 'wcm', 'templates', '.content.xml'));
-      result.assertFile(path.join(root, 'content', 'test', '.content.xml'));
-      result.assertFile(path.join(root, 'content', 'dam', 'test', '.content.xml'));
-      result.assertFile(path.join(root, 'content', 'experience-fragments', 'test', '.content.xml'));
-      result.assertFile(path.join('src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'));
+      const wcm = path.join(root, 'conf', 'test', 'settings', 'wcm');
+
+      result.assertNoFile(path.join(root, 'content', 'test', 'language-masters', '.content.xml'));
+
+      result.assertFileContent(path.join(wcm, 'templates', 'page-content', 'structure', '.content.xml'), /fragmentVariationPath="\/content\/experience-fragments\/test\/br\/pt\/site\/header\/master"/);
+      result.assertFileContent(path.join(wcm, 'templates', 'page-content', 'structure', '.content.xml'), /fragmentVariationPath="\/content\/experience-fragments\/test\/br\/pt\/site\/footer\/master"/);
+
+      result.assertNoFileContent(path.join(root, 'content', 'test', '.content.xml'), /<langauge-masters \/>/);
+      result.assertFileContent(path.join(root, 'content', 'test', '.content.xml'), /<br \/>/);
+
+      result.assertFileContent(path.join(root, 'content', 'test', 'br', '.content.xml'), new RegExp(`jcr:title="${country}"`));
+      result.assertFileContent(path.join(root, 'content', 'test', 'br', 'pt', '.content.xml'), new RegExp(`jcr:title="${language}"`));
+      result.assertNoFileContent(path.join(root, 'content', 'test', 'br', 'pt', '.content.xml'), /cq:LiveRelationship/);
+      result.assertNoFileContent(path.join(root, 'content', 'test', 'br', 'pt', '.content.xml'), /cq:LiveSyncConfig/);
+
+      result.assertNoFileContent(path.join(root, 'content', 'experience-fragments', 'test', '.content.xml'), /<langauge-masters \/>/);
+      result.assertFileContent(path.join(root, 'content', 'experience-fragments', 'test', '.content.xml'), /<br \/>/);
+      result.assertFileContent(path.join(root, 'content', 'experience-fragments', 'test', 'br', '.content.xml'), new RegExp(`jcr:title="${country}"`));
+      result.assertFileContent(path.join(root, 'content', 'experience-fragments', 'test', 'br', 'pt', '.content.xml'), new RegExp(`jcr:title="${language}"`));
 
       result.assertFile(path.join('target', 'test.ui.content-1.0.0-SNAPSHOT.zip'));
     });
 });
 
-test('writing/installing - v6.5 - single site', async (t) => {
-  t.plan(5);
-
+test('writing/installing - cloud - multi site', async () => {
   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
   const fullPath = path.join(temporaryDir, 'ui.content');
   await helpers
@@ -573,8 +625,16 @@ test('writing/installing - v6.5 - single site', async (t) => {
         artifactId: 'test.ui.content',
         name: 'Test Module - Content Package',
         appId: 'test',
+        templates: true,
+        examples: true,
+        singleCountry: false,
+        language: 'pt',
+        country: 'br',
+        enableDynamicMedia: true,
+        apps: 'test.ui.apps',
       },
       parentProps: {
+        name: 'Test Project',
         groupId: 'com.adobe.test',
         artifactId: 'test',
         version: '1.0.0-SNAPSHOT',
@@ -584,143 +644,88 @@ test('writing/installing - v6.5 - single site', async (t) => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, ['ui.config']);
+      addModulesToPom(temporaryDir, ['ui.apps.structure', 'ui.apps']);
 
-      fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
-      fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { artifactId: 'test.ui.config' } }));
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps.structure'));
+      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'), path.join(temporaryDir, 'ui.apps.structure', 'pom.xml'));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps.structure', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-structure': { artifactId: 'test.ui.apps.structure' } }));
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps'));
+      fs.cpSync(fixturePath('projects', 'cloud', 'ui.apps'), path.join(temporaryDir, 'ui.apps'), { recursive: true });
+
+      const pomFile = path.join(temporaryDir, 'ui.apps', 'pom.xml');
+      const parsedPom = new XMLParser(PomUtils.xmlOptions).parse(fs.readFileSync(pomFile));
+      const deps = PomUtils.findPomNodeArray(parsedPom, 'project', 'dependencies');
+      /* eslint-disable no-template-curly-in-string */
+
+      PomUtils.addDependencies(deps, [
+        {
+          dependency: [
+            { groupId: [{ '#text': '${project.groupId}' }] },
+            { artifactId: [{ '#text': 'test.ui.apps.structure' }] },
+            { version: [{ '#text': '${project.version}' }] },
+            { type: [{ '#text': 'zip' }] },
+          ],
+        },
+      ]);
+      /* eslint-enable no-template-curly-in-string */
+
+      // Filevault Plugin Logic
+      const plugins = PomUtils.findPomNodeArray(parsedPom, 'project', 'build', 'plugins');
+      const fvPlugin = _.find(plugins, (plugin) => {
+        if (!plugin.plugin) {
+          return false;
+        }
+
+        return _.find(plugin.plugin, (def) => {
+          return def.artifactId && def.artifactId[0]['#text'] === filevaultPlugin;
+        });
+      }).plugin;
+      const fvPluginConfig = PomUtils.findPomNodeArray(fvPlugin, 'configuration');
+      /* eslint-disable no-template-curly-in-string */
+      fvPluginConfig.push({
+        repositoryStructurePackages: [
+          {
+            repositoryStructurePackage: [{ groupId: [{ '#text': '${project.groupId}' }] }, { artifactId: [{ '#text': 'test.ui.apps.structure' }] }],
+          },
+        ],
+      });
+      /* eslint-enable no-template-curly-in-string */
+
+      fs.writeFileSync(pomFile, PomUtils.fixXml(new XMLBuilder(PomUtils.xmlOptions).build(parsedPom)));
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { artifactId: 'test.ui.apps' } }));
     })
     .run()
     .then((result) => {
+      const country = new Intl.DisplayNames(['pt'], { type: 'region' }).of('BR');
+      const language = new Intl.DisplayNames(['pt'], { type: 'language' }).of('pt');
+
+      const root = result.generator.destinationPath('src', 'main', 'content', 'jcr_root');
+      const wcm = path.join(root, 'conf', 'test', 'settings', 'wcm');
+
+      result.assertFile(path.join(root, 'content', 'test', 'language-masters', '.content.xml'));
+      result.assertFile(path.join(root, 'content', 'test', 'language-masters', 'pt', '.content.xml'));
+
+      result.assertFileContent(
+        path.join(wcm, 'templates', 'page-content', 'structure', '.content.xml'),
+        /fragmentVariationPath="\/content\/experience-fragments\/test\/language-masters\/pt\/site\/header\/master"/
+      );
+      result.assertFileContent(
+        path.join(wcm, 'templates', 'page-content', 'structure', '.content.xml'),
+        /fragmentVariationPath="\/content\/experience-fragments\/test\/language-masters\/pt\/site\/footer\/master"/
+      );
+
+      result.assertFileContent(path.join(root, 'content', 'test', 'br', '.content.xml'), new RegExp(`jcr:title="${country}"`));
+      result.assertFileContent(path.join(root, 'content', 'test', 'br', 'pt', '.content.xml'), new RegExp(`jcr:title="${language}"`));
+
+      result.assertFileContent(path.join(root, 'content', 'test', 'br', 'pt', '.content.xml'), /cq:LiveRelationship/);
+
+      result.assertFileContent(path.join(root, 'content', 'test', 'br', 'pt', '.content.xml'), /cq:LiveSyncConfig/);
+
+      const appDir = path.join(path.dirname(result.generator.destinationPath()), 'ui.apps');
+      result.assertFile(path.join(appDir, 'src', 'main', 'content', 'jcr_root', 'apps', 'msm', 'test_blueprint', '.content.xml'));
+      result.assertFileContent(path.join(appDir, 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml'), /<filter root="\/apps\/msm\/test_blueprint" mode="merge"\/>/);
+
+      result.assertFile(path.join('target', 'test.ui.content-1.0.0-SNAPSHOT.zip'));
     });
 });
-
-test('writing/installing - cloud - multi site', async (t) => {
-  t.fail('Not Implemented');
-  // TODO: Test for adding MSM folder to ui.apps module.
-});
-
-// Test.serial('via @adobe/generator-aem - v6.5 - no references', async (t) => {
-//   t.plan(5);
-//   // I think this test is to fail package creation if no apps or no config project found.
-//   sinon.restore();
-//   const stub = sinon.stub().resolves(aem65ApiMetadata);
-//   sinon.replace(ParentPomGenerator.prototype, '_latestRelease', stub);
-//
-//   await helpers
-//     .create(generatorPath('app'))
-//     .withGenerators([[ContentPackageGenerator, '@adobe/aem:package-content', generatorPath('package-content', 'index.js')]])
-//     .withOptions({
-//       defaults: true,
-//       examples: true,
-//       appId: 'test',
-//       name: 'Test Project',
-//       groupId: 'com.adobe.test',
-//       aemVersion: '6.5',
-//       modules: 'package-content',
-//       showBuildOutput: false,
-//     })
-//     .run()
-//     .then((result) => {
-//       sinon.restore();
-//       const properties = result.generator.props;
-//       const outputRoot = result.generator.destinationPath();
-//       const moduleDir = path.join(outputRoot, 'ui.content');
-//       result.assertFileContent(path.join(outputRoot, 'pom.xml'), /<module>ui\.content<\/module>/);
-//
-//       const pom = path.join(moduleDir, 'pom.xml');
-//       result.assertFile(pom);
-//       const pomString = fs.readFileSync(pom, { encoding: 'utf8' });
-//       const parser = new XMLParser({
-//         ignoreAttributes: true,
-//         ignoreDeclaration: true,
-//       });
-//
-//       const pomData = parser.parse(pomString);
-//       t.is(pomData.project.parent.groupId, properties.groupId, 'Parent groupId set.');
-//       t.is(pomData.project.parent.artifactId, 'test', 'Parent artifactId set.');
-//       t.is(pomData.project.parent.version, '1.0.0-SNAPSHOT', 'Parent version set.');
-//       t.is(pomData.project.artifactId, 'test.ui.content', 'ArtifactId set.');
-//       t.is(pomData.project.name, 'Test Project - UI Content Package', 'Name set.');
-//
-//       const confPath = path.join(moduleDir, 'src', 'main', 'content', 'jcr_root', 'conf', 'test');
-//       const contentPath = path.join(moduleDir, 'src', 'main', 'content', 'jcr_root', 'content', 'test');
-//       const damPath = path.join(moduleDir, 'src', 'main', 'content', 'jcr_root', 'content', 'dam', 'test');
-//       const xfPath = path.join(moduleDir, 'src', 'main', 'content', 'jcr_root', 'content', 'experience-fragments', 'test');
-//
-//       const filter = path.join(moduleDir, 'src', 'main', 'content', 'META-INF', 'vault', 'filter.xml');
-//       result.assertFileContent(filter, /\/conf\/test/);
-//       result.assertFileContent(filter, /\/content\/test/);
-//       result.assertFileContent(filter, /\/content\/dam\/test/);
-//       result.assertFileContent(filter, /\/content\/experience-fragments\/test/);
-//       result.assertFile(path.join(moduleDir, 'target', `${properties.artifactId}.ui.content-${properties.version}.zip`));
-//     });
-// });
-//
-// test('no apps module - errors', async (t) => {
-//   t.plan(2);
-//
-//   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-//   const fullPath = path.join(temporaryDir, 'test');
-//
-//   const error = await t.throwsAsync(
-//     helpers
-//       .create(generatorPath('package-content'))
-//       .withOptions({
-//         generateInto: 'ui.content',
-//         name: 'Test Content',
-//         appId: 'test',
-//       })
-//       .inDir(fullPath, (temporary) => {
-//         fs.cpSync(fixturePath('projects', 'cloud'), temporary, { recursive: true });
-//         // Delete additional things to reduce context
-//         const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
-//         delete data['@adobe/generator-aem'].all;
-//         delete data['@adobe/generator-aem'].core;
-//         delete data['@adobe/generator-aem']['ui.apps'];
-//         delete data['@adobe/generator-aem']['ui.config'];
-//         delete data['@adobe/generator-aem']['ui.apps.structure'];
-//         delete data['@adobe/generator-aem']['it.tests'];
-//         delete data['@adobe/generator-aem']['ui.frontend'];
-//         delete data['@adobe/generator-aem'].dispatcher;
-//         fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
-//       })
-//       .run()
-//   );
-//
-//   t.regex(error.message, /Unable to create Content Package, no Apps Module found\./);
-// });
-//
-// test('no config module - errors', async (t) => {
-//   t.plan(2);
-//
-//   const temporaryDir = path.join(tempDirectory, crypto.randomBytes(20).toString('hex'));
-//   const fullPath = path.join(temporaryDir, 'test');
-//
-//   const error = await t.throwsAsync(
-//     helpers
-//       .create(generatorPath('package-content'))
-//       .withOptions({
-//         generateInto: 'ui.content',
-//         name: 'Test Content',
-//         appId: 'test',
-//       })
-//       .withPrompts({ appsRef: 'ui.apps' })
-//       .inDir(fullPath, (temporary) => {
-//         fs.cpSync(fixturePath('projects', 'cloud'), temporary, { recursive: true });
-//         // Delete additional things to reduce context
-//         const data = JSON.parse(fs.readFileSync(path.join(temporary, '.yo-rc.json')));
-//         delete data['@adobe/generator-aem'].all;
-//         delete data['@adobe/generator-aem'].core;
-//         delete data['@adobe/generator-aem']['ui.config'];
-//         delete data['@adobe/generator-aem']['ui.apps.structure'];
-//         delete data['@adobe/generator-aem']['it.tests'];
-//         delete data['@adobe/generator-aem']['ui.frontend'];
-//         delete data['@adobe/generator-aem'].dispatcher;
-//         fs.writeFileSync(path.join(temporary, '.yo-rc.json'), JSON.stringify(data, null, 2));
-//       })
-//       .run()
-//   );
-//
-//   t.regex(error.message, /Unable to create Content Package, no Config Module found\./);
-// });

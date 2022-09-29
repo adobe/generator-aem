@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+          xmlns:sling="http://sling.apache.org/jcr/sling/1.0"
+          xmlns:cq="http://www.day.com/jcr/cq/1.0"
+          jcr:primaryType="nt:unstructured"
+          jcr:title="Page Root"
+          jcr:description="Allows the template components and defines the component mapping (this configures what components should be automatically created when authors drop assets from the content finder to the page editor)."
+          sling:resourceType="wcm/core/components/policy/policy"
+          components="[group:<%= parent.name %> - Content,/apps/<%= appId %>/components/form/container]">
+  <jcr:content jcr:primaryType="nt:unstructured"/>
+  <cq:authoring jcr:primaryType="nt:unstructured">
+    <assetToComponentMapping jcr:primaryType="nt:unstructured">
+      <image
+        jcr:primaryType="nt:unstructured"
+        assetGroup="media"
+        assetMimetype="image/*"
+        droptarget="image"
+        resourceType="<%= appId %>/components/image"/>
+      <experiencefragment
+        jcr:primaryType="nt:unstructured"
+        assetGroup="content"
+        assetMimetype="text/html"
+        droptarget="experiencefragment"
+        resourceType="<%= appId %>/components/experiencefragment"/>
+      <contentfragment
+        jcr:primaryType="nt:unstructured"
+        assetGroup="media"
+        assetMimetype="[text/html,application/vnd.adobe.contentfragment]"
+        droptarget="contentfragment"
+        resourceType="<%= appId %>/components/contentfragment"/>
+    </assetToComponentMapping>
+  </cq:authoring>
+</jcr:root>

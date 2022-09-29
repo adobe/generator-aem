@@ -20,10 +20,8 @@ import crypto from 'node:crypto';
 import tempDirectory from 'temp-dir';
 
 import test from 'ava';
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 import { addModulesToPom, fixturePath } from '../../fixtures/helpers.js';
-import PomUtils from '../../../lib/pom-utils.js';
 import ModuleMixins from '../../../lib/module-mixins.js';
 
 test('no duplicate', (t) => {
@@ -34,7 +32,7 @@ test('no duplicate', (t) => {
 
   fs.mkdirSync(fullPath, { recursive: true });
   fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-  addModulesToPom(temporaryDir, ['someother', 'module'])
+  addModulesToPom(temporaryDir, ['someother', 'module']);
 
   fs.mkdirSync(path.join(temporaryDir, 'someother'), { recursive: true });
 
@@ -74,7 +72,7 @@ test('same folder', (t) => {
   fs.mkdirSync(fullPath, { recursive: true });
   fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
 
-  addModulesToPom(temporaryDir, ['module'])
+  addModulesToPom(temporaryDir, ['module']);
 
   fs.writeFileSync(path.join(temporaryDir, 'module', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:test': {} }));
 
@@ -111,7 +109,7 @@ test('duplicate', (t) => {
 
   fs.mkdirSync(fullPath, { recursive: true });
   fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-  addModulesToPom(temporaryDir, ['test', 'module'])
+  addModulesToPom(temporaryDir, ['test', 'module']);
   fs.mkdirSync(path.join(temporaryDir, 'test'));
   fs.writeFileSync(path.join(temporaryDir, 'test', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:test': {} }));
 

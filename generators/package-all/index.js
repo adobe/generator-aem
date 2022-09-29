@@ -28,6 +28,7 @@ import PomUtils, { filevaultPlugin } from '../../lib/pom-utils.js';
 import { generatorName as bundleGeneratorName } from '../bundle/index.js';
 import { generatorName as configGeneratorName } from '../package-config/index.js';
 import { generatorName as appsGeneratorName } from '../package-apps/index.js';
+import { generatorName as contentGeneratorName } from '../package-content/index.js';
 
 export const generatorName = '@adobe/generator-aem:package-all';
 const analyserCoordinates = {
@@ -125,7 +126,7 @@ class AllPackageGenerator extends Generator {
         embeddeds.push({ artifactId: module.artifactId, classifier: 'precompiled-scripts' });
       }
     });
-    _.each([configGeneratorName], (type) => {
+    _.each([configGeneratorName, contentGeneratorName], (type) => {
       const modules = this._findModules(type);
       _.each(modules, (module) => {
         embeddeds.push({ artifactId: module.artifactId, type: 'zip' });

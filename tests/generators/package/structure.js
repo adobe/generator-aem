@@ -67,7 +67,7 @@ test('writing/installing', async (t) => {
       );
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
+      fs.cpSync(fixturePath('projects', 'cloud', 'ui.config'), path.join(temporaryDir, 'ui.config'), { recursive: true });
       fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { appId: 'config' } }));
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
@@ -142,7 +142,7 @@ test('writing/installing - merges existing filters', async (t) => {
       );
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.config'));
-      fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.config', 'pom.xml'), path.join(temporaryDir, 'ui.config', 'pom.xml'));
+      fs.cpSync(fixturePath('projects', 'cloud', 'ui.config'), path.join(temporaryDir, 'ui.config'), { recursive: true });
       fs.writeFileSync(path.join(temporaryDir, 'ui.config', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-config': { appId: 'config' } }));
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.content', 'src', 'main', 'content', 'META-INF', 'vault'), { recursive: true });
