@@ -61,6 +61,8 @@ test('initializing - defaults', async (t) => {
         templates: true,
         singleCountry: true,
         language: 'en',
+        country: 'us',
+        enableDynamicMedia: false,
       };
 
       t.deepEqual(result.generator.props, expected, 'Properties set.');
@@ -143,7 +145,7 @@ test.serial('initializing - lookups & but does not set modules > 1 ', async (t) 
 });
 
 test('prompting - templates', async (t) => {
-  t.plan(4);
+  t.plan(6);
 
   await helpers
     .create(ContentPrompt)
@@ -159,14 +161,21 @@ test('prompting - templates', async (t) => {
       const prompts = result.generator.prompts;
       const prompt = _.find(prompts, { name: 'templates' });
       t.true(prompt.default, 'Default is set.');
-      t.true(await prompt.when(), 'Prompts.');
 
       result.generator.options.defaults = true;
-      t.false(await prompt.when(), 'Does not prompt.');
+      t.false(await prompt.when({}), 'Does not prompt.');
+      delete result.generator.options.defaults;
+
+      // Examples question comes first, if it's true we must have templates to support
+      result.generator.props.examples = true;
+      t.false(await prompt.when({}), 'Does not prompt.');
+      delete result.generator.props.examples;
+      t.false(await prompt.when({ examples: true }), 'Does not prompt.');
+
+      t.true(await prompt.when({}), 'Prompts.');
 
       result.generator.props.templates = true;
-      delete result.generator.options.defaults;
-      t.false(await prompt.when(), 'Does not prompt.');
+      t.false(await prompt.when({}), 'Does not prompt.');
     });
 });
 
@@ -318,27 +327,62 @@ test('prompting - country', async (t) => {
     });
 });
 
+test('prompting - enableDynamicMedia', async (t) => {
+  t.plan(5);
+
+  await helpers
+    .create(ContentPrompt)
+    .withOptions({
+      props: {
+        bundle: 'prompted',
+        apps: 'prompted',
+      },
+    })
+    .run()
+    .then(async (result) => {
+      delete result.generator.props.enableDynamicMedia;
+
+      const prompts = result.generator.prompts;
+      const prompt = _.find(prompts, { name: 'enableDynamicMedia' });
+      t.is(prompt.default, false, 'Default is set.');
+
+      result.generator.options.defaults = true;
+      t.false(await prompt.when({}), 'Does not prompt.');
+
+      delete result.generator.options.defaults;
+      result.generator.props.templates = true;
+      t.true(await prompt.when({}), 'Prompts.');
+
+      delete result.generator.props.templates;
+      t.true(await prompt.when({ templates: true }), 'Prompts.');
+
+      t.false(await prompt.when({ templates: false }), 'Does not prompt.');
+    });
+});
+
 test('prompting - post-processing', async (t) => {
   t.plan(1);
   await helpers
     .create(ContentPrompt)
     .withPrompts({
-      templates: false,
+      templates: true,
       bundleRef: 'prompted',
       appsRef: 'prompted',
       singleCountry: false,
       language: 'es',
       country: 'mx',
+      enableDynamicMedia: false,
     })
     .run()
     .then((result) => {
       const expected = {
-        templates: false,
+        templates: true,
         bundle: 'prompted',
         apps: 'prompted',
         singleCountry: false,
         language: 'es',
         country: 'mx',
+        enableDynamicMedia: false,
       };
       t.deepEqual(result.generator.props, expected, 'Properties correct.');
     });
@@ -435,7 +479,7 @@ test('writing/installing - cloud - no examples', async (t) => {
   await helpers
     .create(ContentWriteInstall)
     .withOptions({
-      showBuildOutput: false,
+      showBuildOutput: true,
       props: {
         artifactId: 'test.ui.content',
         name: 'Test Module - Content Package',
@@ -514,7 +558,7 @@ test('writing/installing - cloud - templates, no examples', async () => {
         singleCountry: true,
         language: 'en',
         country: 'us',
-        enableDynamicMedia: false,
+        enableDynamicMedia: true,
       },
       parentProps: {
         groupId: 'com.adobe.test',
@@ -544,7 +588,8 @@ test('writing/installing - cloud - templates, no examples', async () => {
       result.assertFile(path.join(wcm, 'templates', 'xf-web-variation', '.content.xml'));
 
       result.assertFileContent(path.join(wcm, 'policies', 'test', 'components', 'image', 'content', '.content.xml'), /enableAssetDelivery="true"/);
-
+      result.assertFileContent(path.join(wcm, 'policies', 'test', 'components', 'image', 'content', '.content.xml'), /enableDmFeatures="true"/);
+      result.assertFileContent(path.join(wcm, 'policies', 'test', 'components', 'container', 'page-content', '.content.xml'), /,group:Dynamic Media/);
       result.assertFile(path.join('target', 'test.ui.content-1.0.0-SNAPSHOT.zip'));
     });
 });
@@ -565,7 +610,7 @@ test('writing/installing - v6.5 - single site', async () => {
         singleCountry: true,
         language: 'pt',
         country: 'br',
-        enableDynamicMedia: true,
+        enableDynamicMedia: false,
       },
       parentProps: {
         name: 'Test Project',
@@ -593,6 +638,9 @@ test('writing/installing - v6.5 - single site', async () => {
       const wcm = path.join(root, 'conf', 'test', 'settings', 'wcm');
 
       result.assertNoFile(path.join(root, 'content', 'test', 'language-masters', '.content.xml'));
+
+      result.assertNoFileContent(path.join(wcm, 'policies', 'test', 'components', 'image', 'content', '.content.xml'), /enableDmFeatures="true"/);
+      result.assertNoFileContent(path.join(wcm, 'policies', 'test', 'components', 'container', 'page-content', '.content.xml'), /,group:Dynamic Media/);
 
       result.assertFileContent(path.join(wcm, 'templates', 'page-content', 'structure', '.content.xml'), /fragmentVariationPath="\/content\/experience-fragments\/test\/br\/pt\/site\/header\/master"/);
       result.assertFileContent(path.join(wcm, 'templates', 'page-content', 'structure', '.content.xml'), /fragmentVariationPath="\/content\/experience-fragments\/test\/br\/pt\/site\/footer\/master"/);

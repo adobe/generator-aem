@@ -118,20 +118,16 @@ export const ModuleOptions = Object.freeze({
     if (parentProps.defaults) {
       _.merge(options, {
         artifactId: `${parentProps.artifactId}.ui.content`,
+        bundleRef: 'core',
         appsRef: 'ui.apps',
-        configRef: 'ui.config',
       });
     } else {
+      if (modules.bundle && _.keys(modules.bundle).length === 1) {
+        options.bundleRef = modules.bundle[_.keys(modules.bundle)[0]].artifactId;
+      }
+
       if (modules['package-apps'] && _.keys(modules['package-apps']).length === 1) {
         options.appsRef = modules['package-apps'][_.keys(modules['package-apps'])[0]].artifactId;
-      }
-
-      if (modules['package-config'] && _.keys(modules['package-config']).length === 1) {
-        options.configRef = modules['package-config'][_.keys(modules['package-config'])[0]].artifactId;
-      }
-
-      if (modules['package-structure'] && _.keys(modules['package-structure']).length > 0) {
-        options.structureRef = modules['package-structure'][_.keys(modules['package-structure'])[0]].artifactId;
       }
     }
 

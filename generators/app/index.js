@@ -74,6 +74,7 @@ const modulesDefault = Object.freeze({
   'package-structure': { 'ui.apps.structure': {} },
   'package-apps': { 'ui.apps': {} },
   'package-config': { 'ui.config': {} },
+  'package-content': { 'ui.content': {} },
   'package-all': { all: {} },
   'tests-it': { 'it.tests': {} },
   dispatcher: { dispatcher: {} },
@@ -286,6 +287,7 @@ class AEMGenerator extends Generator {
           { name: 'Apps Structure', value: 'package-structure' },
           { name: 'Apps', value: 'package-apps' },
           { name: 'Config', value: 'package-config' },
+          { name: 'Content', value: 'package-content' },
           { name: 'All', value: 'package-all' },
           new inquirer.Separator('---- Test Modules ----'),
           // { name: 'UI Test', value: 'test-ui' },
@@ -396,6 +398,15 @@ class AEMGenerator extends Generator {
         default: 'ui.config',
         when: (answers) => {
           return this._moduleNameWhen('package-config', answers);
+        },
+        validate: this._checkName,
+      },
+      {
+        name: 'package-content',
+        message: 'What do you want to name the Content package module?',
+        default: 'ui.config',
+        when: (answers) => {
+          return this._moduleNameWhen('package-content', answers);
         },
         validate: this._checkName,
       },

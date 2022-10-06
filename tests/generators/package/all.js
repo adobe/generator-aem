@@ -316,10 +316,7 @@ test('writing/installing - merges existing pom', async (t) => {
         path.join(fullPath, 'pom.xml'),
         /<groupId>org.apache.commons<\/groupId>\s+<artifactId>commons-lang3<\/artifactId>\s+<target>\/apps\/test-vendor-packages\/application\/install<\/target>/
       );
-      result.assertFileContent(
-        path.join(fullPath, 'pom.xml'),
-        /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.core<\/artifactId>\s+<version>\${project.version}<\/version>/
-      );
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.core<\/artifactId>\s+<version>\${project.version}<\/version>/);
       result.assertFileContent(
         path.join(fullPath, 'pom.xml'),
         /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.apps<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/
@@ -332,10 +329,7 @@ test('writing/installing - merges existing pom', async (t) => {
         path.join(fullPath, 'pom.xml'),
         /<groupId>com.adobe.test<\/groupId>\s+<artifactId>test.ui.content<\/artifactId>\s+<version>\${project.version}<\/version>\s+<type>zip<\/type>/
       );
-      result.assertFileContent(
-        path.join(fullPath, 'pom.xml'),
-        /<groupId>org.apache.commons<\/groupId>\s+<artifactId>commons-lang3<\/artifactId>\s+<version>3.11<\/version>/
-      );
+      result.assertFileContent(path.join(fullPath, 'pom.xml'), /<groupId>org.apache.commons<\/groupId>\s+<artifactId>commons-lang3<\/artifactId>\s+<version>3.11<\/version>/);
 
       result.assertFileContent(path.join(fullPath, 'pom.xml'), /<id>precompiledScripts<\/id>/);
     });

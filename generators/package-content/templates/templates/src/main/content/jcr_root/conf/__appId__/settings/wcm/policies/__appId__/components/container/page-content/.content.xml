@@ -7,7 +7,7 @@
           jcr:title="Page Root"
           jcr:description="Allows the template components and defines the component mapping (this configures what components should be automatically created when authors drop assets from the content finder to the page editor)."
           sling:resourceType="wcm/core/components/policy/policy"
-          components="[group:<%= parent.name %> - Content,/apps/<%= appId %>/components/form/container]">
+          components="[group:<%= parent.name %> - Content,/apps/<%= appId %>/components/form/container<%= enableDynamicMedia ? ',group:Dynamic Media' : '' %>]">
   <jcr:content jcr:primaryType="nt:unstructured"/>
   <cq:authoring jcr:primaryType="nt:unstructured">
     <assetToComponentMapping jcr:primaryType="nt:unstructured">

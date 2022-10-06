@@ -49,7 +49,7 @@ class ContentPackageGenerator extends Generator {
 
       appsRef: {
         type: String,
-        desc: 'Artifact UI of the Apps package dependency, in this multi-module project.',
+        desc: 'Artifact Id of the Apps package dependency, in this multi-module project.',
       },
 
       singleCountry: {
@@ -66,7 +66,9 @@ class ContentPackageGenerator extends Generator {
         desc: 'The ISO country code with which to initialize the content structure, when not using single country.',
       },
 
-      dataLayer: {},
+      enableDynamicMedia: {
+        desc: 'Whether or not the Dynamic Media components should be enabled on template policies.',
+      },
     });
 
     _.forOwn(this.moduleOptions, (v, k) => {
@@ -81,7 +83,7 @@ class ContentPackageGenerator extends Generator {
   initializing() {
     this._initializing();
 
-    _.defaults(this.props, _.pick(this.options, ['templates', 'singleCountry', 'language', 'country']));
+    _.defaults(this.props, _.pick(this.options, ['templates', 'singleCountry', 'language', 'country', 'enableDynamicMedia']));
 
     if (this.options.bundleRef) {
       // TODO: is this really necessary?
@@ -101,6 +103,8 @@ class ContentPackageGenerator extends Generator {
         templates: true,
         singleCountry: true,
         language: 'en',
+        country: 'us',
+        enableDynamicMedia: false,
       });
     }
 
@@ -121,9 +125,14 @@ class ContentPackageGenerator extends Generator {
         name: 'templates',
         message: 'Do you want to include the default templates?',
         type: 'confirm',
-        when: () => {
+        when: (answers) => {
           return new Promise((resolve) => {
             if (this.options.defaults) {
+              resolve(false);
+              return;
+            }
+
+            if (this.props.examples || answers.examples) {
               resolve(false);
               return;
             }
@@ -210,6 +219,26 @@ class ContentPackageGenerator extends Generator {
           });
         },
         default: 'us',
+      },
+      {
+        name: 'enableDynamicMedia',
+        message: 'Should Dynamic Media features be enabled?',
+        type: 'confirm',
+        when: (answers) => {
+          return new Promise((resolve) => {
+            if (this.options.defaults) {
+              resolve(false);
+              return;
+            }
+
+            if (this.props.templates || answers.templates || this.props.examples || answers.examples) {
+              resolve(this.props.enableDynamicMedia === undefined);
+            } else {
+              resolve(false);
+            }
+          });
+        },
+        default: false,
       },
     ];
 
