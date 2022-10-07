@@ -164,6 +164,21 @@ export const ModuleOptions = Object.freeze({
 
     return options;
   },
+  'tests-ui'(moduleName, parentProps) {
+    const options = {
+      generateInto: moduleName,
+      appId: parentProps.appId,
+      name: `${parentProps.name} - UI Tests`,
+      artifactId: `${parentProps.artifactId}.${moduleName}`,
+    };
+    if (parentProps.defaults) {
+      _.merge(options, {
+        artifactId: `${parentProps.artifactId}.ui.tests`,
+      });
+    }
+
+    return options;
+  },
   dispatcher(moduleName, parentProps) {
     const options = {
       generateInto: moduleName,

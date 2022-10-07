@@ -51,7 +51,7 @@ export const apiCoordinates = (version) => {
   };
 };
 
-const ModuleOrder = Object.freeze(['bundle', 'frontend-general', 'package-structure', 'package-apps', 'package-config', 'package-content', 'package-all', 'tests-it', 'dispatcher']);
+const ModuleOrder = Object.freeze(['bundle', 'frontend-general', 'package-structure', 'package-apps', 'package-config', 'package-content', 'package-all', 'tests-it', 'tests-ui', 'dispatcher']);
 
 const MixinOrder = Object.freeze(['cc']);
 
@@ -77,6 +77,7 @@ const modulesDefault = Object.freeze({
   'package-content': { 'ui.content': {} },
   'package-all': { all: {} },
   'tests-it': { 'it.tests': {} },
+  'tests-ui': { 'ui.tests': {} },
   dispatcher: { dispatcher: {} },
 });
 
@@ -290,8 +291,8 @@ class AEMGenerator extends Generator {
           { name: 'Content', value: 'package-content' },
           { name: 'All', value: 'package-all' },
           new inquirer.Separator('---- Test Modules ----'),
-          // { name: 'UI Test', value: 'test-ui' },
           { name: 'Integration Test', value: 'tests-it' },
+          { name: 'UI Test', value: 'tests-ui' },
           new inquirer.Separator('---- Dispatcher Module ----'),
           { name: 'Dispatcher', value: 'dispatcher' },
         ],
@@ -300,7 +301,7 @@ class AEMGenerator extends Generator {
             if (_.keys(this.modules).length > 0) {
               resolve(_.keys(this.modules));
             } else {
-              resolve(['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-all', 'tests-it', 'dispatcher']);
+              resolve(['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-all', 'tests-it', 'test-ui', 'dispatcher']);
             }
           });
         },
@@ -425,6 +426,15 @@ class AEMGenerator extends Generator {
         default: 'it.tests',
         when: (answers) => {
           return this._moduleNameWhen('tests-it', answers);
+        },
+        validate: this._checkName,
+      },
+      {
+        name: 'tests-ui',
+        message: 'What do you want to name the UI Tests module?',
+        default: 'ui.tests',
+        when: (answers) => {
+          return this._moduleNameWhen('tests-ui', answers);
         },
         validate: this._checkName,
       },

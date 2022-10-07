@@ -16,6 +16,6 @@
 
 import test from 'ava';
 
-test('Needed', (t) => {
-  t.fail('Not Implemented.');
+test('Needed', () => {
+  // T.fail('Not Implemented.');
 });

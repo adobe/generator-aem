@@ -38,6 +38,7 @@ import PackageConfig, { generatorName as configGeneratorName } from '../../gener
 import PackageContent, { generatorName as contentGeneratorName } from '../../generators/package-content/index.js';
 import PackageAll, { generatorName as allGeneratorName } from '../../generators/package-all/index.js';
 import TestsIt, { generatorName as itGeneratorName } from '../../generators/tests-it/index.js';
+import TestsUi, { generatorName as uiTestsGeneratorName } from '../../generators/tests-ui/index.js';
 import Dispatcher, { generatorName as dispatcherGeneratorName } from '../../generators/dispatcher/index.js';
 import CoreComponent, { generatorName as ccGeneratorName } from '../../generators/mixin-cc/index.js';
 
@@ -95,6 +96,7 @@ test('initializing - defaults', async (t) => {
         'package-content': { 'ui.content': {} },
         'package-all': { all: {} },
         'tests-it': { 'it.tests': {} },
+        'tests-ui': { 'ui.tests': {} },
         dispatcher: { dispatcher: {} },
       };
 
@@ -131,6 +133,7 @@ test('initializing - invalid java/aem version', async (t) => {
         'package-content': { 'ui.content': {} },
         'package-all': { all: {} },
         'tests-it': { 'it.tests': {} },
+        'tests-ui': { 'ui.tests': {} },
         dispatcher: { dispatcher: {} },
       };
       const mixins = ['cc'];
@@ -355,6 +358,7 @@ test('initialize merge', async (t) => {
         'package-content': { 'ui.content': {} },
         'package-all': { all: {} },
         'tests-it': { 'it.tests': {} },
+        'tests-ui': { 'ui.tests': {} },
         dispatcher: { dispatcher: {} },
       };
 
@@ -417,7 +421,7 @@ test('prompting - options passed', async (t) => {
     version: 'options',
     aemVersion: 'options',
     javaVersion: 'options',
-    modules: 'bundle,frontend-general,package-structure,package-apps,package-config,package-content,package-all,tests-it,dispatcher',
+    modules: 'bundle,frontend-general,package-structure,package-apps,package-config,package-content,package-all,tests-it,tests-ui,dispatcher',
     mixins: 'cc',
     nodeVersion: 'options',
     npmVersion: 'options',
@@ -452,6 +456,7 @@ test('prompting - options passed', async (t) => {
     'package-content': 'content',
     'package-all': 'alls',
     'tests-it': 'it',
+    'tests-ui': 'ui',
   };
 
   await helpers
@@ -476,7 +481,7 @@ test('prompting - asked', async (t) => {
     version: 'prompted',
     aemVersion: 'prompted',
     javaVersion: 'prompted',
-    moduleSelection: ['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-content', 'package-all', 'tests-it', 'dispatcher'],
+    moduleSelection: ['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-content', 'package-all', 'tests-it', 'tests-ui', 'dispatcher'],
     frontend: 'frontend-general',
     bundle: 'prompted',
     'frontend-general': 'prompted',
@@ -486,6 +491,7 @@ test('prompting - asked', async (t) => {
     'package-content': 'prompted',
     'package-all': 'prompted',
     'tests-it': 'prompted',
+    'tests-ui': 'prompted',
     mixins: ['cc'],
     nodeVersion: 'prompted',
     npmVersion: 'prompted',
@@ -520,6 +526,7 @@ test('prompting - asked', async (t) => {
         'package-content',
         'package-all',
         'tests-it',
+        'tests-ui',
         'dispatcher',
         'frontend-general',
         'mixins',
@@ -547,6 +554,9 @@ test('prompting - asked', async (t) => {
           prompted: {},
         },
         'tests-it': {
+          prompted: {},
+        },
+        'tests-ui': {
           prompted: {},
         },
         dispatcher: {
@@ -953,6 +963,7 @@ test.serial('integration - options', async () => {
       [PackageContent, contentGeneratorName.replace('generator-', ''), generatorPath('package-content', 'index.js')],
       [PackageAll, allGeneratorName.replace('generator-', ''), generatorPath('package-all', 'index.js')],
       [TestsIt, itGeneratorName.replace('generator-', ''), generatorPath('tests-it', 'index.js')],
+      [TestsUi, uiTestsGeneratorName.replace('generator-', ''), generatorPath('tests-ui', 'index.js')],
       [Dispatcher, dispatcherGeneratorName.replace('generator-', ''), generatorPath('dispatcher', 'index.js')],
       [CoreComponent, ccGeneratorName.replace('generator-', ''), generatorPath('mixin-cc', 'index.js')],
     ])
@@ -965,7 +976,7 @@ test.serial('integration - options', async () => {
       groupId: 'com.adobe.test',
       version: '1.0.0-SNAPSHOT',
       aemVersion: 'cloud',
-      modules: 'bundle,frontend-general,package-structure,package-apps,package-config,package-content,package-all,tests-it,dispatcher',
+      modules: 'bundle,frontend-general,package-structure,package-apps,package-config,package-content,package-all,tests-it,tests-ui,dispatcher',
       mixins: 'cc',
       nodeVersion: '16.13.2',
       npmVersion: '8.1.2',
@@ -979,6 +990,7 @@ test.serial('integration - options', async () => {
       'package-content': 'content',
       'package-all': 'all.package',
       'tests-it': 'it',
+      'tests-ui': 'uit',
       name: 'Text Project',
       appId: 'test',
       ccVersion: '2.20',
@@ -999,6 +1011,8 @@ test.serial('integration - options', async () => {
       result.assertFile(path.join(dest, 'all.package', 'target', 'test.all.package-1.0.0-SNAPSHOT.zip'));
       result.assertFile(path.join(dest, 'it', 'target', 'test.it-1.0.0-SNAPSHOT.jar'));
       result.assertFile(path.join(dest, 'it', 'target', 'test.it-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
+      result.assertFile(path.join(dest, 'uit', 'target', 'test.uit-1.0.0-SNAPSHOT-ui-test-docker-context.tar.gz'));
+      result.assertFile(path.join(dest, 'dispatcher', 'target', 'test.dispatcher-1.0.0-SNAPSHOT.zip'));
     });
 });
 
@@ -1048,6 +1062,7 @@ test.serial('integration - prompts', async () => {
       [PackageContent, contentGeneratorName.replace('generator-', ''), generatorPath('package-content', 'index.js')],
       [PackageAll, allGeneratorName.replace('generator-', ''), generatorPath('package-all', 'index.js')],
       [TestsIt, itGeneratorName.replace('generator-', ''), generatorPath('tests-it', 'index.js')],
+      [TestsUi, uiTestsGeneratorName.replace('generator-', ''), generatorPath('tests-ui', 'index.js')],
       [Dispatcher, dispatcherGeneratorName.replace('generator-', ''), generatorPath('dispatcher', 'index.js')],
       [CoreComponent, ccGeneratorName.replace('generator-', ''), generatorPath('mixin-cc', 'index.js')],
     ])
@@ -1062,7 +1077,7 @@ test.serial('integration - prompts', async () => {
       groupId: 'com.mysite',
       version: '1.0.0-SNAPSHOT',
       aemVersion: 'cloud',
-      moduleSelection: ['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-content', 'package-all', 'tests-it', 'dispatcher'],
+      moduleSelection: ['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-content', 'package-all', 'tests-it', 'tests-ui', 'dispatcher'],
       frontend: 'frontend-general',
       bundle: 'core',
       'frontend-general': 'ui.frontend',
@@ -1072,6 +1087,7 @@ test.serial('integration - prompts', async () => {
       'package-content': 'ui.content',
       'package-all': 'all',
       'tests-it': 'it.tests',
+      'tests-ui': 'ui.tests',
       mixins: 'cc',
       nodeVersion: '16.13.2',
       npmVersion: '8.1.2',
@@ -1090,6 +1106,7 @@ test.serial('integration - prompts', async () => {
       result.assertFile(path.join(dest, 'all', 'target', 'mysite.all-1.0.0-SNAPSHOT.zip'));
       result.assertFile(path.join(dest, 'it.tests', 'target', 'mysite.it.tests-1.0.0-SNAPSHOT.jar'));
       result.assertFile(path.join(dest, 'it.tests', 'target', 'mysite.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
+      result.assertFile(path.join(dest, 'ui.tests', 'target', 'mysite.ui.tests-1.0.0-SNAPSHOT-ui-test-docker-context.tar.gz'));
       result.assertFile(path.join(dest, 'dispatcher', 'target', 'mysite.dispatcher-1.0.0-SNAPSHOT.zip'));
     });
 });
@@ -1140,6 +1157,7 @@ test.serial('integration - defaults', async () => {
       [PackageContent, contentGeneratorName.replace('generator-', ''), generatorPath('package-content', 'index.js')],
       [PackageAll, allGeneratorName.replace('generator-', ''), generatorPath('package-all', 'index.js')],
       [TestsIt, itGeneratorName.replace('generator-', ''), generatorPath('tests-it', 'index.js')],
+      [TestsUi, uiTestsGeneratorName.replace('generator-', ''), generatorPath('tests-ui', 'index.js')],
       [Dispatcher, dispatcherGeneratorName.replace('generator-', ''), generatorPath('dispatcher', 'index.js')],
       [CoreComponent, ccGeneratorName.replace('generator-', ''), generatorPath('mixin-cc', 'index.js')],
     ])
@@ -1168,6 +1186,7 @@ test.serial('integration - defaults', async () => {
       result.assertFile(path.join(dest, 'all', 'target', 'mysite.all-1.0.0-SNAPSHOT.zip'));
       result.assertFile(path.join(dest, 'it.tests', 'target', 'mysite.it.tests-1.0.0-SNAPSHOT.jar'));
       result.assertFile(path.join(dest, 'it.tests', 'target', 'mysite.it.tests-1.0.0-SNAPSHOT-jar-with-dependencies.jar'));
+      result.assertFile(path.join(dest, 'ui.tests', 'target', 'mysite.ui.tests-1.0.0-SNAPSHOT-ui-test-docker-context.tar.gz'));
       result.assertFile(path.join(dest, 'dispatcher', 'target', 'mysite.dispatcher-1.0.0-SNAPSHOT.zip'));
     });
 });

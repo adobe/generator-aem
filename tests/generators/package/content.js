@@ -479,7 +479,7 @@ test('writing/installing - cloud - no examples', async (t) => {
   await helpers
     .create(ContentWriteInstall)
     .withOptions({
-      showBuildOutput: true,
+      showBuildOutput: false,
       props: {
         artifactId: 'test.ui.content',
         name: 'Test Module - Content Package',
