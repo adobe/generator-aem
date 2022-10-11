@@ -144,7 +144,7 @@ class CoreComponentMixinGenerator extends Generator {
     const prompts = [
       {
         name: 'examples',
-        message: 'Include any examples in generated projects?',
+        message: 'Should examples be included in the generated projects?',
         type: 'confirm',
         when: () => {
           return new Promise((resolve) => {
@@ -159,7 +159,7 @@ class CoreComponentMixinGenerator extends Generator {
       },
       {
         name: 'latest',
-        message: "Use latest version of Core Components ('n' to select a version)?",
+        message: "Do you want to  use the latest version of Core Components ('n' to select a version)?",
         type: 'confirm',
         when: () => {
           return new Promise((resolve) => {
@@ -180,7 +180,7 @@ class CoreComponentMixinGenerator extends Generator {
         type: 'list',
         when: (answers) => {
           return new Promise((resolve) => {
-            if (this.options.defaults || answers.latest) {
+            if (this.options.defaults || answers.latest || this.props.version === 'latest') {
               resolve(false);
               return;
             }
@@ -192,7 +192,7 @@ class CoreComponentMixinGenerator extends Generator {
       },
       {
         name: 'dataLayer',
-        message: 'Enable the Data Layer configuration in the content package?',
+        message: 'Do you want to enable the Data Layer configuration in the content package?',
         type: 'confirm',
         when: () => {
           return new Promise((resolve) => {
@@ -207,40 +207,41 @@ class CoreComponentMixinGenerator extends Generator {
       },
       {
         name: 'bundles',
-        message: 'Which bundle(s) modules should be updated to reference the dependency and add unit test context?',
+        message: 'Which bundle(s) modules should be updated to reference the Core Component dependency and add unit test context?',
         type: 'checkbox',
         when: () => {
           return new Promise((resolve) => {
+            if (this.options.parent && this.props.bundles) {
+              resolve(false);
+              return;
+            }
+
             resolve(this.props.bundles.length !== this.availableBundles.length);
           });
         },
         choices: () => {
           return new Promise((resolve) => {
-            resolve(_.map(this.availableBundles, 'path'));
-          });
-        },
-        default: () => {
-          return new Promise((resolve) => {
-            if (this.props.bundles.length > 0) {
-              resolve(this.props.bundles);
-            } else {
-              resolve(_.map(this.availableBundles, 'path'));
-            }
+            resolve(_.union(this.props.bundles, _.map(this.availableBundles, 'path')));
           });
         },
       },
       {
         name: 'apps',
-        message: 'Which App module(s) should have the proxies added?',
+        message: 'Which App module(s) should have the Core Component proxies added?',
         type: 'checkbox',
         when: () => {
           return new Promise((resolve) => {
+            if (this.options.parent && this.props.apps) {
+              resolve(false);
+              return;
+            }
+
             resolve(this.props.apps.length !== this.availableApps.length);
           });
         },
         choices: () => {
           return new Promise((resolve) => {
-            resolve(_.map(this.availableApps, 'path'));
+            resolve(_.union(this.props.apps, _.map(this.availableApps, 'path')));
           });
         },
         validate(chosen) {
@@ -274,12 +275,17 @@ class CoreComponentMixinGenerator extends Generator {
               return;
             }
 
+            if (this.options.parent && this.props.contents) {
+              resolve(false);
+              return;
+            }
+
             resolve(this.props.contents.length !== this.availableContents.length);
           });
         },
         choices: () => {
           return new Promise((resolve) => {
-            resolve(_.map(this.availableContents, 'path'));
+            resolve(_.union(this.props.contents, _.map(this.availableContents, 'path')));
           });
         },
         default: () => {
@@ -449,7 +455,7 @@ class CoreComponentMixinGenerator extends Generator {
 
     const ccProp = _.find(pomProperties, (item) => _.has(item, versionProperty));
     if (ccProp) {
-      ccProp[0]['#text'] = this.props.resolvedVersion;
+      ccProp[versionProperty][0]['#text'] = this.props.resolvedVersion;
     } else {
       const prop = {};
       prop[versionProperty] = [{ '#text': this.props.resolvedVersion }];

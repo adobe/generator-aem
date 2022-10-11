@@ -117,7 +117,7 @@ test('prompting - package - when - defaults & no options', async (t) => {
     .then(async (result) => {
       const prompts = result.generator.prompts;
       const prompt = _.find(prompts, { name: 'package' });
-      t.true(await prompt.when(), 'Prompts for package.');
+      t.false(await prompt.when(), 'Prompts for package.');
     });
 });
 

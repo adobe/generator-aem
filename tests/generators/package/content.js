@@ -30,7 +30,6 @@ import ContentPackageGenerator from '../../../generators/package-content/index.j
 import PomUtils, { filevaultPlugin } from '../../../lib/pom-utils.js';
 import { init, prompt, config, wrapDefault, writeInstall } from '../../fixtures/generators/wrappers.js';
 import { generatorPath, fixturePath, addModulesToPom, cloudSdkApiMetadata } from '../../fixtures/helpers.js';
-import { generatorName as bundleGeneratorName } from '../../../generators/bundle/index.js';
 import { generatorName as appsGeneratorName } from '../../../generators/package-apps/index.js';
 
 const resolved = generatorPath('package-content', 'index.js');
@@ -76,7 +75,6 @@ test('initializing - options', async (t) => {
     .create(ContentInit)
     .withOptions({
       templates: false,
-      bundleRef: 'core',
       appsRef: 'ui.apps',
       singleCountry: false,
       language: 'pt',
@@ -86,7 +84,6 @@ test('initializing - options', async (t) => {
     .then((result) => {
       const expected = {
         templates: false,
-        bundle: 'core',
         apps: 'ui.apps',
         singleCountry: false,
         language: 'pt',
@@ -97,13 +94,11 @@ test('initializing - options', async (t) => {
 });
 
 test.serial('initializing - lookups & sets modules ', async (t) => {
-  t.plan(3);
+  t.plan(2);
 
-  const bundles = [{ path: 'core', artifactId: 'test.core' }];
   const apps = [{ path: 'ui.apps', artifactId: 'test.ui.apps' }];
   sinon.restore();
   const stub = sinon.stub(ContentInit.prototype, '_findModules');
-  stub.withArgs(bundleGeneratorName).returns(bundles);
   stub.withArgs(appsGeneratorName).returns(apps);
 
   await helpers
@@ -111,26 +106,20 @@ test.serial('initializing - lookups & sets modules ', async (t) => {
     .run()
     .then((result) => {
       stub.restore();
-      t.deepEqual(result.generator.availableBundles, bundles, 'Set bundle list.');
       t.deepEqual(result.generator.availableApps, apps, 'Set apps list.');
-      t.deepEqual(result.generator.props, { bundle: 'test.core', apps: 'test.ui.apps' }, 'Set references.');
+      t.deepEqual(result.generator.props, { apps: 'test.ui.apps' }, 'Set references.');
     });
 });
 
 test.serial('initializing - lookups & but does not set modules > 1 ', async (t) => {
-  t.plan(3);
+  t.plan(2);
 
-  const bundles = [
-    { path: 'core', artifactId: 'test.core' },
-    { path: 'core', artifactId: 'test.bundle' },
-  ];
   const apps = [
     { path: 'ui.apps', artifactId: 'test.ui.apps' },
     { path: 'ui.apps', artifactId: 'test.ui.apps.other' },
   ];
   sinon.restore();
   const stub = sinon.stub(ContentInit.prototype, '_findModules');
-  stub.withArgs(bundleGeneratorName).returns(bundles);
   stub.withArgs(appsGeneratorName).returns(apps);
 
   await helpers
@@ -138,7 +127,6 @@ test.serial('initializing - lookups & but does not set modules > 1 ', async (t) 
     .run()
     .then((result) => {
       stub.restore();
-      t.deepEqual(result.generator.availableBundles, bundles, 'Set bundle list.');
       t.deepEqual(result.generator.availableApps, apps, 'Set apps list.');
       t.deepEqual(result.generator.props, {}, 'Does not set references.');
     });
@@ -151,7 +139,6 @@ test('prompting - templates', async (t) => {
     .create(ContentPrompt)
     .withOptions({
       props: {
-        bundle: 'prompted',
         apps: 'prompted',
       },
     })
@@ -179,37 +166,6 @@ test('prompting - templates', async (t) => {
     });
 });
 
-test('prompting - bundleRef', async (t) => {
-  t.plan(3);
-
-  await helpers
-    .create(ContentPrompt)
-    .withOptions({
-      props: {
-        bundle: 'prompted',
-        apps: 'prompted',
-      },
-    })
-    .run()
-    .then(async (result) => {
-      delete result.generator.props.bundle;
-      const prompts = result.generator.prompts;
-      const prompt = _.find(prompts, { name: 'bundleRef' });
-      t.true(await prompt.when(), 'Prompts.');
-
-      result.generator.props.bundle = 'test.core';
-      t.false(await prompt.when(), 'Does not prompt.');
-
-      // Choices
-      result.generator.availableBundles = [
-        { path: 'core', artifactId: 'test.core' },
-        { path: 'bundle', artifactId: 'test.bundle' },
-      ];
-
-      t.deepEqual(await prompt.choices(), ['test.core', 'test.bundle'], 'List matches.');
-    });
-});
-
 test('prompting - appsRef', async (t) => {
   t.plan(3);
 
@@ -217,7 +173,6 @@ test('prompting - appsRef', async (t) => {
     .create(ContentPrompt)
     .withOptions({
       props: {
-        bundle: 'prompted',
         apps: 'prompted',
       },
     })
@@ -232,7 +187,7 @@ test('prompting - appsRef', async (t) => {
       t.false(await prompt.when(), 'Does not prompt.');
 
       // Choices
-      result.generator.availableBundles = [
+      result.generator.availableApps = [
         { path: 'ui.apps', artifactId: 'test.ui.apps' },
         { path: 'other.apps', artifactId: 'test.other.apps' },
       ];
@@ -248,7 +203,6 @@ test('prompting - singleCountry', async (t) => {
     .create(ContentPrompt)
     .withOptions({
       props: {
-        bundle: 'prompted',
         apps: 'prompted',
       },
     })
@@ -276,7 +230,6 @@ test('prompting - language', async (t) => {
     .create(ContentPrompt)
     .withOptions({
       props: {
-        bundle: 'prompted',
         apps: 'prompted',
       },
     })
@@ -304,7 +257,6 @@ test('prompting - country', async (t) => {
     .create(ContentPrompt)
     .withOptions({
       props: {
-        bundle: 'prompted',
         apps: 'prompted',
       },
     })
@@ -334,7 +286,6 @@ test('prompting - enableDynamicMedia', async (t) => {
     .create(ContentPrompt)
     .withOptions({
       props: {
-        bundle: 'prompted',
         apps: 'prompted',
       },
     })
@@ -366,7 +317,6 @@ test('prompting - post-processing', async (t) => {
     .create(ContentPrompt)
     .withPrompts({
       templates: true,
-      bundleRef: 'prompted',
       appsRef: 'prompted',
       singleCountry: false,
       language: 'es',
@@ -377,7 +327,6 @@ test('prompting - post-processing', async (t) => {
     .then((result) => {
       const expected = {
         templates: true,
-        bundle: 'prompted',
         apps: 'prompted',
         singleCountry: false,
         language: 'es',
@@ -462,8 +411,14 @@ test('default - templates fails on apps module no core components ', async (t) =
   const error = await t.throwsAsync(
     helpers
       .create(ContentDefault)
-      .withOptions({ props: { apps: 'ui.apps', templates: true } })
+      .withOptions({ props: { apps: 'test.ui.apps', templates: true } })
       .inDir(fullPath, () => {
+        fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
+        addModulesToPom(temporaryDir, ['ui.apps']);
+
+        fs.mkdirSync(path.join(temporaryDir, 'ui.apps'));
+        fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { artifactId: 'test.ui.apps' } }));
+
         fs.writeFileSync(path.join(temporaryDir, '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:mixin-cc': { apps: ['notfound'] } }));
       })
       .run()
@@ -559,6 +514,7 @@ test('writing/installing - cloud - templates, no examples', async () => {
         language: 'en',
         country: 'us',
         enableDynamicMedia: true,
+        apps: 'test.ui.apps',
       },
       parentProps: {
         groupId: 'com.adobe.test',
@@ -570,7 +526,11 @@ test('writing/installing - cloud - templates, no examples', async () => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, ['ui.apps.structure']);
+      addModulesToPom(temporaryDir, ['ui.apps', 'ui.apps.structure']);
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps'));
+      fs.cpSync(fixturePath('projects', 'cloud', 'ui.apps'), path.join(path.join(temporaryDir, 'ui.apps')), { recursive: true });
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { artifactId: 'test.ui.apps' } }));
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.apps.structure'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'), path.join(temporaryDir, 'ui.apps.structure', 'pom.xml'));
@@ -580,6 +540,8 @@ test('writing/installing - cloud - templates, no examples', async () => {
     .then((result) => {
       const root = result.generator.destinationPath('src', 'main', 'content', 'jcr_root');
       const wcm = path.join(root, 'conf', 'test', 'settings', 'wcm');
+
+      result.assertFileContent('pom.xml', /<artifactId>test.ui.apps<\/artifactId>/);
 
       result.assertFile(path.join(wcm, 'template-types', 'page', '.content.xml'));
       result.assertFile(path.join(wcm, 'template-types', 'xf', '.content.xml'));
@@ -611,6 +573,7 @@ test('writing/installing - v6.5 - single site', async () => {
         language: 'pt',
         country: 'br',
         enableDynamicMedia: false,
+        apps: 'test.ui.apps',
       },
       parentProps: {
         name: 'Test Project',
@@ -623,7 +586,11 @@ test('writing/installing - v6.5 - single site', async () => {
     })
     .inDir(fullPath, () => {
       fs.copyFileSync(fixturePath('projects', 'cloud', 'pom.xml'), path.join(temporaryDir, 'pom.xml'));
-      addModulesToPom(temporaryDir, ['ui.apps.structure']);
+      addModulesToPom(temporaryDir, ['ui.apps', 'ui.apps.structure']);
+
+      fs.mkdirSync(path.join(temporaryDir, 'ui.apps'));
+      fs.cpSync(fixturePath('projects', 'cloud', 'ui.apps'), path.join(path.join(temporaryDir, 'ui.apps')), { recursive: true });
+      fs.writeFileSync(path.join(temporaryDir, 'ui.apps', '.yo-rc.json'), JSON.stringify({ '@adobe/generator-aem:package-apps': { artifactId: 'test.ui.apps' } }));
 
       fs.mkdirSync(path.join(temporaryDir, 'ui.apps.structure'));
       fs.copyFileSync(fixturePath('projects', 'cloud', 'ui.apps.structure', 'pom.xml'), path.join(temporaryDir, 'ui.apps.structure', 'pom.xml'));
@@ -637,6 +604,7 @@ test('writing/installing - v6.5 - single site', async () => {
       const root = result.generator.destinationPath('src', 'main', 'content', 'jcr_root');
       const wcm = path.join(root, 'conf', 'test', 'settings', 'wcm');
 
+      result.assertFileContent('pom.xml', /<artifactId>test.ui.apps<\/artifactId>/);
       result.assertNoFile(path.join(root, 'content', 'test', 'language-masters', '.content.xml'));
 
       result.assertNoFileContent(path.join(wcm, 'policies', 'test', 'components', 'image', 'content', '.content.xml'), /enableDmFeatures="true"/);
@@ -750,6 +718,8 @@ test('writing/installing - cloud - multi site', async () => {
 
       const root = result.generator.destinationPath('src', 'main', 'content', 'jcr_root');
       const wcm = path.join(root, 'conf', 'test', 'settings', 'wcm');
+
+      result.assertFileContent('pom.xml', /<artifactId>test.ui.apps<\/artifactId>/);
 
       result.assertFile(path.join(root, 'content', 'test', 'language-masters', '.content.xml'));
       result.assertFile(path.join(root, 'content', 'test', 'language-masters', 'pt', '.content.xml'));

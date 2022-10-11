@@ -172,7 +172,7 @@ class AllPackageGenerator extends Generator {
   }
 }
 
-const embeddedPredicate = (target, embedded) => {
+export const embeddedPredicate = (target, embedded) => {
   if (!embedded.embedded) {
     return false;
   }

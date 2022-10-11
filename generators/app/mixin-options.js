@@ -32,6 +32,10 @@ export const MixinOptions = Object.freeze({
       if (modules['package-apps'] && _.keys(modules['package-apps']).length === 1) {
         options.appsPath = _.keys(modules['package-apps'])[0];
       }
+
+      if (modules['package-content'] && _.keys(modules['package-content']).length === 1) {
+        options.contentPath = _.keys(modules['package-content'])[0];
+      }
     }
 
     return options;

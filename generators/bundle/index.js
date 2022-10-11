@@ -65,7 +65,7 @@ class BundleGenerator extends Generator {
     const prompts = [
       {
         name: 'package',
-        message: 'What do you want ot use for the root Java package (e.g. "com.mysite")?',
+        message: 'What do you want to use for the root Java package (e.g. "com.mysite")?',
         validate(pkg) {
           return new Promise((resolve) => {
             if (!pkg || pkg.length === 0) {
@@ -83,7 +83,7 @@ class BundleGenerator extends Generator {
         },
         when: () => {
           return new Promise((resolve) => {
-            if (this.options.defaults && this.options.package) {
+            if (this.options.defaults || this.options.package || this.props.package) {
               resolve(false);
               return;
             }

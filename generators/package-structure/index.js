@@ -60,6 +60,7 @@ class StructurePackageGenerator extends Generator {
 
   writing() {
     this.fs.copy(this.templatePath('README.md'), this.destinationPath('README.md'));
+    this.fs.copy(this.templatePath('.yo-resolve'), this.destinationPath('.yo-resolve'));
 
     this._writePom();
     if (this.env.rootGenerator() === this) {

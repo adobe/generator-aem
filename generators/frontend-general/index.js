@@ -39,7 +39,7 @@ class GeneralFEGenerator extends Generator {
   }
 
   initializing() {
-    return this._initializing();
+    this._initializing();
   }
 
   prompting() {
@@ -51,12 +51,13 @@ class GeneralFEGenerator extends Generator {
   }
 
   writing() {
-    const files = [];
-    files.push(...this._listTemplates());
     const tplProps = {
       ..._.pick(this.props, ['name', 'appId', 'artifactId']),
       parent: this.parentProps,
     };
+
+    const files = [];
+    files.push(...this._listTemplates());
     this._writing(files, tplProps);
 
     const pkg = _.defaults(
@@ -84,5 +85,4 @@ class GeneralFEGenerator extends Generator {
 _.extendWith(GeneralFEGenerator.prototype, ModuleMixins, (objectValue, srcValue) => {
   return _.isFunction(srcValue) ? srcValue : _.cloneDeep(srcValue);
 });
-
 export default GeneralFEGenerator;

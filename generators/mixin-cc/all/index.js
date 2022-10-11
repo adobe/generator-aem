@@ -23,7 +23,7 @@ import PomUtils, { filevaultPlugin } from '../../../lib/pom-utils.js';
 import { bundleGav, configGav, contentGav, exampleAppsGav, exampleConfigGav, exampleContentGav } from '../index.js';
 
 import { apiCoordinates } from '../../app/index.js';
-import { generatorName as allGeneratorName } from '../../package-all/index.js';
+import { embeddedPredicate, generatorName as allGeneratorName } from '../../package-all/index.js';
 
 const generatorName = '@adobe/generator-aem:mixin-cc:all';
 
@@ -94,17 +94,21 @@ class AllPackageModuleCoreComponentMixin extends Generator {
           return def.artifactId && def.artifactId[0]['#text'] === filevaultPlugin;
         });
       }).plugin;
-      const fvPluginDeps = PomUtils.findPomNodeArray(fvPlugin, 'configuration', 'embeddeds');
-      PomUtils.removeDependencies(fvPluginDeps, [bundle, content, config, exampleConfig, exampleApps, exampleContent]);
-
-      const depsToAdd = [];
-      const embedsToAdd = [];
+      const fvPluginEmbeddeds = PomUtils.findPomNodeArray(fvPlugin, 'configuration', 'embeddeds');
 
       const makeEmbed = (dependency) => {
         return {
           embedded: [..._.cloneDeep(dependency.dependency), { target: [{ '#text': `/apps/${appId}-vendor-packages/application/install` }] }],
         };
       };
+
+      const embeddeds = [makeEmbed(bundle), makeEmbed(content), makeEmbed(content), makeEmbed(exampleConfig), makeEmbed(exampleApps), makeEmbed(exampleContent)];
+      _.remove(fvPluginEmbeddeds, (item) => {
+        return embeddedPredicate(embeddeds, item);
+      });
+
+      const depsToAdd = [];
+      const embedsToAdd = [];
 
       if (this.props.aemVersion !== 'cloud') {
         depsToAdd.push(bundle, content, config);
@@ -117,7 +121,7 @@ class AllPackageModuleCoreComponentMixin extends Generator {
       }
 
       PomUtils.addDependencies(deps, depsToAdd, apiCoordinates(this.props.aemVersion));
-      PomUtils.addDependencies(fvPluginDeps, embedsToAdd);
+      PomUtils.addDependencies(fvPluginEmbeddeds, embedsToAdd);
       const builder = new XMLBuilder(PomUtils.xmlOptions);
       this.fs.write(this.destinationPath('pom.xml'), PomUtils.fixXml(builder.build(pomData)));
       resolve();

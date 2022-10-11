@@ -459,9 +459,9 @@ test('prompting - dataLayer - dataLayer set', async (t) => {
 });
 
 test('prompting - bundles', async (t) => {
-  t.plan(7);
+  t.plan(5);
 
-  const bundles = [
+  const availableBundles = [
     { path: 'core', artifactId: 'test.core' },
     { path: 'bundle', artifactId: 'test.bundle' },
   ];
@@ -475,14 +475,12 @@ test('prompting - bundles', async (t) => {
       t.false(await prompt.when(), 'Bundles does not prompt');
 
       result.generator.props.bundles = ['core'];
-      result.generator.availableBundles = bundles;
+      result.generator.availableBundles = availableBundles;
       t.true(await prompt.when(), 'Bundles prompts');
-      t.deepEqual(await prompt.default(), ['core'], 'Correct default list set.');
       t.deepEqual(await prompt.choices(), ['core', 'bundle'], 'Choices match.');
 
       result.generator.props.bundles = ['core', 'bundle'];
       t.false(await prompt.when(), 'Bundles does not prompt');
-      t.deepEqual(await prompt.default(), ['core', 'bundle'], 'Correct default list set.');
       t.deepEqual(await prompt.choices(), ['core', 'bundle'], 'Choices match.');
     });
 });

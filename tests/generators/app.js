@@ -436,7 +436,7 @@ test('prompting - options passed', async (t) => {
     /* eslint-disable ava/prefer-async-await */
     prompting() {
       this.props = options;
-      this.modules = {};
+      this.modules = { 'frontend-general': {} };
       this.mixins = [];
 
       return super.prompting().then((answers) => {
@@ -563,6 +563,59 @@ test('prompting - asked', async (t) => {
           dispatcher: {},
         },
       };
+      t.deepEqual(result.generator.props, props, 'Properties set');
+      t.deepEqual(result.generator.modules, modules, 'Modules set');
+      t.deepEqual(result.generator.mixins, ['cc'], 'Mixins set');
+    });
+});
+
+test('prompting - existing configuration', async (t) => {
+  t.plan(3);
+
+  const props = {
+    examples: false,
+    appId: 'test-project',
+    name: 'Test Project',
+    artifactId: 'test-project',
+    groupId: 'com.adobe.test',
+    version: '1.0.0-SNAPSHOT',
+    aemVersion: 'cloud',
+    javaVersion: '11',
+    nodeVersion: '1.2.3',
+    npmVersion: '3.2.1',
+  };
+
+  const modules = {
+    bundle: { existing: {} },
+    'frontend-general': { existing: {} },
+    'package-structure': { existing: {} },
+    'package-apps': { existing: {} },
+    'package-config': { existing: {} },
+    'package-content': { existing: {} },
+    'package-all': { existing: {} },
+    'tests-it': { existing: {} },
+    'tests-ui': { existing: {} },
+    dispatcher: { dispatcher: {} },
+  };
+
+  class Mock extends AEMGenerator {
+    constructor(args, options, features) {
+      options.resolved = resolved;
+      super(args, options, features);
+    }
+
+    prompting() {
+      this.props = _.cloneDeep(props);
+      this.modules = _.cloneDeep(modules);
+      this.mixins = ['cc'];
+      return super.prompting();
+    }
+  }
+
+  await helpers
+    .create(Mock)
+    .run()
+    .then((result) => {
       t.deepEqual(result.generator.props, props, 'Properties set');
       t.deepEqual(result.generator.modules, modules, 'Modules set');
       t.deepEqual(result.generator.mixins, ['cc'], 'Mixins set');
@@ -772,7 +825,7 @@ test('writing/installing - cloud', async (t) => {
       const gitignore = result.generator.destinationPath('.gitignore');
       result.assertFile('.gitignore');
       const content = fs.readFileSync(gitignore, { encoding: 'utf8' }).split('\n');
-      t.is(content.length, 110, 'Correct number of lines.');
+      t.is(content.length, 109, 'Correct number of lines.');
       t.is(content[2], '# This is a custom entry', 'Custom entry found');
       t.is(content[3], '*.hprof', 'Order correct');
 

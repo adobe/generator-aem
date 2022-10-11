@@ -299,9 +299,14 @@ class AEMGenerator extends Generator {
         default: () => {
           return new Promise((resolve) => {
             if (_.keys(this.modules).length > 0) {
-              resolve(_.keys(this.modules));
+              const keys = _.keys(this.modules);
+              resolve(
+                _.map(keys, (k) => {
+                  return k.replaceAll(/frontend-\w+/g, 'frontend');
+                })
+              );
             } else {
-              resolve(['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-all', 'tests-it', 'test-ui', 'dispatcher']);
+              resolve(['bundle', 'frontend', 'package-structure', 'package-apps', 'package-config', 'package-content', 'package-all', 'tests-it', 'tests-ui', 'dispatcher']);
             }
           });
         },
@@ -312,7 +317,7 @@ class AEMGenerator extends Generator {
               return;
             }
 
-            resolve(true);
+            resolve(_.keys(this.modules).length !== _.keys(modulesDefault).length);
           });
         },
       },
@@ -327,6 +332,11 @@ class AEMGenerator extends Generator {
         when: (answers) => {
           return new Promise((resolve) => {
             if (this.options.defaults) {
+              resolve(false);
+              return;
+            }
+
+            if (this.modules && (this.modules['frontend-general'] || this.modules['frontend-react'] || this.modules['frontend-angular'])) {
               resolve(false);
               return;
             }
@@ -365,12 +375,12 @@ class AEMGenerator extends Generator {
               return;
             }
 
-            if (this.options.modules && this.options.modules.includes('frontend-general')) {
-              resolve(true);
+            if (this.modules && this.modules['frontend-general'] && _.keys(this.modules['frontend-general']).length > 0) {
+              resolve(false);
               return;
             }
 
-            resolve(answers.frontend === 'frontend-general');
+            resolve(answers.frontend === 'frontend-general' || this.modules['frontend-general']);
           });
         },
         validate: this._checkName,
@@ -405,7 +415,7 @@ class AEMGenerator extends Generator {
       {
         name: 'package-content',
         message: 'What do you want to name the Content package module?',
-        default: 'ui.config',
+        default: 'ui.content',
         when: (answers) => {
           return this._moduleNameWhen('package-content', answers);
         },
@@ -453,7 +463,7 @@ class AEMGenerator extends Generator {
               return;
             }
 
-            resolve(true);
+            resolve(this.mixins.length !== mixinsDefault.length);
           });
         },
       },
@@ -504,7 +514,12 @@ class AEMGenerator extends Generator {
         this.props.javaVersion = '11';
       }
 
+      let frontend;
       _.forOwn(this.modules, (modules, moduleType) => {
+        if (moduleType.startsWith('frontend-')) {
+          frontend = modules;
+        }
+
         const name = answers[moduleType];
         if (name) {
           this.modules[moduleType][name] = this.modules[moduleType][name] || {};
@@ -515,15 +530,22 @@ class AEMGenerator extends Generator {
       if (answers.moduleSelection) {
         const idx = answers.moduleSelection.indexOf('frontend');
         if (idx >= 0) {
-          answers.moduleSelection[idx] = answers.frontend;
-        }
+          if (frontend) {
+            answers.moduleSelection.splice(idx, 1);
+          } else {
+            answers.moduleSelection[idx] = answers.frontend;
+          }
 
-        delete this.props.frontend;
+          delete this.props.frontend;
+        }
 
         _.each(answers.moduleSelection, (moduleType) => {
           const name = answers[moduleType];
           this.modules[moduleType] = this.modules[moduleType] || {};
-          this.modules[moduleType][name] = this.modules[moduleType][name] || {};
+          if (name) {
+            this.modules[moduleType][name] = this.modules[moduleType][name] || {};
+          }
+
           delete this.props[moduleType];
         });
         delete this.props.moduleSelection;
@@ -634,6 +656,10 @@ class AEMGenerator extends Generator {
 
   _initModules(pomModules) {
     _.each(pomModules, (module) => {
+      if (!module.module) {
+        return;
+      }
+
       const name = module.module[0]['#text'];
       if (this.fs.exists(this.destinationPath(name, '.yo-rc.json'))) {
         const yoData = this.fs.readJSON(this.destinationPath(name, '.yo-rc.json'));
@@ -667,6 +693,11 @@ class AEMGenerator extends Generator {
   _moduleNameWhen = (module, answers) => {
     return new Promise((resolve) => {
       if (this.options.defaults) {
+        resolve(false);
+        return;
+      }
+
+      if (_.keys(this.modules[module]).length > 0) {
         resolve(false);
         return;
       }
@@ -788,7 +819,7 @@ class AEMGenerator extends Generator {
       orig = this.fs.read(file).split('\n');
     }
 
-    const keep = _.without(orig, ..._.without(base, ''));
+    const keep = _.without(orig, ..._.without(base, ['']));
     base.shift();
     base.unshift('# These values are from original file not included in generator template.', '', ...keep);
     this.fs.write(file, base.join('\n'));

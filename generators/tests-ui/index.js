@@ -55,9 +55,13 @@ class UITestsGenerator extends Generator {
 
   default() {
     this._duplicateCheck();
-    const content = this._findModules(contentGeneratorName);
-    if (content.length === 0) {
-      throw new Error('Unable to create UI Test package, Content package is required and not found.');
+    // If options parent is set - then the root generator called, and we don't need to do these checks.
+    // The "findModules" logic doesn't work when running from root first time - because no files have been written yet at this point.
+    if (!this.options.parent) {
+      const content = this._findModules(contentGeneratorName);
+      if (content.length === 0) {
+        throw new Error('Unable to create UI Test package, Content package is required and not found.');
+      }
     }
   }
 

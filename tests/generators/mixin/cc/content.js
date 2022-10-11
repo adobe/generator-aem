@@ -71,7 +71,7 @@ test('writing - dataLayer set', async (t) => {
     })
     .run()
     .then((result) => {
-      const outputDir = result.generator.destinationPath('src', 'main', 'content', 'jcr_root', 'conf', 'test', '_sling_config', 'com.adobe.cq.wcm.core.components.internal.DataLayerConfig');
+      const outputDir = result.generator.destinationPath('src', 'main', 'content', 'jcr_root', 'conf', 'test', '_sling_configs', 'com.adobe.cq.wcm.core.components.internal.DataLayerConfig');
       result.assertFile(path.join(outputDir, '.content.xml'));
       const spawnResult = result.generator.spawnCommandSync('mvn', ['clean', 'verify'], { stdio: 'ignore', cwd: temporaryDir });
       t.is(spawnResult.exitCode, 0, 'Build successful.');
@@ -105,7 +105,7 @@ test('writing - dataLayer not set', async (t) => {
     })
     .run()
     .then((result) => {
-      const outputDir = result.generator.destinationPath('src', 'main', 'content', 'jcr_root', 'conf', 'test', '_sling_config', 'com.adobe.cq.wcm.core.components.internal.DataLayerConfig');
+      const outputDir = result.generator.destinationPath('src', 'main', 'content', 'jcr_root', 'conf', 'test', '_sling_configs', 'com.adobe.cq.wcm.core.components.internal.DataLayerConfig');
       result.assertNoFile(path.join(outputDir, '.content.xml'));
       const spawnResult = result.generator.spawnCommandSync('mvn', ['clean', 'verify'], { stdio: 'ignore', cwd: temporaryDir });
       t.is(spawnResult.exitCode, 0, 'Build successful.');

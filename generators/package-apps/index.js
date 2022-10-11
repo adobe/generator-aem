@@ -98,7 +98,7 @@ class AppsPackageGenerator extends Generator {
     const prompts = [
       {
         name: 'bundleRef',
-        message: 'Which OSGi bundle should be added as a dependency to this package?',
+        message: 'Which OSGi bundle artifact should be added as a dependency to this package?',
         type: 'list',
         default: 'None',
         choices: () => {
@@ -157,10 +157,6 @@ class AppsPackageGenerator extends Generator {
       delete this.props.frontendRef;
       if (answers.frontendRef !== 'None') {
         this.props.frontend = answers.frontendRef;
-      }
-
-      if (!answers.precompileScripts) {
-        delete this.props.precompileScripts;
       }
     });
   }

@@ -87,7 +87,7 @@ class IntegrationTestsGenerator extends Generator {
     const prompts = [
       {
         name: 'package',
-        message: 'Java Test Source Package (e.g. "com.mysite").',
+        message: 'What do you want to use for the root Java test package (e.g. "com.mysite")?',
         validate(pkg) {
           return new Promise((resolve) => {
             if (!pkg || pkg.length === 0) {
@@ -107,7 +107,7 @@ class IntegrationTestsGenerator extends Generator {
           return new Promise((resolve) => {
             // Use Options, not props as props will default to parent group id
             // Which may not be what the user wants.
-            if (this.options.defaults && this.options.package) {
+            if (this.options.defaults || this.options.package || this.props.package) {
               resolve(false);
               return;
             }
@@ -119,7 +119,7 @@ class IntegrationTestsGenerator extends Generator {
       },
       {
         name: 'publish',
-        message: 'Whether or not there is a Publish tier in the target AEM environments.',
+        message: 'Will there be a Publish tier in the target AEM environments?',
         type: 'confirm',
         when: this.props.publish === undefined,
         default: true,

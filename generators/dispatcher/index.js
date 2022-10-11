@@ -155,6 +155,10 @@ class DispatcherGenerator extends Generator {
       const relPath = path.relative(symPath, entry);
       const temporary = relPath.replace(/_{2}([^_]+)_{2}/gi, `<%= $1 %>`);
       const dest = ejs.render(temporary, this.props);
+      if (fs.existsSync(this.destinationPath(dest))) {
+        return;
+      }
+
       const temporaryAvailable = dest.replaceAll('enabled', 'available');
       const src = path.join('..', path.basename(path.dirname(dest)), path.basename(dest)).replaceAll('enabled', 'available');
       fs.mkdirSync(this.destinationPath(path.dirname(dest)), { recursive: true });

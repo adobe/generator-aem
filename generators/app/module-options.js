@@ -118,8 +118,7 @@ export const ModuleOptions = Object.freeze({
     if (parentProps.defaults) {
       _.merge(options, {
         artifactId: `${parentProps.artifactId}.ui.content`,
-        bundleRef: 'core',
-        appsRef: 'ui.apps',
+        appsRef: `${parentProps.artifactId}.ui.apps`,
       });
     } else {
       if (modules.bundle && _.keys(modules.bundle).length === 1) {
