@@ -1,7 +1,7 @@
 # These values are from original file not included in generator template.
 
 
-# Created by https://www.gitignore.io/api/eclipse,java,maven
+# Below was created by https://www.gitignore.io/api/eclipse,java,maven
 
 ### Eclipse ###
 *.pydevproject
@@ -94,12 +94,19 @@ yarn.lock
 # Webpack
 build/
 dist/
+actions/common/
 
 # Frontend Maven Plugin
 node/
 
 # Tests
 coverage/
+reports/
 
 # OS Files
 .DS_Store
+
+# Others
+dispatcher/src/conf.d/variables/default.vars
+ui.tests/test-module/assets/form/themes/**/*diff.png
+ui.tests/test-module/assets/form/themes/**/*current.png

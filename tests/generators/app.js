@@ -824,10 +824,12 @@ test('writing/installing - cloud', async (t) => {
     .then((result) => {
       const gitignore = result.generator.destinationPath('.gitignore');
       result.assertFile('.gitignore');
-      const content = fs.readFileSync(gitignore, { encoding: 'utf8' }).split('\n');
-      t.is(content.length, 109, 'Correct number of lines.');
-      t.is(content[2], '# This is a custom entry', 'Custom entry found');
-      t.is(content[3], '*.hprof', 'Order correct');
+      const actual = fs.readFileSync(gitignore, { encoding: 'utf8' }).split('\n');
+      const expected = fs.readFileSync(result.generator.templatePath('.gitignore'), { encoding: 'utf8' }).split('\n');
+
+      t.is(actual.length, expected.length + 3, 'Correct number of lines.');
+      t.is(actual[2], '# This is a custom entry', 'Custom entry found');
+      t.is(actual[3], '*.hprof', 'Order correct');
 
       result.assertFile('.gitattributes');
 
