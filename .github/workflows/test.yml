@@ -39,10 +39,19 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: 'maven'
 
+      - name: Show Maven and Java version
+        run: mvn --version
+
       - name: Setup Node.JS
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
+
+      - name: Show Node version
+        run: node --version
+
+      - name: Show NPM version
+        run: npm --version
 
       - name: Cache npm dependencies
         uses: actions/cache@v3
